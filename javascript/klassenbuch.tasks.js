@@ -713,7 +713,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 			var f = icons.length / this._taskTable.sortedRows.length;
 			
 			icons.each(function(icon, i) {
-				var task = this._taskTable.rows[this._taskTable.sortedRows[Math.floor(i / f)]];
+				var task = this._taskTable.rows.get(this._taskTable.sortedRows[Math.floor(i / f)]);
 				
 				if (icon.hasClassName("iconShowComments")) {
 					icon.observe("click", this.reportNavigation.bind(this, task.id + "/kommentare"));
