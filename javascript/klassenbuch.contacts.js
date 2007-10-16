@@ -97,7 +97,7 @@ Contacts.View = Class.create(Controls.View, {
 			}
 		);
 		
-		this.on("activate", ((function() {
+		this.on("activate", function() {
 			if (!this.contactTable) {
 				this.contactTable = this.content.insertControl(new Controls.Table({ keepHighlightedOnUpdate: "id" }));
 				
@@ -179,24 +179,19 @@ Contacts.View = Class.create(Controls.View, {
 				
 				this.registerChildControl(this.contactTable, this.sideMenu);
 				
-				var h1 = User.on("signIn", function() {
+				this._onExternalEvent(User, "signIn", function() {
 					this.sideMenu.items[1][(this.contactTable.highlightedRowId) ? "enable" : "disable"]();
 				}, this);
 				
-				var h2 = User.on("signOut", function() {
+				this._onExternalEvent(User, "signOut", function() {
 					this.sideMenu.items[1].disable();
 				}, this);
 				
-				this.on("remove", function() {
-					User.removeEventListeners(h1);
-					User.removeEventListeners(h2);
-				}, this);
-				
-				Contacts.on("updated", this.update, this);
+				this._onExternalEvent(Contacts, "updated", this.update, this);
 				
 				this.update();
 			}
-		}).bind(this)));
+		}, this);
 	},
 	
 	_onHighlightRow: function() {
