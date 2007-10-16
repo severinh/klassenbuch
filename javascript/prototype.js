@@ -1,4 +1,4 @@
-/*  Prototype JavaScript framework, version 1.6.0_rc0
+/*  Prototype JavaScript framework, version 1.6.0_rc1
  *  (c) 2005-2007 Sam Stephenson
  *
  *  Prototype is freely distributable under the terms of an MIT-style license.
@@ -7,7 +7,7 @@
  *--------------------------------------------------------------------------*/
 
 var Prototype = {
-  Version: '1.6.0_rc0',
+  Version: '1.6.0_rc1',
 
   Browser: {
     IE:     !!(window.attachEvent && !window.opera),
@@ -34,6 +34,9 @@ var Prototype = {
 
 if (Prototype.Browser.MobileSafari)
   Prototype.BrowserFeatures.SpecificElementExtensions = false;
+
+if (Prototype.Browser.WebKit)
+  Prototype.BrowserFeatures.XPath = false;
 
 /* Based on Alex Arnell's inheritance implementation. */
 var Class = {
@@ -168,6 +171,10 @@ Object.extend(Object, {
     return object && object.constructor === Array;
   },
 
+  isHash: function(object) {
+    return object instanceof Hash;
+  },
+
   isFunction: function(object) {
     return typeof object == "function";
   },
@@ -187,7 +194,7 @@ Object.extend(Object, {
 
 Object.extend(Function.prototype, {
   argumentNames: function() {
-    var names = this.toString().match(/^[\s\(]*function\s*\((.*?)\)/)[1].split(",").invoke("strip");
+    var names = this.toString().match(/^[\s\(]*function[^(]*\((.*?)\)/)[1].split(",").invoke("strip");
     return names.length == 1 && !names[0] ? [] : names;
   },
 
@@ -427,9 +434,7 @@ Object.extend(String.prototype, {
   },
 
   times: function(count) {
-    var result = '';
-    for (var i = 0; i < count; i++) result += this;
-    return result;
+    return count < 1 ? '' : new Array(count + 1).join(this);
   },
 
   camelize: function() {
@@ -795,17 +800,17 @@ Object.extend(Enumerable, {
 function $A(iterable) {
   if (!iterable) return [];
   if (iterable.toArray) return iterable.toArray();
-  var length = iterable.length, results = new Array(length); 
-  while (length--) results[length] = iterable[length]; 
+  var length = iterable.length, results = new Array(length);
+  while (length--) results[length] = iterable[length];
   return results;
 }
 
 if (Prototype.Browser.WebKit) {
   function $A(iterable) {
     if (!iterable) return [];
-    if (!(Object.isFunction(iterable) && iterable == '[object NodeList]') && 
-		iterable.toArray) return iterable.toArray();
-	var length = iterable.length, results = new Array(length);
+    if (!(Object.isFunction(iterable) && iterable == '[object NodeList]') &&
+        iterable.toArray) return iterable.toArray();
+    var length = iterable.length, results = new Array(length);
     while (length--) results[length] = iterable[length];
     return results;
   }
@@ -922,6 +927,7 @@ if (!Array.prototype.lastIndexOf) Array.prototype.lastIndexOf = function(item, i
 Array.prototype.toArray = Array.prototype.clone;
 
 function $w(string) {
+  if (!Object.isString(string)) return [];
   string = string.strip();
   return string ? string.split(/\s+/) : [];
 }
@@ -1009,7 +1015,7 @@ var Hash = Class.create(Enumerable, (function() {
 
   return {
     initialize: function(object) {
-      this._object = object instanceof Hash ? object.toObject() : Object.clone(object);
+      this._object = Object.isHash(object) ? object.toObject() : Object.clone(object);
     },
 
     _each: each,
@@ -1961,8 +1967,8 @@ Element.Methods = {
   makeClipping: function(element) {
     element = $(element);
     if (element._overflow) return element;
-    element._overflow = element.style.overflow || 'auto';
-    if ((Element.getStyle(element, 'overflow') || 'visible') != 'hidden')
+    element._overflow = Element.getStyle(element, 'overflow') || 'auto';
+    if (element._overflow !== 'hidden')
       element.style.overflow = 'hidden';
     return element;
   },
@@ -2689,7 +2695,7 @@ var Selector = Class.create({
 
   compileMatcher: function() {
     // Selectors with namespaced attributes can't use the XPath version
-    if (Prototype.BrowserFeatures.XPath && !(/\[[\w-]*?:/).test(this.expression))
+    if (Prototype.BrowserFeatures.XPath && !(/(\[[\w-]*?:|:checked)/).test(this.expression))
       return this.compileXPathMatcher();
 
     var e = this.expression, ps = Selector.patterns, h = Selector.handlers,
@@ -2929,7 +2935,7 @@ Object.extend(Selector, {
     tagName:      /^\s*(\*|[\w\-]+)(\b|$)?/,
     id:           /^#([\w\-\*]+)(\b|$)/,
     className:    /^\.([\w\-\*]+)(\b|$)/,
-    pseudo:       /^:((first|last|nth|nth-last|only)(-child|-of-type)|empty|checked|(en|dis)abled|not)(\((.*?)\))?(\b|$|\s|(?=:))/,
+    pseudo:       /^:((first|last|nth|nth-last|only)(-child|-of-type)|empty|checked|(en|dis)abled|not)(\((.*?)\))?(\b|$|(?=\s)|(?=:))/,
     attrPresence: /^\[([\w]+)\]/,
     attr:         /\[((?:[\w-]*:)?[\w-]+)\s*(?:([!^$*~|]?=)\s*((['"])([^\4]*?)\4|([^'"][^\]]*?)))?\]/
   },
@@ -3677,39 +3683,61 @@ Object.extend(Event, {
   }
 });
 
-Event.Methods = {
-  element: function(event) {
-    var node = event.target;
-    return Element.extend(node.nodeType == Node.TEXT_NODE ? node.parentNode : node);
-  },
+Event.Methods = (function() {
+  if (Prototype.Browser.IE) {
+    function isButton(event, code) {
+      return event.button == ({ 0: 1, 1: 4, 2: 2 })[code];
+    }
 
-  findElement: function(event, expression) {
-    var element = Event.element(event);
-    return element.match(expression) ? element : element.up(expression);
-  },
+  } else if (Prototype.Browser.WebKit) {
+    function isButton(event, code) {
+      switch (code) {
+        case 0: return event.which == 1 && !event.metaKey;
+        case 1: return event.which == 1 && event.metaKey;
+        default: return false;
+      }
+    }
 
-  isLeftClick: function(event) {
-    return (((event.which) && (event.which == 1)) ||
-            ((event.button) && (event.button == 1)));
-  },
-
-  pointer: function(event) {
-    return {
-      x: event.pageX || (event.clientX +
-        (document.documentElement.scrollLeft || document.body.scrollLeft)),
-      y: event.pageY || (event.clientY +
-        (document.documentElement.scrollTop || document.body.scrollTop))
-    };
-  },
-
-  pointerX: function(event) { return Event.pointer(event).x },
-  pointerY: function(event) { return Event.pointer(event).y },
-
-  stop: function(event) {
-    event.preventDefault();
-    event.stopPropagation();
+  } else {
+    function isButton(event, code) {
+      return event.which ? (event.which === code + 1) : (event.button === code);
+    }
   }
-};
+
+  return {
+    isLeftClick:   function(event) { return isButton(event, 0) },
+    isMiddleClick: function(event) { return isButton(event, 1) },
+    isRightClick:  function(event) { return isButton(event, 2) },
+
+    element: function(event) {
+      var node = Event.extend(event).target;
+      return Element.extend(node.nodeType == Node.TEXT_NODE ? node.parentNode : node);
+    },
+
+    findElement: function(event, expression) {
+      var element = Event.element(event);
+      return element.match(expression) ? element : element.up(expression);
+    },
+
+    pointer: function(event) {
+      return {
+        x: event.pageX || (event.clientX +
+          (document.documentElement.scrollLeft || document.body.scrollLeft)),
+        y: event.pageY || (event.clientY +
+          (document.documentElement.scrollTop || document.body.scrollTop))
+      };
+    },
+
+    pointerX: function(event) { return Event.pointer(event).x },
+    pointerY: function(event) { return Event.pointer(event).y },
+
+    stop: function(event) {
+      Event.extend(event);
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+})();
 
 Event.extend = (function() {
   var methods = Object.keys(Event.Methods).inject({ }, function(m, name) {
@@ -3757,7 +3785,7 @@ Object.extend(Event, (function() {
 
   function getDOMEventName(eventName) {
     if (eventName && eventName.match(/:/)) return "dataavailable";
-    return { keypress: "keydown" }[eventName] || eventName;
+    return eventName;
   }
 
   function getCacheForID(id) {
@@ -3934,7 +3962,6 @@ Object.extend(document, {
     };
   }
 })();
-
 /*------------------------------- DEPRECATED -------------------------------*/
 
 // This should be moved to script.aculo.us; notice the deprecated methods
