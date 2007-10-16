@@ -55,7 +55,7 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
 	 * damit gegebenenfalls automatisch die Standardeinstellungen zurückgegeben werden.
 	 * @type Object
 	*/
-	settings: {},
+	settings: new Hash(),
 	
 	isAdmin: false,
 	
@@ -64,9 +64,9 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
 	 * eine bestimmte Einstellung nichts angegeben hat.
 	 * @type Object
 	*/
-	standardSettings: {
+	standardSettings: $H({
 		theme: "nonzero"
-	},
+	}),
 	
     /**
      * Fenster, mit dem sich der Benutzer beim Klassenbuch durch Eingabe seines Passworts anmelden kann.<br /><br />
@@ -139,11 +139,11 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
 		User.nickname = response.result.nickname;
 		User.token = response.result.token;
 		User.profile = response.result.profile;
-		User.settings = Object.extend(Object.cloneDeeply(User.standardSettings), response.result.settings);
+		User.settings = User.standardSettings.merge($H(response.result.settings));
 		User.isAdmin = response.result.isadmin;
 		
 		// Zeigt den Willkommenshinweis an
-		$("welcomeMessage").update("Hallo, " + User.nickname + "!");
+		$("welcomeMessage").innerHTML = "Hallo, " + User.nickname + "!";
 		User.updateSignInElements();
 		
         User.fireEvent("signIn");
@@ -186,7 +186,7 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
 			User.nickname = "";
 			User.token = "";
             User.profile = {};
-            User.settings = {};
+            User.settings = User.standardSettings.clone();
             User.isAdmin = false;
             
             User.updateSignInElements();
@@ -228,14 +228,6 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
 	
 	showSettingsWindow: function() {
 		var window = new User.SettingsWindow();
-	},
-	
-	getSetting: function(key) {
-		if (User.signedIn && User.settings[key]) {
-			return User.settings[key];
-		} else {
-			return User.standardSettings[key];
-		}
 	},
 	
 	showRegisterWindow: function() {
@@ -427,14 +419,14 @@ User.SettingsWindow = Class.create(Controls.Window, {
 				alert("Bitte überprüfe deine Eingaben.");
 				error = true;
 			} else {
-				Object.extend(settings, input);
+				settings.update(input);
 			}
 		}, this);
 		
 		if (!error) {
 			var request = new JSONRPC.Request("changeusersettings", [settings], {
 				onSuccess: (function(response) {
-					Object.extend(User.settings, settings);
+					User.settings.update(settings);
 					this.close();
 				}).bind(this)
 			});
@@ -551,24 +543,23 @@ User.SettingsWindow.Profile = Class.create(Controls.TabControl.TabPageWithButton
 			});
 		}
 		
-		return {};
+		return new Hash();
 	}
 });
 
 User.SettingsWindow.Theme = Class.create(Controls.TabControl.TabPageWithButtonControl, {
 	initialize: function($super) {
+		this._selectedTheme = User.settings.theme;
+		
 		$super("Design", new Sprite("fileTypesSmall", 4));
 		
 		this.addClassName("themeTab");
-		
-		this._selectedTheme = User.settings.theme;
-		
-		this.element.update("<h2>Design</h2>");
+		this.element.innerHTML = "<h2>Design</h2>";
 		
 		App.ThemeManager.availableThemes.each(function(pair) {
-			var el = this.element.createChild({ className: "theme" });
+			var el = this.element.createChild({ className: "theme", content: 
+				"<img src=\"design/" + pair.key + "/preview.jpg\" /><div>" + pair.value +"</div>" });
 			
-			el.update("<img src=\"design/" + pair.key + "/preview.jpg\" /><div>" + pair.value +"</div>");
 			el.observe("click", this._selectTheme.bind(this, pair.key));
 			
 			this.on("remove", el.stopObserving, el);
@@ -580,9 +571,9 @@ User.SettingsWindow.Theme = Class.create(Controls.TabControl.TabPageWithButtonCo
 	},
 	
 	_getSettings: function() {
-		return {
+		return $H({
 			theme: this._selectedTheme
-		};
+		});
 	},
 	
 	_selectTheme: function(theme) {

@@ -1,31 +1,33 @@
-App.ThemeManager = Object.extend(new EventPublisher(), {
-	initialize: function() {
-		var updateTheme = function() {
-			App.ThemeManager.setTheme(User.getSetting("theme"));
-		};
+App.ThemeManager = new (Class.create(EventPublisher, {
+	initialize: function($super) {
+		$super();
 		
-		User.on("signIn", updateTheme);
-		User.on("signOut", updateTheme);
+		var updateTheme = function() {
+			this.setTheme(User.settings.get("theme"));
+		};
+	
+		App.on("beforeInitialize", function() {
+			User.on("signIn", updateTheme, this);
+			User.on("signOut", updateTheme, this);
+		}, this);
 	},
 	
 	switchTheme: function(theme) {
 		$$("link")[0].writeAttribute("href", "design/" + theme + "/css/design.css");
-		App.ThemeManager.currentTheme = theme;
-		App.ThemeManager.fireEvent("changetheme", theme)
+		this.currentTheme = theme;
+		this.fireEvent("changetheme", theme);
 	},
 	
 	setTheme: function(theme) {
-		if (theme !== App.ThemeManager.currentTheme && App.ThemeManager.availableThemes[theme]) {
-			App.ThemeManager.switchTheme(theme);
+		if (theme !== this.currentTheme && this.availableThemes.get(theme)) {
+			this.switchTheme(theme);
 		}
 	},
 	
-	currentTheme: User.settings.theme,	
+	currentTheme: User.settings.get("theme"),	
 	
 	availableThemes: $H({
 		"default": "Standard-Design",
 		"nonzero": "nonZero"
 	})
-});
-
-App.on("initialize", App.ThemeManager.initialize);
+}))();
