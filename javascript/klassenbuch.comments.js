@@ -160,7 +160,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
 
 Comments.Emoticons = $H({
     angry:    ["*angry*"],
-    biggrin:  [":-D", ":D", "=D", "xD"],
+    biggrin:  [":-D", ":D", "=D"],
     blink:    ["o.O", "oO", "o_O"],
     blush:    ["*blush*", ":-*)"],
     cool:     ["B-)", "B)", "8-D", "8D"],
@@ -176,7 +176,8 @@ Comments.Emoticons = $H({
     sleep:    ["-_-"],
     tongue:   [":-P", ":P"],
     unsure:   ["*unsure*", ":-/"],
-    wink:     [";-)", ";)"]
+    wink:     [";-)", ";)"],
+    lol:	  ["xD", "XD"]
 });
 
 Comments.MainWindow.TabPage = Class.create(Controls.TabControl.TabPage, {
