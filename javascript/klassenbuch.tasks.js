@@ -44,6 +44,7 @@ var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement
 		$super();
 		
 		var init = (function() {
+			
 			if (!this.initialized) {
 				var data = DirectData.get("tasks");
 				
@@ -78,11 +79,11 @@ var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement
 			}
 		}).bind(this);
 		
-		/* if (App.initialized) {
+		if (App.initialized) {
 			init();
 		} else {
 			App.on("initialize", init);
-		} */
+		}
 	},
 	
 	/**
