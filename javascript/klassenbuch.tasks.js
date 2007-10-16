@@ -32,7 +32,7 @@
  * @static
  * @inherits EventPublisher
 */
-var TaskManagement = Object.extend(new EventPublisher(), /** @scope TaskManagement */ {
+var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement.prototype */ {
 	/**
 	 * Initialisiert die Aufgabenverwaltung beim Start des Klassenbuchs. Um sich einen weiteren Aufruf des Servers zu
 	 * ersparen, wird die Aufgabenliste bereits mit der Datei index.php mitübertragen. Diese Daten werden mit dieser
@@ -40,41 +40,49 @@ var TaskManagement = Object.extend(new EventPublisher(), /** @scope TaskManageme
 	 * definiert, was beim An- oder Abmelden des Benutzers passieren soll.
 	 * @memberof TaskManagement
 	*/
-	initialize: function() {
-		// Verhindert, dass die Aufgabenverwaltung mehrmals initialisiert werden kann
-		if (!TaskManagement.initialized) {
-			var data = DirectData.get("tasks");
-			
-			if (data) {
-				TaskManagement._updateSuccess(new JSONRPC.Response(data.result));
-			}
-			
-			/**
-			 * Bewirkt, dass ungefähr jede Viertelstunde eine Anfrage an den Server gesendet wird, um die Aufgabenliste zu
-			 * aktualisieren.
-			 * @type PeriodicalExecuter
-			 * @memberof TaskManagement
-			 * @name periodicalUpdate
-			*/
-			TaskManagement.periodicalUpdate = new PeriodicalExecuter(TaskManagement.update, 1000);
-			
-			// Meldet sich der Benutzer an, wird die Aufgabenliste erneut vom Server abgerufen, da sie nun nauch Informationen
-			// darüber enthält, ob es bei bestimmten Aufgaben ungelesene Kommentare gibt.
-			User.on("signIn", TaskManagement.update);
-			
-			// Meldet sich der Benutzer ab, wird bei jeder Aufgabe die Eigenschaft newComments auf <em>false</em>
-			// gesetzt, und das Ereignis <em>updated</em> ausgelöst. Dies erspart eine weitere Anfrage an den Server.
-			User.on("signOut", function() {
-				TaskManagement.Tasks.each(function(task) {
-					task.newComments = false;
-				});
+	initialize: function($super) {
+		$super();
+		
+		var init = (function() {
+			if (!this.initialized) {
+				var data = DirectData.get("tasks");
 				
-				TaskManagement.fireEvent("updated");
-			});
-			
-			// Die Aufgabenverwaltung ist nun fertig initialisiert
-			TaskManagement.initialized = true;
-		}
+				if (data) {
+					this._updateSuccess(new JSONRPC.Response(data.result));
+				}
+				
+				/**
+				 * Bewirkt, dass ungefähr jede Viertelstunde eine Anfrage an den Server gesendet wird, um die Aufgabenliste zu
+				 * aktualisieren.
+				 * @type PeriodicalExecuter
+				 * @memberof TaskManagement
+				 * @name periodicalUpdate
+				*/
+				this.periodicalUpdate = new PeriodicalExecuter(this.update.bind(this), 1000);
+				
+				// Meldet sich der Benutzer an, wird die Aufgabenliste erneut vom Server abgerufen, da sie nun nauch Informationen
+				// darüber enthält, ob es bei bestimmten Aufgaben ungelesene Kommentare gibt.
+				User.on("signIn", this.update, this);
+				
+				// Meldet sich der Benutzer ab, wird bei jeder Aufgabe die Eigenschaft newComments auf <em>false</em>
+				// gesetzt, und das Ereignis <em>updated</em> ausgelöst. Dies erspart eine weitere Anfrage an den Server.
+				User.on("signOut", function() {
+					this.Tasks.each(function(task) {
+						task.newComments = false;
+					});
+					
+					this.fireEvent("updated");
+				}, this);
+				
+				this.initialized = true;
+			}
+		}).bind(this);
+		
+		/* if (App.initialized) {
+			init();
+		} else {
+			App.on("initialize", init);
+		} */
 	},
 	
 	/**
@@ -89,9 +97,9 @@ var TaskManagement = Object.extend(new EventPublisher(), /** @scope TaskManageme
 		var createWindow = new TaskManagement.TaskCreationWindow();
 		
 		createWindow.on("created", function(task) {
-			TaskManagement._addTask(task);
-			TaskManagement.fireEvent("updated");
-		});
+			this._addTask(task);
+			this.fireEvent("updated");
+		}, this);
 		
 		return createWindow;
 	},
@@ -104,7 +112,7 @@ var TaskManagement = Object.extend(new EventPublisher(), /** @scope TaskManageme
 	*/
 	update: function() {
 		var request = new JSONRPC.Request("gettasks", [CalendarDate.getCurrentTimestamp() - 2592000], {
-			onSuccess: TaskManagement._updateSuccess.bind(this)
+			onSuccess: this._updateSuccess.bind(this)
 		});
 	},
 
@@ -116,7 +124,7 @@ var TaskManagement = Object.extend(new EventPublisher(), /** @scope TaskManageme
 	 * @memberof TaskManagement
 	*/	
 	getTasksWithinTimeRange: function(startTimestamp, endTimestamp) {
-		return TaskManagement.Tasks.findAll(function(task) {
+		return this.Tasks.findAll(function(task) {
 			if (endTimestamp) {
 				return $R(startTimestamp, endTimestamp).include(task.date.getTimestamp());
 			} else {
@@ -159,13 +167,13 @@ var TaskManagement = Object.extend(new EventPublisher(), /** @scope TaskManageme
 	*/	
 	_updateSuccess: function(response) {
         if (!(App.Windows.hasWindowOfType("CreateEditTaskWindow") || App.Windows.hasWindowOfType("TaskCommentsWindow"))) {
-			TaskManagement.Tasks.clear();
+			this.Tasks.clear();
 			
 			response.result.each(function(taskInformation) {
-				TaskManagement._addTask(new TaskManagement.Task(taskInformation));
-			});
+				this._addTask(new TaskManagement.Task(taskInformation));
+			}, this);
 			
-			TaskManagement.fireEvent("updated");
+			this.fireEvent("updated");
         }
 	},
 
@@ -180,10 +188,10 @@ var TaskManagement = Object.extend(new EventPublisher(), /** @scope TaskManageme
     */
 	_addTask: function(task) {
 		task.on("change", function() {
-			TaskManagement.fireEvent("updated");
-		});
+			this.fireEvent("updated");
+		}, this);
 		
-		TaskManagement.Tasks.push(task);		
+		this.Tasks.push(task);		
 	},
 	
 	/**
@@ -263,10 +271,7 @@ var TaskManagement = Object.extend(new EventPublisher(), /** @scope TaskManageme
 	 * @memberof TaskManagement
 	*/
 	initialized: false
-});
-
-// Bewirkt, dass die Aufgabenverwaltung beim Initialisieren des Klassenbuchs ebenfalls initialisiert wird.
-App.on("initialize", TaskManagement.initialize);
+}))();
 
 /**
  * Definiert den Menüpunkt <em>Aufgaben</em> im Klassenbuch, der neben einem Seitenmenü, das Zugriff auf verschiedene
