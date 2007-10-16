@@ -53,18 +53,6 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
             
 			App.setupHistoryManagement();
             App.initialized = true;
-            
-            /* var t1 = new Date();
-            
-            var date = new Date();
-            
-            for (var i = 0; i < 300; i++) {
-				date.format2("D, j. F");
-            }
-            
-            var t2 = new Date();
-            
-            alert((t2.getTime() - t1.getTime())/300); */
 		}
 	},
 	

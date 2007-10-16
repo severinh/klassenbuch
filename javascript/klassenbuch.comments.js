@@ -254,7 +254,6 @@ Comments.CommentWindowAbstract = Class.create(Controls.Window, {
 
 Comments.CreateCommentWindow = Class.create(Comments.CommentWindowAbstract, {
     initialize: function($super, taskid, initialContent) {
-		console.profile();
         if (!$super("Neuer Kommentar")) {
 			return;
 		}
@@ -264,7 +263,6 @@ Comments.CreateCommentWindow = Class.create(Comments.CommentWindowAbstract, {
         if (initialContent) {
             this._inputField.setInput("[QUOTE]" + initialContent + "[/QUOTE]");
         }
-        console.profileEnd();
     },
     
     submit: function() {
