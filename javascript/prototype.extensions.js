@@ -535,9 +535,13 @@ String.Builder = function() {
 		millisecond: 1
 	});
 	
+	var plurals = new Hash();
+	
 	multipliers.each(function(pair) {
-		multipliers.set(pair.key + "s", pair.value);
+		plurals.set(pair.key + "s", pair.value);
 	});
+	
+	multipliers.update(plurals);
 	
 	var compare = function(add) {
 		return this.removeTime(true).getTime() === new Date().removeTime().add(add).getTime();
@@ -628,7 +632,7 @@ String.Builder = function() {
 		clone: function() {
 			return new Date(this.getTime());
 		}
-	}); 
+	});
 	
 	Object.extend(Date, {
 		create: function(str) {
