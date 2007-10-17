@@ -974,7 +974,7 @@ Controls.Form = Class.create(Control, {
 	},
 	
 	getInput: function() {
-		var input = new Hash();
+		var input = {};
 		
 		this.fields.each(function(field) {
 			input[field.name] = field.getProcessedValue();
