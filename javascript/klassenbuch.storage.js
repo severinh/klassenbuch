@@ -552,8 +552,7 @@ Storage.UploadWindow = Class.create(Controls.Window, /** @scope Storage.UploadWi
 	},
 	
 	_selectUploadView: function(view) {
-        this.uploadViews.invoke("hide");
-        this.uploadViews[view].show();
+        this.uploadViews.invoke("hide")[view].show();
 	},
 	
 	_ready: function() {

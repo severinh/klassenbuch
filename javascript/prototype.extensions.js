@@ -337,7 +337,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 		
 		$super(Object.extend({
 			// Backend-Einstellungen
-			upload_url: 				"../" + JSONRPC.SERVICE_FILE,
+			upload_url: 					"../" + JSONRPC.SERVICE_FILE,
 			
 			file_size_limit: 				"10240",
 			file_types: 					"*.*",
@@ -392,7 +392,8 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 	}
 });
 
-Object.extend(JSONRPC.Upload, SWFUpload);
+JSONRPC.Upload.UPLOAD_ERROR = SWFUpload.UPLOAD_ERROR;
+JSONRPC.Upload.QUEUE_ERROR = SWFUpload.QUEUE_ERROR;
 
 Object.extend(Hash.prototype, {
 	getLength: function() {
@@ -677,6 +678,7 @@ String.Builder = function() {
 		months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 	});
 })();
+
 
 $D = Date.create;
 
