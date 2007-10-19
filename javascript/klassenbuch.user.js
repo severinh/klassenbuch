@@ -1,13 +1,12 @@
 /**
  * Ermöglicht es dem Benutzer, sich an-, bzw. abzumelden und stellt zusätzlich Informationen und Funktionen den
  * angemeldeten Benutzer betreffend bereit.
- * @class
- * @static
+ * @singleton
  * @inherits EventPublisher
  * @event signIn Wird ausgelöst, wenn sich der Benutzer erfolgreich angemeldet hat
  * @event signOut Wird ausgelöst, wenn sich der Benutzer abgemeldet hat
  */
-var User = Object.extend(new EventPublisher(), /** @scope User */ {
+var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
     /**
      * Gibt an, ob ein Benutzer angemeldet ist oder nicht. Standardwert ist <em>false</em>.
      * @type Boolean
@@ -82,13 +81,17 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
      * das Feld <a href="#User._autoSignedIn">User.autoSignedIn</a> auf <em>true</em> gesetzt und die Funktion 
      * <a href="#User._signInSuccess">User._signInSuccess</a> mit den vom Server übergegeben Daten aufgerufen.
 	 */
-	initialize: function() {
-        var userData = DirectData.get("userdata");
-        
-        if (userData) {
-			// Der Benutzer wurde bereits vom Server identifiziert
-            User._signInSuccess(new JSONRPC.Response(userData.result));
-        }
+	initialize: function($super) {
+		$super()
+		
+		App.on("initialize", function() {
+			var userData = DirectData.get("userdata");
+			
+			if (userData) {
+				// Der Benutzer wurde bereits vom Server identifiziert
+				this._signInSuccess(new JSONRPC.Response(userData.result));
+			}
+		}, this);
 	},
 	
 	/**
@@ -97,12 +100,12 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
      */
 	showSignInWindow: function() {
         // Prüft, ob das Anmeldefenster bereits existiert
-		if (!User.signInWindow) {
-			User.signInWindow = new User.SignInWindow();
-			User.signInWindow.on("submit", User.signIn);
+		if (!this.signInWindow) {
+			this.signInWindow = new User.SignInWindow();
+			this.signInWindow.on("submit", this.signIn, this);
 		}
 		
-		User.signInWindow.show();
+		this.signInWindow.show();
 	},
 	
 	/**
@@ -115,8 +118,8 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
      */
 	signIn: function(username, password) {
         var request = new JSONRPC.Request("signin", [username, password], {
-			onSuccess: User._signInSuccess, // Im Erfolgsfall
-			onFailure: User._signInFailure // Wenn ein Fehler aufgetreten ist
+			onSuccess: this._signInSuccess.bind(this), // Im Erfolgsfall
+			onFailure: this._signInFailure.bind(this) // Wenn ein Fehler aufgetreten ist
         });
 	},
 	
@@ -129,24 +132,24 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
      */
 	_signInSuccess: function(response) {
         // Versteckt das Anmeldefenster, wenn diess bereits existiert
-        if (User.signInWindow) {
-            User.signInWindow.hide();
+        if (this.signInWindow) {
+            this.signInWindow.hide();
         }
         
         // Fügt die Benutzerdaten ein (darunter auch die Session-ID)
-		User.signedIn = true;
-		User.id = response.result.id;
-		User.nickname = response.result.nickname;
-		User.token = response.result.token;
-		User.profile = response.result.profile;
-		User.settings = User.standardSettings.merge($H(response.result.settings));
-		User.isAdmin = response.result.isadmin;
+		this.signedIn = true;
+		this.id = response.result.id;
+		this.nickname = response.result.nickname;
+		this.token = response.result.token;
+		this.profile = response.result.profile;
+		this.settings = this.standardSettings.merge($H(response.result.settings));
+		this.isAdmin = response.result.isadmin;
 		
 		// Zeigt den Willkommenshinweis an
-		$("welcomeMessage").innerHTML = "Hallo, " + User.nickname + "!";
-		User.updateSignInElements();
+		$("welcomeMessage").innerHTML = "Hallo, " + this.nickname + "!";
+		this.updateSignInElements();
 		
-        User.fireEvent("signIn");
+        this.fireEvent("signIn");
 	},
 	
 	/**
@@ -175,23 +178,23 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
      */
 	signOut: function() {
 		// Abmelden ergibt nur dann einen Sinn, wenn der Benutzer auch wirklich angemeldet ist ;-)
-        if (User.signedIn) {
+        if (this.signedIn) {
 			// Sendet eine Anfrage an den Server, um die serverseitige Session-Datei zu entfernen
             var request = new JSONRPC.Request("signout");
             
-            // Setzt das 'User' zurück
-            User.signedIn = false;
+            // Entfernt alle Benutzerdaten
+            this.signedIn = false;
             
-			User.id = 0;
-			User.nickname = "";
-			User.token = "";
-            User.profile = {};
-            User.settings = User.standardSettings.clone();
-            User.isAdmin = false;
+			this.id = 0;
+			this.nickname = "";
+			this.token = "";
+            this.profile = {};
+            this.settings = this.standardSettings.clone();
+            this.isAdmin = false;
             
-            User.updateSignInElements();
+            this.updateSignInElements();
             
-            User.fireEvent("signOut");
+            this.fireEvent("signOut");
 		}
 	},
 	
@@ -206,8 +209,8 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
      * @param {Object} data Die einzufügenden Benutzerdaten
 	 */
 	updateLocalProfile: function(profileInformation) {
-        Object.extend(User.profile, profileInformation);
-		Object.extend(Contacts.getContact.byId(User.id), User.profile);
+        Object.extend(this.profile, profileInformation);
+		Object.extend(Contacts.getContact.byId(this.id), this.profile);
 		Contacts.fireEvent("updated");
 	},
 	
@@ -222,8 +225,8 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
 		element = $(element);
 		var func = (element) ? element.select : $$;
 		
-		func(".signedIn").invoke((User.signedIn) ? "show" : "hide");
-		func(".notSignedIn").invoke((User.signedIn) ? "hide" : "show");
+		func(".signedIn").invoke((this.signedIn) ? "show" : "hide");
+		func(".notSignedIn").invoke((this.signedIn) ? "hide" : "show");
 	},
 	
 	showSettingsWindow: function() {
@@ -233,10 +236,7 @@ var User = Object.extend(new EventPublisher(), /** @scope User */ {
 	showRegisterWindow: function() {
 		var window = new User.RegisterWindow();
 	}
-});
-
-// Stellt sicher, dass die Funktion 'User._initialize' beim Initialisieren des Klassenbuchs aufgerufen wird.
-App.on("initialize", User.initialize);
+}))();
 
 User.SignInWindow = Class.create(Controls.Window, {
 	initialize: function($super) {
@@ -359,7 +359,7 @@ User.PasswordChangeWindow = Class.create(Controls.Window, {
 	
     _submit: function(input) {
 		if (input.newpassword === input.newpasswordrepeat) {
-			var request = new JSONRPC.Request("changepassword", [input.newpassword, input.currentpassword], { 
+			var request = new JSONRPC.Request("changepassword", [input.newpassword, input.currentpassword], {
 				onSuccess: this._success.bind(this)
 			});
 		} else {
