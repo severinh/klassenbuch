@@ -943,7 +943,6 @@ Controls.Form = Class.create(Control, {
 		$super(new Element("form", { className: "form", action: "javascript:void(null)" }));
 		
 		this._fieldsContainer = this.element.createChild();
-		this._fieldsContainer.innerHTML = "<input type=\"submit\" style=\"display: none;\" />";
 		
 		this._buttonContainer = this.element.createChild({ className: "buttons" });
 		this.element.createChild({ className: "clearFloating" });
@@ -953,6 +952,12 @@ Controls.Form = Class.create(Control, {
 		}));
 		
 		this.element.observe("submit", this._onSubmit.bind(this));
+		
+		this.element.observe("keypress", (function(e) {
+			if (e.keyCode === Event.KEY_RETURN) {
+				this._onSubmit();
+			}
+		}).bind(this));
 	},
 	
 	add: function() {
@@ -1377,7 +1382,6 @@ Controls.Table = Class.create(Control, {
 	},
 
 	sort: function(value, byClick) {
-		
 		var index = -1;
 		
 		if (Object.isString(value)) {
