@@ -54,20 +54,7 @@ Object.extend(Object, /** @scope Object */ {
 	 * @static
 	*/
 	isDefined: function(object) {
-		return !Object.isUndefined(object);
-	},
-	
-	// http://www.heise.de/ix/artikel/2001/04/194/03.shtml
-	instanceOf: function(object, constructor) {
-		while (!Object.isNull(object)) {
-			if (object === constructor.prototype) {
-				return true;
-			}
-			
-			object = object.__proto__;
-		}
-		
-		return false;
+		return typeof object != "undefined";
 	},
 	
 	/**
@@ -112,7 +99,7 @@ Object.extend(Prototype.Browser, (function() {
 				return true;
 			}
 			
-			if (!Object.isDefined(navigator.cookieEnabled)) {
+			if (Object.isUndefined(navigator.cookieEnabled)) {
 				Cookie.set("testcookie", "testvalue");
 				
 				if (Cookie.get("testcookie") === "testvalue") {
@@ -140,7 +127,11 @@ var JSONRPC = {
 	ERROR_CODE: {
 		AUTHENTICATION_FAILED: 800,
 		INVALID_DATABASE_QUERY: 801,
-		INVALID_RESPONSE: 850
+		INVALID_INPUT: 802,
+		SERVER_ERROR: 803,
+		USER_NOT_FOUND: 804,
+		INVALID_RESPONSE: 850,
+		UNKNOWN_ERROR: 999
 	}
 };
 
@@ -174,7 +165,12 @@ JSONRPC.Request = Class.create(Ajax.Request, /** @scope JSONRPC.Request.prototyp
 		// Cookies nicht unterstützt, muss zusätzlich die Benutzer-ID und das Benutzer-Token mitgesendet werden,
 		// sofern der Benutzer angemeldet ist
 		var postBody = $H(Object.extend((User.signedIn && !Prototype.Browser.supportsCookies) ? {
-			userid: User.id, token: User.token } : {}, { method: method, params: params || [] })).toJSON();
+			userid: User.id,
+			token: User.token
+		} : {}, {
+			method: method,
+			params: params || []
+		})).toJSON();
 		
 		// Der Konstruktor von Ajax.Request wird aufgerufen.
 		// Der Dateiname der JSONRPC-Service-Datei ist in "JSONRPC.SERVICE_FILE" festgelegt.
@@ -767,6 +763,8 @@ Element.addMethods({
     
     insertControl: function(element, control, position) {
         $(element).insert(control.element, position);
+        
+		control.fireEvent("insert");
         
         return control;
     }
