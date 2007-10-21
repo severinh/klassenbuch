@@ -576,25 +576,25 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 	}
 });
 
-Controls.RoundedPane = Class.create(Control, {
-	initialize: function($super, className) {
-		$super(new Element("div", { className: "roundedPane " + className }));
-		
-		if (!Controls.RoundedPane._cachedConstruct) {
-			var corner = function(v, h) {
-				return "<div class=\"corner " + h + "Corner " + v + "Corner " + v + h.capitalize() + "Corner\"></div>";
-			};
+Controls.RoundedPane = function() {
+	var corner = function(v, h) {
+		return "<div class=\"corner " + h + "Corner " + v + "Corner " + v + h.capitalize() + "Corner\"></div>";
+	};
+	
+	var construct = corner("top", "left") + corner("top", "right") + "<div class=\"paneContent\"></div>" + 
+		corner("bottom", "left") + corner("bottom", "right");
+	
+	return Class.create(Control, {
+		initialize: function($super, className) {
+			$super(new Element("div", { className: "roundedPane " + className }));
 			
-			Controls.RoundedPane._cachedConstruct = corner("top", "left") + corner("top", "right") + 
-				"<div class=\"paneContent\"></div>" + corner("bottom", "left") + corner("bottom", "right");
+			this.element.innerHTML = construct;
+			
+			this.corners = this.select(".corners");
+			this.content = this.select(".paneContent")[0];
 		}
-		
-		this.element.innerHTML = Controls.RoundedPane._cachedConstruct;
-		
-		this.corners = this.select(".corners");
-		this.content = this.select(".paneContent")[0];
-	}
-});
+	});
+}();
 
 Controls.TabControl = Class.create(Control, {
 	initialize: function($super, contentParent) {
@@ -1606,7 +1606,7 @@ Controls.Table = Class.create(Control, {
 		
 		if (enableRowHighlighting) {
 			var toKeep = this.options.keepHighlightedOnUpdate;
-			var oldKey = this.oldHighlightedRowKey;
+			var oldKey = this.oldHighlightedRowId;
 			
 			if (!this.highlightedRowId && toKeep && oldKey) {
 				var row = this.rows.find(function(pair) {
@@ -1617,7 +1617,7 @@ Controls.Table = Class.create(Control, {
 					this.highlightedRowId = row.key;
 				}
 				
-				this.oldHighlightedRowKey = null;
+				this.oldHighlightedRowId = null;
 			}
 			
 			this.highlightRow(this.highlightedRowId);
