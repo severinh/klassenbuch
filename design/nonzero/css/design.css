@@ -6,7 +6,7 @@ html {
 
 body {
 	font-family: "Trebuchet MS", Helvetica, sans-serif;
-	background: url(../images/headerbackground.gif) top left repeat-x;
+	background: url(../images/background.gif) top left repeat-x;
 	background-position: 0px -16px;
 	background-color: #FFF;
 	color: #585858;
@@ -171,7 +171,6 @@ img {
 
 /* Das Element, dass alle Ansichten (Controls.View) enthält */
 #content {
-	background: url(../images/contentbackground.gif) repeat-x;
 	margin: 0;
 }
 
