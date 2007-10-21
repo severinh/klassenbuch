@@ -92,7 +92,7 @@ var Control = Class.create(EventPublisher, {
 	
 	makePropertiesFromClassNames: function() {
         $A(arguments).each(function(className) {
-			this[className] = this.select("." + className).first();
+			this[className] = this.select("." + className)[0];
 		}, this);
 	},
 	
@@ -146,11 +146,7 @@ var Control = Class.create(EventPublisher, {
      * @method Zeigt das Steuerelement an, wenn es zur Zeit unsichtbar ist und umgekehrt (Wrapperfunktion).
     */
 	toggle: function() {
-		if (this.visible()) {
-			this.hide();
-		} else {
-			this.show();
-		}
+		this[(this.visible()) ? "hide" : "show"]();
 	}
 });
 
@@ -490,7 +486,6 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
     */
 	addItem: function(item) {
 		this._list.insert("<li>" + item + "</li>");
-		
 		this._items.push(item);
 		
 		if (this._items.length === 1) {
@@ -536,7 +531,7 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		// Drückt der Benutzer die Maustaste, wird die Auswahlliste sofort wieder entfernt
 		(function() {
 			Event.observe(document, "mousedown", this._hideListListener);
-		}).bind(this).defer(50);
+		}).bind(this).defer();
 	},
 
     /**
@@ -971,11 +966,7 @@ Controls.Form = Class.create(Control, {
 	},
 	
 	isValid: function() {
-		if (this.fields.findAll(function(field) { return !field.validate(); }, this).length) {
-			return false;
-		} else {
-			return true;
-		}
+		return !this.fields.findAll(function(field) { return !field.validate(); }, this).length;
 	},
 	
 	getInput: function() {
@@ -1026,7 +1017,7 @@ Controls.Form.Field = Class.create(Control, {
 		}, options);
 		
 		this.value = "";
-		this.name = this.options.name || "unnamedfield";
+		this.name = this.options.name || "field" + Controls.Form.Field.ANONYMOUS_ID++;
 		this.fieldElement = fieldElement;
 		
 		$super(new Element("div", { className: "field" }));
@@ -1091,6 +1082,8 @@ Controls.Form.Field = Class.create(Control, {
 	}
 });
 
+Controls.Form.Field.ANONYMOUS_ID = 1;
+
 Controls.Form.TextField = Class.create(Controls.Form.Field, {
 	initialize: function($super, options) {
 		options = Object.extend({
@@ -1105,8 +1098,6 @@ Controls.Form.TextField = Class.create(Controls.Form.Field, {
 		} else {
 			$super(new Element("input", { type: options.type }), options);
 		}
-		
-		this.on("remove", this.fieldElement.stopObserving, this.fieldElement);
 	},
 	
 	setValue: function($super, value) {
@@ -1316,10 +1307,15 @@ Controls.Window.Overlay = function() {
 		update: function() {
 			var action = (App.Windows.getNumberOfOpenWindows() === 0) ? "hide" : "show";
 			
-			this._overlay[action]();
-			this._windowContainer[action]();
-			this.fireEvent(action);
-		}
+			if (action !== this._lastAction) {
+				this._overlay[action]();
+				this._windowContainer[action]();
+				this.fireEvent(action);
+				this._lastAction = action;
+			}
+		},
+		
+		_lastAction: ""
 	}))();
 }();
 
