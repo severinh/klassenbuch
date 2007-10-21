@@ -3,6 +3,12 @@
 // Der Zugriff auf das Klassenbuch erfolgt über diese Datei.
 define("_KBSECURE", true);
 
+// Wenn das Klassenbuch noch nicht konfiguriert wurde, wird die Installation eingeleitet
+if (!file_exists("server.settings.php") || filesize("server.settings.php") < 10) {
+	header("Location: installation/index.php");
+	exit();
+}
+
 // Soll in keinem Fall gecached werden
 header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
 header("Expires: Sun, 1 Jan 1995 00:00:00 GMT");    // Datum in der Vergangenheit

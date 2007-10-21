@@ -6,17 +6,17 @@ defined("_KBSECURE") or die("Zugriff verweigert.");
 $settings = Array();
 
 $settings["db"] = Array(
-	"server" 	=> "localhost",
- 	"name"		=> "",
-	"user" 		=> "",
-	"password" 	=> "",
-	"prefix" 	=> ""
+	"server" 	=> "{dbhost}",
+ 	"name"		=> "{dbname}",
+	"user" 		=> "{dbuser}",
+	"password" 	=> "{dbpassword}",
+	"prefix" 	=> "{tblprefix}"
 );
 
 $settings["gen"] = Array(
 	"online" => true,
 	"cookieprefix" => "kb_",
-	"adminmail" => "severinheiniger@gmail.com"
+	"adminmail" => "{adminmail}"
 );
 
 $settings["upload"] = Array();
