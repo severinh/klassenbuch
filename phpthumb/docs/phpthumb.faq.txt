@@ -94,7 +94,9 @@ A: Check that these two values are present and properly
    configured in phpThumb.config.php (introduced in v1.6.0):
     $PHPTHUMB_CONFIG['allow_src_above_docroot']  (default=false)
     $PHPTHUMB_CONFIG['allow_src_above_phpthumb'] (default=true)
-   If your images are outside DOCUMENT_ROOT then you will have
+   If your images are outside DOCUMENT_ROOT (this includes if
+    you have an image upload form, most likely the images will
+    get uploaded to "/tmp/<file>" or similar) then you will have
     to configure 'allow_src_above_docroot' to true.
    Make sure whatever user the webserver is running as has read
     permission to the file/directory you're reading from
@@ -277,6 +279,23 @@ A: You can either let phpThumb's built-in cache purging features (see phpThumb.c
      }
 
 
+Q: Is it safe to delete cache files?
+A: Yes, it is safe to delete any cache files and/or directories. phpThumb will
+   automatically re-create them as needed.  Also, take a look at the "cache_max*"
+   settings in phpThumb.config.php for automatic cache purging.
+
+
+Q: How can I find the filename that phpThumb.php will use to
+   cache a particular image?
+A: It's not easily possible to get the cache filename. You can
+   see the method used to calculate it in SetCacheFilename()
+   in phpthumb.class.php (around line 2991-3090). If you need
+   to know where an image will be rendered to, it may be
+   easier and better to call phpThumb as an object and handle
+   your own caching. See /demo/phpThumb.demo.object.simple.php
+   for an example.
+
+
 Q: Can I make thumbnails from a PDF?
 A: Yes, as long as you have both ImageMagick and GhostScript
    installed. The AFPL version of GhostScript seems to work
@@ -293,6 +312,21 @@ A: Possibly, but it's not easy. Theoretically, if you have
    be possible, but I have not tested that.  Other projects that
    attempt to generate thumbnails from webpages include:
    http://www.boutell.com/webthumb/
+
+
+Q: Can I use source images from (same or another) server that uses
+   a script with parameters to display images? For example:
+   http://sourceforge.net/sflogo.php?group_id=106407&type=5
+   (displays a PNG image, 210x62)
+A: Yes, you should be able to use phpThumb like that no problem.
+   If the source image is on a different server you need to set
+   $PHPTHUMB_CONFIG['nohotlink_valid_domains'] to contain the source
+   domain(s) [eg: sourceforge.net] if it's a small list of possible
+   source domains, or make sure $PHPTHUMB_CONFIG['nohotlink_enabled']
+   is set to false to allow creating source images from any domain/IP.
+   You will also need to properly encode the image source (using PHP
+   function rawurlencode):
+   /phpThumb.php?src=http%3A%2F%2Fsourceforge.net%2Fsflogo.php%3Fgroup_id%3D106407%26type%3D5&w=100
 
 
 Q: phpThumb is the best software in the world, how can I donate?

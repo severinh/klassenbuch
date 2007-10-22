@@ -6,7 +6,106 @@
 § = structure change or important new feature
 * = less important new feature or change
 
-v1.7.7 - December ??, 2006
+v1.7.9 - November ??, 2007
+  * Bugfix: "wmt" alignment broken for built-in fonts
+    (thanks mailÿmmjaeger*com)
+
+
+v1.7.8 - September 16, 2007
+  § Added 'stc' (Source Transparent Color) filter
+    (Feature Request #1672440)
+  § 'zc' now supports directed crop (top/bottom/left/right)
+    (thanks lee¯virtualinkdesign*com, chris¯sostreassoc*com)
+  § new class function resetObject() should be used to reset
+    default class paramters to default to allow reusing a
+    single object on multiple images
+    (see phpThumb.demo.object.php)
+    (thanks bjohnsonÿaccomplishhosting*com)
+  § "wmt" and "wmi" filters now support absolute positioning
+    using alignment values: {xoffset}x{yoffset} (eg: "10x20")
+    (Feature Request #1567113)
+    (thanks mailÿpedrocandeias*com;
+     squidlibertyÿusers*sourceforge*net)
+  § "wmi" filter now supports watermark scaling & rotation
+    (Feature Request #1788063)
+    (thanks glen*fiebichÿ2020promo*com)
+  § Added "size" filter.  NOTE: try not to use this filter,
+    it is inefficient and for special purposes only, please
+    see phpthumb.readme.txt entry before using.
+    (thanks glen*fiebichÿ2020promo*com)
+  * Added wildcard domain options for config settings
+    nooffsitelink_valid_domains and nohotlink_valid_domains
+    (thanks meÿjohannes*jarolim*com)
+  * Output image format defaults to input format (based on
+    filename)  (thanks bjohnsonÿaccomplishhosting*com)
+  * Sepia filter now uses ImageFilter under PHP5
+    (thanks richard*comleyÿmademedia*co*uk)
+  * "f" parameters now accepts formats with leading "."
+    (eg "&f=.png") to allow you to fool things that look at
+    the last characters of the URL to determine image type
+    (thanks alexÿalexderas*nl)
+  * Added section to phpthumb.demo.check.php to test cache
+    file creation and deletion
+  * Bugfix [#1715256]: ImageMagick output not always used
+    if fltr set incorrectly
+    (thanks danakiÿusers*sourceforge*net)
+  * Bugfix [#1541673]: ResolveFilenameToAbsolute() fails in
+    RenderToFile() if target file does not exist
+    (thanks jasonpellÿusers*sourceforge*net)
+  * Bugfix [#1703373]: CleanUpURLencoding() broken if path
+    element equals "0"
+    (thanks izeronÿusers*sourceforge*net)
+  * Bugfix [#1573399]: phpthumb_filters::Colorize() broken
+    under PHP5  (thanks cerwÿusers*sourceforge*net)
+  * Bugfix [#1573399]: ImageMagick version of colorize filter
+    missing quotes  (thanks cerwÿusers*sourceforge*net)
+  * Bugfix [#1733462]: SafeExec broken
+    (thanks hansfnÿusers*sourceforge*net)
+  * Bugfix [#1751821]: open_basedir restriction gives warning
+    when trying to initialize config_temp_dir
+    (thanks k-mystikÿusers*sourceforge*net)
+  * Bugfix: [#1751880]: open_basedirs not initialized properly
+    under Windows  (thanks k-mystikÿusers*sourceforge*net)
+  * Bugfix: "A non well formed numeric value encountered" error
+    when using "cont" filter in PHP5
+    (thanks isnbitÿyahoo*com)
+  * Bugfix: Colorize filter ignored $amount under PHP5
+    (thanks richard*comleyÿmademedia*co*uk)
+  * Bugfix: double-drawn color in corders of Bevel filter
+    (thanks m*westmijzeÿstudent*utwente*nl)
+  * Bugfix: 'nocache' parameter was forbidden
+    (thanks andreasÿkringelstan*se)
+  * Bugfix: disabled functions (set_time_limit, shell_exec, etc)
+    not always correctly detected
+    (thanks ryandemmerÿgmail*com, dr*creatorÿgmail*com)
+  * Bugfix: phpThumbURL() was broken if __FILE__ and
+    $PHPTHUMB_CONFIG['document_root'] had different slash
+    styles (\ vs /)  (thanks jobbetÿskarin*com)
+  * Bugfix: 'wmt' watermark text not properly right- or center-
+    aligned with TTF fonts
+  * Bugfix: force stderr output to stdout in SafeExec
+  * Bugfix: filter-generated debug messages not passed back
+  * Bugfix: /demo/phpThumb.demo.gallery.php was not getting
+    correct DOCUMENT_ROOT value on some servers
+    (thanks latex*dragonÿgmail*com)
+  * Bugfix: HTTP source images with no parameters were not
+    being passed through directly (thanks chrisÿmegawap*net)
+  * Bugfix: "unknown image type" errors on non-GD-supported
+    remote image sources  (thanks chrisÿgorillachicago*com)
+  * Bugfix: remote images not found if server returned 302
+    message with text other than "Found"
+    (thanks cveleÿdefault*co*yu, kevinÿkevinevans*net)
+  * Bugfix: resetObject() was clobbering debug messages
+    (thanks kevinÿkevinevans*net)
+  * Bugfix: CleanUpURLencoding() was broken
+    (thanks kevinÿkevinevans*net)
+  * Bugfix: Cache auto-purging was generally broken, especially
+    if the cache contained a directory or filename of "0"
+    (thanks hannoÿxcalak*info; webdesignÿweisshart*de)
+
+
+
+v1.7.7 - December 25, 2006
   § Added phpThumb.demo.gallery.php -- basic image gallery demo
   § Added option for image watermark for anti-hotlinking. See
     phpThumb.config.php "nooffsitelink_watermark_src"

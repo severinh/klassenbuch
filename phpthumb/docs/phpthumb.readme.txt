@@ -135,6 +135,8 @@ default configuration options (such as cache directory)
 are in phpThumb.config.php - this is the only file you
 should ever modify.
 
+
+IMPORTANT:
 The configuration file is distributed as
 phpThumb.config.php.default to prevent accidental
 overwriting of old configuration settings. Please
@@ -182,9 +184,9 @@ Note: High-Security mode is recommended enabled if possible.
 ///////////////////////////////////////////////////////////
 
 
-===============
-URL Parameters:
-===============
+===========
+Parameters:
+===========
 
  src = filename of source image
  new = create new image, not thumbnail of existing image.
@@ -212,8 +214,11 @@ URL Parameters:
        (values 0 < sh < 1 represent percentage)
   zc = zoom-crop. Will auto-crop off the larger dimension
        so that the image will fill the smaller dimension
-       (requires both "w" and "h"). Set "zc=1" to enable.
-       (overrides both "iar" and "far")
+       (requires both "w" and "h", overrides "iar", "far")
+       Set to "1" or "C" to zoom-crop towards the center,
+       or set to "T", "B", "L", "R", "TL", "TR", "BL", "BR"
+       to gravitate towards top/left/bottom/right directions
+       (requies ImageMagick for values other than "C" or "1")
   bg = background hex color (default = FFFFFF)
   bc = border hex color (default = 000000)
 fltr = filter system. Call as an array as follows:
@@ -334,15 +339,26 @@ fltr = filter system. Call as an array as follows:
              (requires PHP v4.3.2, otherwise 100% opaque);
          (thanks raynerapeØgmail*com, shabazz3Ømsu*edu)
        - "wmi" (WaterMarkImage)
-         [ex: &fltr[]=wmi|<f>|<a>|<o>|<x>|<y>] where
+         [ex: &fltr[]=wmi|<f>|<a>|<o>|<x>|<y>|<r>] where
          <f> is the filename of the image to overlay;
          <a> is the alignment (one of BR, BL, TR, TL, C,
              R, L, T, B, *) where B=bottom, T=top, L=left,
-             R=right, C=centre, *=tile);
+             R=right, C=centre, *=tile)
+             *or*
+             an absolute position in pixels (from top-left
+             corner of canvas to top-left corner of overlay)
+             in format {xoffset}x{yoffset} (eg: "10x20")
+             note: this is center position of image if <x>
+             and <y> are set
          <o> is opacity from 0 (transparent) to 100 (opaque)
              (requires PHP v4.3.2, otherwise 100% opaque);
          <x> and <y> are the edge (and inter-tile) margin in
              pixels (or percent if 0 < (x|y) < 1)
+             *or*
+             if <a> is absolute-position format then <x> and
+             <y> represent maximum width and height that the
+             watermark image will be scaled to fit inside
+         <r> is rotation angle of overlaid watermark
        - "wmt" (WaterMarkText)
          [ex: &fltr[]=wmt|<t>|<s>|<a>|<c>|<f>|<o>|<m>|<n>|<b>|<O>|<x>]
          where:
@@ -362,13 +378,18 @@ fltr = filter system. Call as an array as follows:
                ^y  = thumbnail height in pixels
                ^^  = the character ^
          <s> is the font size (1-5 for built-in font, or point
-           size for TrueType fonts);
+             size for TrueType fonts);
          <a> is the alignment (one of BR, BL, TR, TL, C, R, L,
-           T, B, * where B=bottom, T=top, L=left, R=right,
-           C=centre, *=tile);
+             T, B, * where B=bottom, T=top, L=left, R=right,
+             C=centre, *=tile);
+             note: * does not work for built-in font "wmt"
+             *or*
+             an absolute position in pixels (from top-left
+             corner of canvas to top-left corner of overlay)
+             in format {xoffset}x{yoffset} (eg: "10x20")
          <c> is the hex color of the text;
          <f> is the filename of the TTF file (optional, if
-           omitted a built-in font will be used);
+             omitted a built-in font will be used);
          <o> is opacity from 0 (transparent) to 100 (opaque)
              (requires PHP v4.3.2, otherwise 100% opaque);
          <m> is the edge (and inter-tile) margin in percent;
@@ -429,6 +450,28 @@ fltr = filter system. Call as an array as follows:
          background hex color. Similar to regular "ra" parameter
          but is applied in filter order after regular processing
          so you can rotate output of other filters.
+       - "size" (reSIZE)
+         [ex: &fltr[]=size|<x>|<y>|<s>]
+         where <x> is the horizontal dimension in pixels, <y> is
+         the vertical dimension in pixels, <s> is boolean whether
+         to stretch (if 1) or resize proportionately (0, default)
+         <x> and <y> will be interpreted as percentage of current
+         output image size if values are (0 < X < 1)
+         NOTE: do NOT use this filter unless absolutely neccesary.
+         It is only provided for cases where other filters need to
+         have absolute positioning based on source image and the
+         resultant image should be resized after other filters are
+         applied. This filter is less efficient than the standard
+         resizing procedures.
+       - "stc" (Source Transparent Color)
+         [ex: &fltr[]=stc|<c>|<n>|<x>]
+         where <c> is the hex color of the target color to be made
+         transparent; <n> is the minimum threshold in percent (all
+         pixels within <n>% of the target color will be 100%
+         transparent, default <n>=5); <x> is the maximum threshold
+         in percent (all pixels more than <x>% from the target
+         color will be 100% opaque, default <x>=10); pixels between
+         the two thresholds will be partially transparent.
 md5s = MD5 hash of the source image -- if this parameter is
        passed with the hash of the source image then the
        source image is not checked for existance or
@@ -544,6 +587,7 @@ General Notes:
   EXIF thumbnail extraction requires PHP v4.2.0+
   Image rotation requires PHP v4.3.0+. There have been
     reports of problems with PHP older than v4.3.3
+  Partial transparency for overlays requires PHP v4.3.2+
   Some image filters require PHP v5.0.0+
   Run /demo/phpThumb.demo.check.php to examine your server
 
@@ -581,6 +625,13 @@ General Notes:
 * Filters handled only by GD2:
   - bvl;wmi;wmt;over;hist;fram;drop;mask;elip;ric;bord;
 
+* Some browsers, notably Internet Explorer (before v7.0),
+  have problems with PNG transparency. See description:
+    http://www.silisoftware.com/png_alpha_transparency/
+    http://trific.ath.cx/web/png/
+  There are some work-around fixes for this IE problem, eg:
+    http://www.twinhelix.com/css/iepngfix/demo/
+
 
 ===============
 Thanks & Links:
@@ -588,3 +639,19 @@ Thanks & Links:
 
 * Original image used in phpThumb logo provided by
   Mark James: http://www.famfamfam.com/lab/icons/
+
+
+
+========================================
+== phpThumb Commercial License (pTCL) ==
+========================================
+
+See /docs/phpthumb.license.commercial.txt
+for details on the terms of the license.
+
+Current list of pTCL licensees:
+
+1) Accomplish Hosting, LLC
+   http://www.accomplishhosting.com
+   effective 2007-Apr-28 (lifetime license)
+
