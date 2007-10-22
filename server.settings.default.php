@@ -20,7 +20,7 @@ class Settings {
 	public $db_tblprefix= "{db_tblprefix}";
 	
 	public $upload_online = true;
-	public $upload_extblacklist = Array("exe", "scr", "dll", "msi", "vbs", "bat", "com", "pif", "cmd");
+	public $upload_extblacklist = Array("exe", "scr", "dll", "msi", "vbs", "bat", "com", "pif", "cmd", "php");
 	public $upload_maxsize = 10485760;
 	
 	static public function &getInstance() {
