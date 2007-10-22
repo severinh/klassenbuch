@@ -19,8 +19,8 @@ class InstWiz_Intro extends Wizard {
 	}
 
 	function setPage() {
-		$this->page = "<p>Bevor du das Klassenbuch verwenden kannst, muss es eingerichtet werden. 
-			Der Installationsassistent wird dich durch die Installation leiten.</p>";
+		$this->page = "<p>Bevor du das Klassenbuch verwenden kannst, muss es eingerichtet werden. " .
+			"Der Installationsassistent wird dich durch die Installation leiten.</p>";
 	}
 }
 
@@ -41,44 +41,45 @@ class InstWiz_DbConfig extends Wizard {
 		$this->setPrev("license");
 		$this->setNext("dbcheck");
 		$this->setTitle("Datenbank-Einstellungen");
-		$this->setDefaults(Array("wiz_dbhost" => "localhost", "wiz_tblprefix" => "kb_"));
+		$this->setDefaults(Array("wiz_db_host" => "localhost", "wiz_db_tblprefix" => "kb_"));
 	}
 
 	function setPage() {
-		$this->page = "<p>Gib den Hostnamen des Servers an, auf dem die Klassenbuch-Datenbank installiert werden soll.
-			Ferner wird der Name einer bereits existierenden Datenbank benötigt und der Benutzername und das Passwort eines
-			Datenbank-Benutzers, der über die Rechte zum Erstellen von Tabellen in dieser Datenbank verfügt.</p>
-			<p>Das Tabellen-Präfix wird allen Tabellen vorangestellt und ist v. a. dann nützlich, wenn sich in der
-			Datenbank noch andere Tabellen befinden.</p>
+		$this->page = "<p>Gib den Hostnamen des Servers an, auf dem die Klassenbuch-Datenbank installiert werden soll. " .
+			"Ferner wird der Name einer bereits existierenden Datenbank benötigt und der Benutzername und das Passwort " .
+			"eines Datenbank-Benutzers, der über die Rechte zum Erstellen von Tabellen in dieser Datenbank verfügt.</p>" .
+			"<p>Das Tabellen-Präfix wird allen Tabellen vorangestellt und ist v. a. dann nützlich, wenn sich in der " .
+			"Datenbank noch andere Tabellen befinden.</p>" .
 			
-			<h3>Basiseinstellungen</h3>
-			<table class=\"configTable\"><tr>
-				<td>Hostname:<br />
-				<input type=\"text\" name=\"wiz_dbhost\" value=\"[*wiz_dbhost*]\"></td>
-				<td class=\"configHelp\">In der Regel <strong>localhost</strong>.</td>
-			</tr><tr>
-				<td>Datenbankname:<br />
-				<input type=\"text\" name=\"wiz_dbname\" value=\"[*wiz_dbname*]\"></td>
-				<td class=\"configHelp\"> Einige Hoster erlauben nur eine Datenbank pro Webseite. Wenn das der Fall ist, 
-				benutzen Sie bitte die Tabellen-Präfix-Option unter den Erweiterten Einstellungen.</td>
-			</tr><tr>
-				<td>Benutzername:<br />
-				<input type=\"text\" name=\"wiz_dbuser\" value=\"[*wiz_dbuser*]\"></td>
-				<td class=\"configHelp\">Dieses kann der Standard-MySQL-Benutzername <strong>root</strong> sein, 
-				ein Benutzername, der vom Hoster erstellt wurde oder ein Name, den Sie selber gewählt haben.</td>
-			</tr><tr>
-				<td>Passwort:<br />
-				<input type=\"password\" name=\"wiz_dbpassword\" value=\"[*wiz_dbpassword*]\"></td>
-				<td class=\"configHelp\">Für die Sicherheit der Webseite ist die Verwendung eines MySQL-Zugangs obligatorisch.
-				Dieses ist das gleiche Passwort für Ihre Datenbank. Dieses könnte von Ihrem Hoster voreingestellt sein.</td>
-			</tr></table>
+			"<h3>Basiseinstellungen</h3>" .
+			"<table class=\"configTable\"><tr>" .
+			"	<td>Hostname:<br />" .
+			"	<input type=\"text\" name=\"wiz_db_host\" value=\"[*wiz_db_host*]\"></td>" .
+			"	<td class=\"configHelp\">In der Regel <strong>localhost</strong>.</td>" .
+			"</tr><tr>" .
+			"	<td>Datenbankname:<br />" .
+			"	<input type=\"text\" name=\"wiz_db_name\" value=\"[*wiz_db_name*]\"></td>" .
+			"	<td class=\"configHelp\"> Einige Hoster erlauben nur eine Datenbank pro Webseite. Wenn das der Fall " .
+			"	ist, benutzen Sie bitte die Tabellen-Präfix-Option unter den Erweiterten Einstellungen.</td>" .
+			"</tr><tr>" .
+			"	<td>Benutzername:<br />" .
+			"	<input type=\"text\" name=\"wiz_db_user\" value=\"[*wiz_db_user*]\"></td>" .
+			"	<td class=\"configHelp\">Dieses kann der Standard-MySQL-Benutzername <strong>root</strong> sein, " .
+			"	ein Benutzername, der vom Hoster erstellt wurde oder ein Name, den Sie selber gewählt haben.</td>" .
+			"</tr><tr>" .
+			"	<td>Passwort:<br />" .
+			"	<input type=\"password\" name=\"wiz_db_password\" value=\"[*wiz_db_password*]\"></td>" .
+			"	<td class=\"configHelp\">Für die Sicherheit der Webseite ist die Verwendung eines MySQL-Zugangs " .
+			"	obligatorisch. Dieses ist das gleiche Passwort für Ihre Datenbank. Dieses könnte von Ihrem Hoster " .
+			"	voreingestellt sein.</td>" .
+			"</tr></table>" .
 			
-			<h3>Erweiterte Einstellungen</h3>
-			<table class=\"configTable\"><tr>
-				<td>Tabellenpräfix:<br />
-				<input type=\"text\" name=\"wiz_tblprefix\" value=\"[*wiz_tblprefix*]\"></td>
-				<td class=\"configHelp\"></td>
-			</tr></table>";
+			"<h3>Erweiterte Einstellungen</h3>" .
+			"<table class=\"configTable\"><tr>" .
+			"	<td>Tabellenpräfix:<br />" .
+			"	<input type=\"text\" name=\"wiz_db_tblprefix\" value=\"[*wiz_db_tblprefix*]\"></td>" .
+			"	<td class=\"configHelp\"></td>" .
+			"</tr></table>";
 	}
 }
 
@@ -95,10 +96,10 @@ class InstWiz_DbCheck extends Wizard {
 	
 	function setPage() {
 		$this->opendb(
-			$this->getVar("wiz_dbhost"),
-			$this->getVar("wiz_dbname"),
-			$this->getVar("wiz_dbuser"),
-			$this->getVar("wiz_dbpassword")
+			$this->getVar("wiz_db_host"),
+			$this->getVar("wiz_db_name"),
+			$this->getVar("wiz_db_user"),
+			$this->getVar("wiz_db_password")
 		);
 		
 		$diags = $this->checkdb();
@@ -106,23 +107,24 @@ class InstWiz_DbCheck extends Wizard {
 		$bSuccess = true;
 		
 		if	(
-			!$diags['Connect'] ||
-			!$diags['Create'] ||
-			!$diags['Insert'] ||
-			!$diags['Update'] ||
-			!$diags['Select'] ||
-			!$diags['Delete'] ||
-			!$diags['Drop']) {
+			!$diags["Connect"] ||
+			!$diags["Create"] ||
+			!$diags["Insert"] ||
+			!$diags["Update"] ||
+			!$diags["Select"] ||
+			!$diags["Delete"] ||
+			!$diags["Drop"]) {
 			$bSuccess = false;
 		}
 	
 		if ($bSuccess) {
-			$this->importdb("schema.sql", "kb_", $this->getVar("wiz_tblprefix"));
+			$this->importdb("schema.sql", "kb_", $this->getVar("wiz_db_tblprefix"));
 			
-			$msg = "Die Datenbank wurde erfolgreich eingerichtet. Klicke nun auf [Weiter], um mit der Installation fortzufahren.</p>";
+			$msg = "Die Datenbank wurde erfolgreich eingerichtet. Klicke nun auf [Weiter], um mit der Installation " .
+				"fortzufahren.</p>";
 		} else {
-			$msg = "<span style=\"color: red; font-weight: bold;\">Fehler!</span> - Die Datenbankeinstellungen stimmen nicht.</p>
-				<p>Bitte klicke auf [Zurück] und überprüfe deine Eingaben.</p>";
+			$msg = "<span style=\"color: red; font-weight: bold;\">Fehler!</span> - Die Datenbankeinstellungen stimmen " .
+				"nicht.</p><p>Bitte klicke auf [Zurück] und überprüfe deine Eingaben.</p>";
 			$this->setNext(null);
 		}
 		
@@ -149,18 +151,15 @@ class InstWiz_Finish extends Wizard {
 	
 	function setPage() {
 		$settings = $this->readFile("../server.settings.default.php");
+		$keys = Array("db_host", "db_name", "db_user", "db_password", "db_tblprefix");
 		
-		$settings = str_replace("{dbhost}", $this->getVar("wiz_dbhost"), $settings);
-		$settings = str_replace("{dbname}", $this->getVar("wiz_dbname"), $settings);
-		$settings = str_replace("{dbuser}", $this->getVar("wiz_dbuser"), $settings);
-		$settings = str_replace("{dbpassword}", $this->getVar("wiz_dbpassword"), $settings);
-		$settings = str_replace("{tblprefix}", $this->getVar("wiz_tblprefix"), $settings);
+		foreach ($keys as $key => $value) {
+			$settings = str_replace("{" . $value . "}", $this->getVar("wiz_" . $value), $settings);
+		}
 		
 		$this->writeFile("../server.settings.php", $settings);
-		
-		$this->page = "<p>Das Klassenbuch wurde erfolgreich eingerichtet.
-			Du kannst das Klassenbuch nun zum ersten Mal öffnen</p>
-			<ul><li><a href=\"../index.php\">Zum Klassenbuch</a></li></ul>";
+		$this->page = "<p>Das Klassenbuch wurde erfolgreich eingerichtet. Du kannst das Klassenbuch nun zum ersten Mal " .
+			"öffnen.</p><ul><li><a href=\"../index.php\">Zum Klassenbuch</a></li></ul>";
 	}
 }
 
@@ -173,10 +172,17 @@ class InstallationWizard extends Wizard {
 
 $wizard = new InstallationWizard();
 
-$license = new InstWiz_License("license"); $wizard->addPage("license", $license);
-$dbconfig = new InstWiz_DbConfig("dbconfig"); $wizard->addPage("dbconfig", $dbconfig);
-$dbcheck = new InstWiz_DbCheck("dbcheck"); $wizard->addPage("dbcheck", $dbcheck);
-$finish = new InstWiz_Finish("finish"); $wizard->addPage("finish", $finish);
+$license = new InstWiz_License("license");
+$wizard->addPage("license", $license);
+
+$dbconfig = new InstWiz_DbConfig("dbconfig");
+$wizard->addPage("dbconfig", $dbconfig);
+
+$dbcheck = new InstWiz_DbCheck("dbcheck");
+$wizard->addPage("dbcheck", $dbcheck);
+
+$finish = new InstWiz_Finish("finish");
+$wizard->addPage("finish", $finish);
 
 $wizard->display();
 

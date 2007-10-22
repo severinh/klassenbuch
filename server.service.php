@@ -372,7 +372,9 @@ function archivefile($id) {
 }
 
 function uploadfile($description) {
-	global $database, $user, $settings;
+	global $database, $user;
+	
+	$settings = Settings::getInstance();
 	
     if (!$user->authenticated) {
         return WebServiceError("authentication_failed");
@@ -387,7 +389,7 @@ function uploadfile($description) {
         
         $fnParts = parseFileName(utf8_decode($_FILES["Filedata"]["name"]));
         
-        if (in_array(strtolower($fnParts["ext"]), $settings["upload"]["extblacklist"])) {
+        if (in_array(strtolower($fnParts["ext"]), $settings->upload_extblacklist)) {
 			return WebServiceError("invalid_input", ": Aus Sicherheitsgründen sind keine " . 
 				strtoupper($fnParts["ext"]) . "-Dateien erlaubt");
         }
@@ -575,7 +577,9 @@ function signout() {
 }
 
 function registeruser($nickname, $firstname, $surname, $mail, $password) {
-	global $database, $settings;
+	global $database;
+	
+	$settings = Settings::getInstance();
 	
     if (!$nickname) {
         return WebServiceError("invalid_input", ": Kein Nickname angegeben.");
@@ -614,7 +618,7 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 	} else { */
 	
 	try {
-		mail($settings["gen"]["adminmail"], "Neuen Klassenbuchbenutzer hinzufügen", "$firstname $surname hat sich im " .
+		mail($settings->adminmail, "Neuen Klassenbuchbenutzer hinzufügen", "$firstname $surname hat sich im " .
 			"Klassenbuch unter dem Nicknamen \"$nickname\" angemeldet.\n\nE-Mail-Adresse: $mail\n" .
 			"Passwort: " . md5($password), "From: usermanagement@gymo1c.ch\r\nX-Mailer: PHP/' . phpversion()");
 	} catch(Exception $e) {

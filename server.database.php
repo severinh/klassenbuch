@@ -5,19 +5,19 @@ defined("_KBSECURE") or die("Zugriff verweigert.");
 
 class DatabaseConnection {
 	function DatabaseConnection() {
-		global $settings;
+		$settings = Settings::getInstance();
 		
 		$this->connection = mysql_connect(
-			$settings["db"]["server"],
-			$settings["db"]["user"],
-			$settings["db"]["password"]
+			$settings->db_host,
+			$settings->db_user,
+			$settings->db_password
 		);
 		
 		if (!$this->connection) {
 			die("Es konnte keine Verbindung zur Datenbank hergestellt werden.");
 		}
 		
-		if (!mysql_select_db($settings["db"]["name"], $this->connection)) {
+		if (!mysql_select_db($settings->db_name, $this->connection)) {
 			die("Die Datenbank konnte nicht ausgewählt werden.");
 		}
 	}

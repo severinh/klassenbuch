@@ -31,6 +31,14 @@ class User {
     
     public $isadmin = false;
 	public $settings = null;
+	
+	static public function &getInstance() {
+		if (!self::$instance) {
+			self::$instance = new User();
+		}
+		
+		return self::$instance;
+	}
     
     public function __construct() {
 		$this->_secureSession = true;
@@ -43,9 +51,9 @@ class User {
     }
     
     private function setupSession() {
-		global $settings;
+		$settings = Settings::getInstance();
 		
-		session_name($settings["gen"]["cookieprefix"] . "sessionid");
+		session_name($settings->cookieprefix . "sessionid");
 		
 		if ("files" != ini_get("session.save_handler")) {
 			ini_set("session.save_handler", "files");
@@ -98,10 +106,10 @@ class User {
     }
     
     private function authenticateByCookie() {
-		global $settings;
+		$settings = Settings::getInstance();
 		
-		return $this->authenticateByToken($_COOKIE[$settings["gen"]["cookieprefix"] . "userid"],
-			$_COOKIE[$settings["gen"]["cookieprefix"] . "token"]);
+		return $this->authenticateByToken($_COOKIE[$settings->cookieprefix . "userid"],
+			$_COOKIE[$settings->cookieprefix . "token"]);
     }
     
     private function authenticateByJSONRPCRequest() {
@@ -231,23 +239,25 @@ class User {
     }
     
     public function signIn($nickname, $password) {
-        global $database, $settings;
+        global $database;
+        
+        $settings = Settings::getInstance();
         
         if ($nickname && $password) {
             $data = $database->query("SELECT * FROM users WHERE nickname = " . mySQLValue($nickname) .
 				" AND password = " . mySQLValue(md5($password)));
-            
+			
             if ($data && mysql_num_rows($data) == 1) {
 				$this->insertData(mysql_fetch_array($data));
 				
-				session_name($settings["gen"]["cookieprefix"] . "sessionid");
+				session_name($settings->cookieprefix . "sessionid");
                 session_start();
                 
                 $_SESSION["userid"] = $this->id;
                 $_SESSION["token"] = $this->token;
                 
-				setcookie($settings["gen"]["cookieprefix"] . "userid", $this->id, 	 time() + 60 * 60 * 24 * 30);
-				setcookie($settings["gen"]["cookieprefix"] . "token",  $this->token, time() + 60 * 60 * 24 * 30);
+				setcookie($settings->cookieprefix . "userid", $this->id, 	 time() + 60 * 60 * 24 * 30);
+				setcookie($settings->cookieprefix . "token",  $this->token, time() + 60 * 60 * 24 * 30);
 				
                 $this->authenticated = true;
                 
@@ -259,14 +269,16 @@ class User {
     }
     
     public function signOut() {
-		global $database, $settings;
+		global $database;
+		
+		$settings = Settings::getInstance();
 		
 		$this->clear();
 		session_destroy();
 		
-		setcookie($settings["gen"]["cookieprefix"] . "sessionid",  "", time() - 3600);
-		setcookie($settings["gen"]["cookieprefix"] . "userid", 	"", time() - 3600);
-		setcookie($settings["gen"]["cookieprefix"] . "token",  	"", time() - 3600);
+		setcookie($settings->cookieprefix . "sessionid",  "", time() - 3600);
+		setcookie($settings->cookieprefix . "userid", 	"", time() - 3600);
+		setcookie($settings->cookieprefix . "token",  	"", time() - 3600);
 		
 		return true;
     }

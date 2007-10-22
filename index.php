@@ -19,14 +19,19 @@ define("INTERNAL_REQUEST", true);
 require_once("server.service.php");
 require_once("server.template.php");
 
+$settings = Settings::getInstance();
+
 $tmpl = new Template;
 $tmpl->read_file("index.tmpl");
 
 $designList = Array("default", "nonzero");
 
-if (!$settings["gen"]["online"]) {
+$tmpl->set_var("TITLE", $settings->title);
+$tmpl->set_var("SUBTITLE", $settings->subtitle);
+
+if (!$settings->online) {
 	$tmpl->set_var("SIMPLEMESSAGE", true);
-	$tmpl->set_var("TITLE", "Offline");
+	$tmpl->set_var("PAGETITLE", "Offline");
 	$tmpl->set_var("SIMPLEMESSAGETITLE", "Das Klassenbuch ist offline");
 	$tmpl->set_var("SIMPLEMESSAGEBODY", "<p>Das Klassenbuch ist auf Grund von Wartungsarbeiten zur Zeit nicht " .
 		"erreichbar. Bitte versuche es später noch einmal. Vielen Dank für dein Verständnis.</p>");
@@ -37,13 +42,13 @@ if (!$settings["gen"]["online"]) {
 		$response = doInternalRequest("verifynewpassword", Array($_GET["passwordverification"]));
 		
 		if ($response->result) {
-			$tmpl->set_var("TITLE", "Passwort geändert");
+			$tmpl->set_var("PAGETITLE", "Passwort geändert");
 			$tmpl->set_var("SIMPLEMESSAGETITLE", "Dein Passwort wurde erfolgreich geändert");
 			$tmpl->set_var("SIMPLEMESSAGEBODY", "<p>Du hast die Passwortänderung nun bestätigt. Du kannst nun das " .
 				"Klassenbuch aufrufen und dich mit deinem neuen Passwort anmelden.</p>" .
 				"<ul><li><a href=\"http://www.gymo2c.ch\">Klassenbuch öffnen</a></li></ul>");
 		} else {
-			$tmpl->set_var("TITLE", "Fehler");
+			$tmpl->set_var("PAGETITLE", "Fehler");
 			$tmpl->set_var("SIMPLEMESSAGETITLE", "Es ist ein Fehler aufgetreten");
 			$tmpl->set_var("SIMPLEMESSAGEBODY", "<p>Dein Passwort konnte leider nicht geändert werden, da der " .
 				"Sicherheitsschlüssel im E-Mail-Link nicht (mehr) gültig ist. Bitte stell sicher, dass der richtige " .
