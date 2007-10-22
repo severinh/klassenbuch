@@ -3,7 +3,7 @@
 ////                                                      ////
 ////              p h p U n s h a r p M a s k             ////
 ////                                                      ////
-////    Unsharp mask algorithm by Torstein Hønsi 2003.    ////
+////    Unsharp mask algorithm by Torstein HÃ¸nsi 2003.    ////
 ////               thoensi_at_netcom_dot_no               ////
 ////               Please leave this notice.              ////
 ////                                                      ////
