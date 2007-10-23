@@ -343,7 +343,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 			flash_url: 					    "flash/swfupload.swf",
 			
 			// Event-Handler
-			ui_function:            		this.fireEvent.bind(this, "ready"),
+			swfupload_loaded_handler:       this.fireEvent.bind(this, "ready"),
 			file_dialog_start_handler:		this.fireEvent.bind(this, "fileDialogStart"),
             file_queued_handler:            this.fireEvent.bind(this, "fileQueued"),
             file_dialog_complete_handler:	this.fireEvent.bind(this, "fileDialogComplete"),
