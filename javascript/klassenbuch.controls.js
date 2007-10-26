@@ -1335,10 +1335,12 @@ Controls.Table = Class.create(Control, {
 				return;
 			}
 			
-			var element = event.findElement("tr");
-			
-			if (element && element.hasClassName("normalRow")) {
-				this.highlightRow(element.readAttribute("name"));
+			if (this.options.enableRowHighlighting) {
+				var element = event.findElement("tr");
+				
+				if (element && element.hasClassName("normalRow")) {
+					this.highlightRow(element.readAttribute("name"));
+				}
 			}
 		}).bindAsEventListener(this));
 		
@@ -1509,7 +1511,7 @@ Controls.Table = Class.create(Control, {
 		}
 		
 		this.sortedRows.each(function(id, i) {
-			var rowHTML = ["<td class=\"normalCell " + ((self.options.enableRowHighlighting) ? 
+			var rowHTML = ["<td class=\"normalCell " + ((enableRowHighlighting) ? 
 				"highlightableCell " : "") + id + "\">", "</td>"];
 			
 			var currentRow = self.rows.get(id);
