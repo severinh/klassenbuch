@@ -1692,9 +1692,10 @@ Controls.Calendar = function() {
 			this.header	= this.select("td")[1];
 			
 			this.content = this.select(".content")[0].observe("click", (function(event) {
-				var day = parseInt(Event.element(event).innerHTML);
+				var element = Event.element(event);
+				var day = parseInt(element.innerHTML);
 				
-				if (Object.isNumber(day)) {
+				if (element.hasClassName("selectableDay")) {
 					var date = new Date(this.displayedYear, this.displayedMonth, day);
 					
 					if (!(this.selectedDate.getTimestamp() === date.getTimestamp())) {
