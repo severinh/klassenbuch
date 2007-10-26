@@ -33,10 +33,6 @@
  */
 var Control = Class.create(EventPublisher, {
 	initialize: function($super, element) {
-		if (!element) {
-			return;
-		}
-		
         $super();
         
         /**
@@ -48,13 +44,7 @@ var Control = Class.create(EventPublisher, {
 		* @field {String} Die ID des Steuerelements. Hat das Element, aus dem das betreffende Steuerelement erschaffen
 		* wird, bereits eine ID, wird diese verwendet, ansonsten wird eine zufällige Zeichenkette als ID generiert.
         */
-		this.id = this.id || this.element.readAttribute("id");
-		
-		// Wenn das Element noch keine ID hat
-		if (!this.id) {
-			this.id = Tools.generateRandomString();
-			this.element.writeAttribute("id", this.id);
-		}
+		this.id = this.element.identify();
 		
 		this._childControls = [];
 	},
