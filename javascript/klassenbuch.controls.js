@@ -41,8 +41,7 @@ var Control = Class.create(EventPublisher, {
 		this.element = $(element);
 		
         /**
-		* @field {String} Die ID des Steuerelements. Hat das Element, aus dem das betreffende Steuerelement erschaffen
-		* wird, bereits eine ID, wird diese verwendet, ansonsten wird eine zufällige Zeichenkette als ID generiert.
+		* @field {String} Die ID des Steuerelements. Wird von Prototype generiert.
         */
 		this.id = this.element.identify();
 		
@@ -1328,6 +1327,29 @@ Controls.Table = Class.create(Control, {
 		
 		$super(new Element("div"));
 		
+		this.element.observe("mousedown", (function(event) {
+			var element = event.findElement("th");
+			
+			if (element && element.hasClassName("sortableColumn")) {
+				this.sort(element.readAttribute("name"), true);
+				return;
+			}
+			
+			var element = event.findElement("tr");
+			
+			if (element && element.hasClassName("normalRow")) {
+				this.highlightRow(element.readAttribute("name"));
+			}
+		}).bindAsEventListener(this));
+		
+		this.element.observe("dblclick", (function(event) {
+			var element = event.findElement("tr");
+			
+			if (element && element.hasClassName("normalRow")) {
+				this.selectRow(element.readAttribute("name"))
+			}
+		}).bindAsEventListener(this));
+		
 		this.on("remove", this.clear, this);
 	},
 	
@@ -1355,15 +1377,6 @@ Controls.Table = Class.create(Control, {
 		this.rows.clear();
 		this.sortedRows.clear();
 		
-		this.clearHTML();
-	},
-	
-	clearHTML: function() {
-		this._cachedEvents.each(function(cachedEvent) {
-			Event.stopObserving.apply(Event, cachedEvent);
-		});
-		
-		this._cachedEvents.clear();
 		this.element.clear();
 	},
 
@@ -1456,42 +1469,38 @@ Controls.Table = Class.create(Control, {
 		var groups = outlookGroups || mergedGroups;
 		var enableRowHighlighting = this.options.enableRowHighlighting;
 		
-		var headerCellTemplate = new Template("<th name=\"#{name}\" class=\"#{className}\" style=\"width: #{width}; " +
-			"text-align: #{textAlign};\">#{content}</th>");
+		var self = this;
 		
 		if (groups) {
-			var groupTemplate = new Template("<tr><td class=\"#{className}\" colspan=\"" + (this.columns.length + 
-				((continueHeader) ? 1 : 0)) + "\">#{content}</td></tr>");
+			var groupHTML = ["<tr><td class=\"", "\" colspan=\"" + (this.columns.length + 
+				((continueHeader) ? 1 : 0)) + "\">", "</td></tr>"];
 			
-			var mergedCellTemplate = new Template("<td class=\"normalCell mergedCell\" rowspan=\"rowspanToReplace\"" +
-				((sortAfterColumn === 0) ? " style=\"border-left: none;\"" : "") + ">#{content}</td>");
+			var mergedCellHTML = ["<td class=\"normalCell mergedCell\" rowspan=\"rowspanToReplace\"" +
+				((sortAfterColumn === 0) ? " style=\"border-left: none;\"" : "") + ">", "</td>"];
 		}
 		
-		var output = "<tr class=\"tableHeader\">";
-		
-		output += this.columns.collect(function(column, i) {
+		var header = this.columns.collect(function(column, i) {
 			if (column.visible && !(sortAfterColumn === i && outlookGroups)) {
-				var data = {
-					name:  column.caption,
-					width: column.width,
-					className: (column.sortable) ? "sortableColumn" : "",
-					textAlign: (column.centerColumnText) ? "center" : "left",
-					
-					content: (column.icon) ? ((Object.isString(column.icon)) ? "<img src=\"images/" + column.icon + 
-						"\" />" : ((Object.isFunction(column.icon.toHTML)) ? column.icon.toHTML("columnIcon") : 
-						column.caption)) : column.caption
-				};
+				var content = (column.icon) ? column.icon.toHTML("columnIcon") : column.caption;
+				var align = (column.centerColumnText) ? "center" : "left";
+				var classNames = [];
 				
-				if (sortAfterColumn === i && column.allowReversedSorting) {
-					data.className += " sorted";
-					data.content = new Sprite("smallIcons", (sortDirection === "ascending") ? 18 : 19).toHTML("sortIcon") + data.content;
+				if (column.sortable) {
+					classNames.push("sortableColumn");
 				}
 				
-				return headerCellTemplate.evaluate(data);
+				if (sortAfterColumn === i && column.allowReversedSorting) {
+					classNames.push("sorted");
+					content = new Sprite("smallIcons", (sortDirection === "ascending") ? 18 : 19).toHTML("sortIcon") + content;
+				}
+				
+				return "<th name=\"" + column.caption + "\" class=\"" + classNames.join(" ") + "\" style=\"width: " +
+					column.width + "; text-align: " + align + ";\">" + content + "</th>";
 			}
-		}, this).join("");
+		}).join("");
 		
-		output += ((continueHeader) ? "<th style=\"border: none;\">&nbsp;</th>" : "") + "</tr>";
+		var output = "<tr class=\"tableHeader\">" + header + ((continueHeader) ? 
+			"<th style=\"border: none;\">&nbsp;</th>" : "") + "</tr>";
 		
 		var lastSortContent = null;
 		
@@ -1500,10 +1509,10 @@ Controls.Table = Class.create(Control, {
 		}
 		
 		this.sortedRows.each(function(id, i) {
-			var normalCellTemplate = new Template("<td class=\"normalCell " + ((this.options.enableRowHighlighting) ? 
-				"highlightableCell " : "") + id + "\">#{content}</td>");
+			var rowHTML = ["<td class=\"normalCell " + ((self.options.enableRowHighlighting) ? 
+				"highlightableCell " : "") + id + "\">", "</td>"];
 			
-			var currentRow = this.rows.get(id);
+			var currentRow = self.rows.get(id);
 			var sortedColumnRowContent = sortedColumn.getContent(currentRow);
 			
 			if (sortedColumn.showSortedInGroups) {
@@ -1513,20 +1522,19 @@ Controls.Table = Class.create(Control, {
 					newGroup = !sortedColumn.belongsToGroup(sortedColumnRowContent, lastSortContent);
 				}
 				
+				var content = "";
+				var className = "";
+				
 				if (newGroup) {
 					if (mergedGroups && i !== 0) {
-						var data = {
-							className: "tableGroupMergedDivider", content: ""
-						};
+						className = "tableGroupMergedDivider";
 					} else if (outlookGroups) {
-						var data = {
-							className: "tableGroupOutlook",
-							content: sortedColumn.processGroupCaption(sortedColumnRowContent)
-						};
+						className = "tableGroupOutlook";
+						content = sortedColumn.processGroupCaption(sortedColumnRowContent);
 					}
 					
-					if (data) {
-						output += groupTemplate.evaluate(data);
+					if (className) {
+						output += groupHTML[0] + className + groupHTML[1] + content + groupHTML[2];
 					}
 				}
 				
@@ -1535,34 +1543,32 @@ Controls.Table = Class.create(Control, {
 			
 			var row = "<tr name=\"" + id + "\" class=\"normalRow\">";
 			
-			row += this.columns.collect(function(column, j) {
+			row += self.columns.collect(function(column, j) {
 					if (column.visible) {
 						if (!(j === sortAfterColumn && outlookGroups)) {
 							var content = column.getContent(currentRow);
 							
-							var data = {
-								content: (Object.isString(content) || Object.isNumber(content)) ?
-									column.processCellContent(content, currentRow) : "&nbsp;"
-							};
+							content = (Object.isString(content) || Object.isNumber(content)) ?
+								column.processCellContent(content, currentRow) : "&nbsp;";
 							
 							if (j === sortAfterColumn && mergedGroups) {
 								if (newGroup) {
 									mergedRowsRowspans.push(1);
-									return mergedCellTemplate.evaluate(data);
+									return mergedCellHTML[0] + content + mergedCellHTML[1];
 								} else {
 									++mergedRowsRowspans[mergedRowsRowspans.length - 1];
 								}
 							} else {
-								return normalCellTemplate.evaluate(data);
+								return rowHTML[0] + content + rowHTML[1];
 							}
 						}
 					}
-				}, this).join("");
+				}).join("");
 				
-			row += ((continueHeader) ? normalCellTemplate.evaluate({ content: "&nbsp;" }) : "" ) + "</tr>";
+			row += ((continueHeader) ? rowHTML[0]  + "&nbsp;" + rowHTML[1] : "") + "</tr>";
 			
 			output += row;
-		}, this);
+		});
 		
 		if (mergedGroups) {
 			mergedRowsRowspans.each(function(rowspan) {
@@ -1570,27 +1576,9 @@ Controls.Table = Class.create(Control, {
 			});
 		}
 		
-		this.clearHTML();
+		this.element.clear();
 		this.element.innerHTML = "<table class=\"table\" style=\"cellpadding=\"" + this.options.cellpadding + "\"><tbody>" +
 			output + "</tbody></table>";
-		
-		this.select(".sortableColumn").each(function(column, i) {
-			this._cachedEvents.push([column, "mousedown", this.sort.bind(this, column.readAttribute("name"), true), false]);
-		}, this);
-		
-		if (enableRowHighlighting) {
-			this.select(".normalRow").each(function(row, i) {
-				this._cachedEvents.push([row, "mousedown", this.highlightRow.bind(this, row.readAttribute("name")), false]);
-			}, this);
-		}
-		
-		this.select(".normalRow").each(function(row, i) {
-			this._cachedEvents.push([row, "dblclick", this.selectRow.bind(this, row.readAttribute("name")), false]);
-		}, this);
-		
-		this._cachedEvents.each(function(event) {
-			Event.observe.apply(Event, event);
-		});
 		
 		this.fireEvent("refresh");
 		
