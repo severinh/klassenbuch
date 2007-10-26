@@ -13,7 +13,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
         }
         
         this.registerSubNode("neuerkommentar", (function() {
-				if (this.task.date.getTimestamp() >= CalendarDate.getCurrentTimestamp()) {
+				if (this.task.date.getTimestamp() >= Date.getTodaysTimestamp()) {
 					var createWindow = new Comments.CreateCommentWindow(this.task.id);
 					createWindow.on("success", this._createCommentSuccess, this);
 					
@@ -351,7 +351,9 @@ Comments.CommentInputField = function() {
 			$H({ formatingContainer: "_formatText", emoticonsContainer: "_insertEmoticon" }).each(function(pair) {
 				var el = this.select("." + pair.key)[0].observe("click", this[pair.value].bindAsEventListener(this));
 				
-				this.on("remove", function() { el.stopObserving("click"); });
+				this.on("remove", function() {
+					el.stopObserving("click");
+				});
 			}, this);
 			
 			this.inputArea = this.select(".inputArea")[0];

@@ -44,7 +44,6 @@ var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement
 		$super();
 		
 		var init = (function() {
-			
 			if (!this.initialized) {
 				var data = DirectData.get("tasks");
 				
@@ -112,7 +111,7 @@ var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement
 	 * @memberof TaskManagement
 	*/
 	update: function() {
-		var request = new JSONRPC.Request("gettasks", [CalendarDate.getCurrentTimestamp() - 2592000], {
+		var request = new JSONRPC.Request("gettasks", [Date.getTodaysTimestamp() - 2592000], {
 			onSuccess: this._updateSuccess.bind(this)
 		});
 	},
@@ -140,7 +139,7 @@ var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement
 	 * @memberof TaskManagement
 	*/
 	getUpcomingTasks: function() {
-		return this.getTasksWithinTimeRange(CalendarDate.getCurrentTimestamp());
+		return this.getTasksWithinTimeRange(Date.getTodaysTimestamp());
 	},
 
 	/**
@@ -188,10 +187,7 @@ var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement
      * @memberof TaskManagement
     */
 	_addTask: function(task) {
-		task.on("change", function() {
-			this.fireEvent("updated");
-		}, this);
-		
+		task.on("change", this.fireEvent.bind(this, "updated"));
 		this.Tasks.push(task);		
 	},
 	
@@ -307,7 +303,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		$super("Aufgaben", new Sprite("smallIcons", 13), "Aufgaben", { className: "tasksView" });
 		
 		// Registriert den Dialog zum Eintragen von Aufgaben als Unterknoten dieses Menüpunkts (siehe App.History.Node)
-		this.registerSubNode("eintragen", TaskManagement.createTask, { restrictedAccess: true });
+		this.registerSubNode("eintragen", TaskManagement.createTask.bind(TaskManagement), { restrictedAccess: true });
 		
 		// Jede einzelne Aufgabe ist ebenfalls ein "Unterknoten" dieses Menüpunkts (Knotenname ist die ID der Aufgabe)
 		this.registerDynamicSubNode(
@@ -408,22 +404,10 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 				sortType: "numeric",
 				
 				processCellContent: function(a) {
-					/* var date = Date.fromTimestamp(a);
+					var date = Date.fromTimestamp(a);
+					var today = Date.getTodaysTimestamp();
 					
-					if (date.wasYesterday()) {
-						return "Gestern";
-					} else if (date.isToday()) {
-						return "Heute";
-					} else if (date.willBeTomorrow()) {
-						return "Morgen";
-					} else {
-						return date.format("D, j. F");
-					} */
-						
-					var date = new CalendarDate(a);
-					var today = (new CalendarDate()).getTimestamp();
-					
-					switch (date.getTimestamp()) {
+					switch (a) {
 						case today: 		return "Heute";
 						case today + 86400: return "Morgen";
 						case today - 86400: return "Gestern";
@@ -777,7 +761,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		this._taskTable.clear();
 		
 		if (this.showPastTasks) {
-			var today = new CalendarDate().getTimestamp();
+			var today = Date.getTodaysTimestamp();
 			var tasks = TaskManagement.getTasksWithinTimeRange(today - 2592000, today);
 		} else {
 			var tasks = TaskManagement.getUpcomingTasks();
@@ -833,7 +817,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
  * @class
  * @inherits Controls.Window
 */
-TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope TaskManagement.TaskWindowAbstract */ {
+TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope TaskManagement.TaskWindowAbstract.prototype */ {
 	initialize: function($super, title) {
 		// Versucht das Fenster zu initialisieren
 		if (!$super("CreateEditTaskWindow", {
@@ -843,6 +827,7 @@ TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope Tas
 			})) {
 			return false;
 		}
+		
 		
 		// Legt den Fensterinhalt fest
 		this.content.innerHTML = "<h2>" + title + "</h2>" +
@@ -974,7 +959,7 @@ TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope Tas
  * @class
  * @inherits TaskManagement.TaskWindowAbstract
 */
-TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstract, /** @scope TaskManagement.TaskWindowAbstract */ {
+TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstract, /** @scope TaskManagement.TaskCreationWindow.prototype */ {
 	/** @ignore */
 	initialize: function($super) {
 		// Initialisiert die allgemeine Fenstervorlage
@@ -1067,7 +1052,7 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
  * @class
  * @inherits TaskManagement.TaskWindowAbstract
 */
-TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstract, /** @scope TaskManagement.TaskEditingWindow */ {
+TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstract, /** @scope TaskManagement.TaskEditingWindow.prototype */ {
 	/** @ignore */
 	initialize: function($super, task) {
 		/**
@@ -1085,7 +1070,10 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
 		this.submitButton.enable();
 		this.dateSelection.setSelectedDate(this.task.date);
 		this.select(".subjectContainer").first().innerHTML = "<em>" + this.task.subject + "</em>";
-		(function() { this.taskInput.value = this.task.text; }).bind(this).defer(10);
+		
+		(function() {
+			this.taskInput.value = this.task.text;
+		}).bind(this).defer(10);
 		
 		if (this.task.important) {
 			this.importantInput.checked = "checked";
@@ -1107,8 +1095,12 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
 	*/
 	submit: function(input) {
 		var request = new JSONRPC.Request("edittask", [this.task.id, input.date, input.text, input.important], {
-			onComplete: (function() { this.submitButton.enable(); }).bind(this), 
-			onSuccess: this._success.bind(this) });		
+			onComplete: (function() {
+				this.submitButton.enable();
+			}).bind(this),
+			
+			onSuccess: this._success.bind(this)
+		});		
 	},
 
 	/**
@@ -1123,7 +1115,7 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
 	_success: function(response) {
 		var input = this.getInput();
 		
-		this.task.date = new CalendarDate(input.date);
+		this.task.date = Date.fromTimestamp(input.date);
 		this.task.text = input.text;
 		this.task.important = input.important;
 		
@@ -1151,11 +1143,11 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
         
 		/**
 		 * Das Datum der Aufgabe.
-		 * @type CalendarDate
+		 * @type Date
 		 * @memberof TaskManagement.Task
 		 * @name date
 		*/
-		this.date = new CalendarDate(task.date);
+		this.date = Date.fromTimestamp(task.date);
 		
 		/**
 		 * Das Schulfach.
@@ -1183,12 +1175,12 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
         
 		/**
 		 * Wann die Aufgabe eingetragen wurde.
-		 * @type CalendarDate
+		 * @type Date
 		 * @memberof TaskManagement.Task
 		 * @name added
 		 * @todo Zu Date wechseln
 		*/
-        this.added = new CalendarDate(task.added);
+        this.added = Date.fromTimestamp(task.added);
         
 		/**
 		 * Die ID des Benutzers, von dem die Aufgabe eingetragen wurde.

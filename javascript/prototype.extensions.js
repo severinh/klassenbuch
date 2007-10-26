@@ -607,6 +607,12 @@ String.Builder = function() {
 			return Math.round(this.getTime() / 1000);
 		},
 		
+		setTimestamp: function(timestamp) {
+			this.setTime(timestamp * 1000);
+			
+			return this;
+		},
+		
 		isToday: compare.curry(0),
 		wasYesterday: compare.curry(-1),
 		willBeTomorrow: compare.curry(1),
@@ -643,6 +649,10 @@ String.Builder = function() {
 		
 		getCurrentTimestamp: function() {
 			return new Date().getTimestamp();
+		},
+		
+		getTodaysTimestamp: function() {
+			return new Date().removeTime().getTimestamp();
 		},
 		
 		fromTimestamp: function(timestamp) {

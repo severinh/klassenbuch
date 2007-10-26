@@ -1661,252 +1661,197 @@ Controls.ProgressBar = Class.create(Control, {
 	}
 });
 
-Controls.Calendar = Class.create(Control, {
-	initialize: function($super, options) {
-		this.setOptions({
-			allowWeekends: true,
-			allowPast: true
-		}, options);
-		
-		$super(new Element("div", { className: "calendar" }));
-		
-		this._cachedEvents = [];
-		
-		this.element.innerHTML = "<table cellpadding=\"0px\" cellspacing=\"0px\">" +
-			"	<tr class=\"header\">" +
-			"		<td>" + (new Sprite("smallIcons", 23)).toHTML("navigation") + "</td>" +
-			"		<td colspan=\"5\"></td>" +
-			"		<td>" + (new Sprite("smallIcons", 24)).toHTML("navigation") + "</td>" +
-			"	</tr><tr>" +
-			$R(0, 6).collect(function(w) {
-				return "<td class=\"weekdays\">" + Date.weekdaysAbbr[w] + "</td>";
-			}).join("") +
-			"</tr></table><div class=\"content\"></div>";
-		
-		this.buttonPrevious = this.select(".navigation")[0].observe("mousedown", this.displayPreviousMonth.bind(this));
-		this.header	= this.select("td")[1];
-		this.buttonNext = this.select(".navigation")[1].observe("mousedown", this.displayNextMonth.bind(this));
-		this.content = this.select(".content")[0];
-		
-		this.setSelectedDate(this.options.initialDate || new CalendarDate());
-		this.on("remove", this._unregisterEvents.bind(this));
-	},
+Controls.Calendar = function() {
+	var html = "<table cellpadding=\"0px\" cellspacing=\"0px\">" +
+		"	<tr class=\"header\">" +
+		"		<td>" + new Sprite("smallIcons", 23).toHTML("navigation") + "</td>" +
+		"		<td colspan=\"5\"></td>" +
+		"		<td>" + new Sprite("smallIcons", 24).toHTML("navigation") + "</td>" +
+		"	</tr><tr>" +
+		$R(0, 6).collect(function(w) {
+			return "<td class=\"weekdays\">" + Date.weekdaysAbbr[w] + "</td>";
+		}).join("") +
+		"</tr></table><div class=\"content\"></div>";
 	
-	_unregisterEvents: function() {
-		this.buttonPrevious.stopObserving("mousedown", this.displayPreviousMonth.bind(this));
-		this.buttonNext.stopObserving("mousedown", this.displayNextMonth.bind(this));
-		
-		this._clearContent();
-	},
-	
-	_clearContent: function() {
-		if (this._cachedEvents.length > 0) {
-			this._cachedEvents.each(function(cachedEvent) {
-				Event.stopObserving.apply(Event, cachedEvent);
-			});
+	return Class.create(Control, {
+		initialize: function($super, options) {
+			this.setOptions({
+				allowWeekends: true,
+				allowPast: true
+			}, options);
 			
-			this._cachedEvents.clear();
-		}
-		
-		this.content.clear();
-	},
-	
-	displayPreviousMonth: function() {
-		var today = new CalendarDate();
-		
-		if (!this.options.allowPast && this.displayedMonth === today.month && this.displayedYear === today.year) {
-			return;
-		}
-		
-		if (this.displayedMonth === 0) {
-			this.displayedYear--;
-			this.displayedMonth = 11;
-		} else {
-			this.displayedMonth--;
-		}
-		
-		this.update();
-	},
-	
-	displayNextMonth: function() {
-		if (this.displayedMonth === 11) {
-			this.displayedYear++;
-			this.displayedMonth = 0;
-		} else {
-			this.displayedMonth++;
-		}
-		
-		this.update();
-	},
-	
-	setSelectedDate: function(date) {
-		this.selectedDate = date;
-		
-		if (!this.options.allowPast && this.selectedDate.getTimestamp() < (new CalendarDate()).getTimestamp()) {
-			this.selectedDate.setToToday();
-		}
-		
-		if (!this.options.allowWeekends && (this.selectedDate.getWeekday() === 0 || this.selectedDate.getWeekday() === 6)) {
-			this.selectedDate.setFromTimestamp(this.selectedDate.getTimestamp() + ((this.selectedDate.getWeekday() === 0) ? 86400 : 172800));
-		}
-		
-		if (!(this.displayedYear === this.selectedDate.year && this.displayedMonth === this.selectedDate.month)) {
-			this.displayedMonth = this.selectedDate.month;
-			this.displayedYear = this.selectedDate.year;
-			this.update();
-		} else {
-			this._highlightSelectedDay();
-		}
-	},
-	
-	_highlightSelectedDay: function() {
-		this.select(".selectedDay").invoke("removeClassName", "selectedDay");
-		this.select(".day" + this.selectedDate.day)[0].addClassName("selectedDay");
-	},
-	
-	update: function() {
-		var today = new CalendarDate();
-		var firstWeekdayDay = new Date(this.displayedYear, this.displayedMonth, 1).getDay();
-		var daysPerMonth = ((this.displayedMonth === 1) && ((this.displayedYear % 400 === 0) || ((this.displayedYear % 4 === 0) && 
-			(this.displayedYear % 100 !== 0)))) ? 29 : Date.daysPerMonth[this.displayedMonth];
-		
-		if (((daysPerMonth === 31) && (firstWeekdayDay > 4)) || ((daysPerMonth === 30) && (firstWeekdayDay === 6))) {
-			rows = 6;
-		} else if ((daysPerMonth === 28) && (firstWeekdayDay === 0)) {
-			rows = 4;
-		} else {
-			rows = 5;
-		}
-		
-		var output = "";
-		this._clearContent();
-		
-		var dayTemplate = new Template("<td class=\"day #{classNames}\">#{day}</td>");
-		
-		for (var j = 0; j < rows; j++) {
-			var row = "";
+			$super(new Element("div", { className: "calendar" }));
 			
-			for (var i = 1; i <= 7; i++) {
-				var day = (j * 7) + (i - firstWeekdayDay);
-				var data = { className: "", day: "" };
-				var classNames = [];
+			this.element.innerHTML = html;
+			
+			var navElements = this.select(".navigation");
+			
+			this.buttonPrevious = navElements[0].observe("mousedown", this.displayPreviousMonth.bind(this));
+			this.buttonNext = navElements[1].observe("mousedown", this.displayNextMonth.bind(this));
+			
+			this.header	= this.select("td")[1];
+			
+			this.content = this.select(".content")[0].observe("click", (function(event) {
+				var day = parseInt(Event.element(event).innerHTML);
 				
-				if ((day >= 1) && (day <= daysPerMonth)) {
-					data.day = day;
+				if (Object.isNumber(day)) {
+					var date = new Date(this.displayedYear, this.displayedMonth, day);
 					
-					classNames.push("day" + day);
-					
-					if ((this.displayedYear === today.year) && (this.displayedMonth === today.month) && (day === today.day)) {
-						classNames.push("today");
+					if (!(this.selectedDate.getTimestamp() === date.getTimestamp())) {
+						this.setSelectedDate(date);
 					}
+				}
+			}).bindAsEventListener(this));
+			
+			this.setSelectedDate(this.options.initialDate || new Date().removeTime());
+			
+			this.on("remove", function() {
+				this.buttonPrevious.stopObserving("mousedown");
+				this.buttonNext.stopObserving("mousedown");
+			}, this);
+		},
+		
+		displayPreviousMonth: function() {
+			var now = new Date();
+			
+			if (!this.options.allowPast && 
+				this.displayedMonth === now.getMonth() &&
+				this.displayedYear === now.getFullYear()) {
+				return;
+			}
+			
+			if (this.displayedMonth === 0) {
+				this.displayedYear--;
+				this.displayedMonth = 11;
+			} else {
+				this.displayedMonth--;
+			}
+			
+			this.update();
+		},
+		
+		displayNextMonth: function() {
+			if (this.displayedMonth === 11) {
+				this.displayedYear++;
+				this.displayedMonth = 0;
+			} else {
+				this.displayedMonth++;
+			}
+			
+			this.update();
+		},
+		
+		setSelectedDate: function(date) {
+			var todaysTimestamp = Date.getTodaysTimestamp();
+			
+			this.selectedDate = date;
+			
+			if (!this.options.allowPast && this.selectedDate.getTimestamp() < todaysTimestamp) {
+				this.selectedDate.setTimestamp(todaysTimestamp);
+			}
+			
+			var day = this.selectedDate.getDay();
+			
+			if (!this.options.allowWeekends && (day === 0 || day === 6)) {
+				this.selectedDate.add((day === 0) ? 1 : 2, "days");
+			}
+			
+			var selectedMonth = this.selectedDate.getMonth();
+			var selectedYear = this.selectedDate.getFullYear();
+			
+			if (!(this.displayedYear === selectedYear && this.displayedMonth === selectedMonth)) {
+				this.displayedMonth = selectedMonth;
+				this.displayedYear = selectedYear;
+				this.update();
+			} else {
+				this._highlightSelectedDay();
+			}
+		},
+		
+		_highlightSelectedDay: function() {
+			this.select(".selectedDay").invoke("removeClassName", "selectedDay");
+			this.select(".day" + this.selectedDate.getDate())[0].addClassName("selectedDay");
+		},
+		
+		update: function() {
+			var today = new Date();
+			
+			var selectedYear = this.selectedDate.getFullYear();
+			var selectedMonth = this.selectedDate.getMonth();
+			var selectedDay = this.selectedDate.getDate()
+			
+			var firstWeekdayDay = new Date(this.displayedYear, this.displayedMonth, 1).getDay();
+			
+			var daysPerMonth = ((this.displayedMonth === 1) && (
+				this.displayedYear % 400 === 0 || (
+				this.displayedYear % 4 === 0 &&
+				this.displayedYear % 100 !== 0))) ? 29 : Date.daysPerMonth[this.displayedMonth];
+			
+			var rows = 5;
+			
+			if ((daysPerMonth === 31 && firstWeekdayDay > 4) ||
+				(daysPerMonth === 30 && firstWeekdayDay === 6)) {
+				var rows = 6;
+			} else if (daysPerMonth === 28 && firstWeekdayDay === 0) {
+				var rows = 4;
+			}
+			
+			this.content.clear();
+			
+			var output = "";
+			
+			for (var j = 0; j < rows; j++) { 
+				var row = "";
+				
+				for (var i = 1; i <= 7; i++) {
+					var day = j * 7 + (i - firstWeekdayDay);
+					var dayText = "";
+					var classNames = [];
 					
-					if ((this.displayedYear === this.selectedDate.year) && (this.displayedMonth === this.selectedDate.month) && (day === this.selectedDate.day)) {
-						classNames.push("selectedDay");
-					}
-					
-					var allowToSelect = (!(this.options.allowWeekends === false && (i === 1 || i === 7)));
-					
-					if (!this.options.allowPast && (
-						(this.displayedYear < today.year) ||
-						(this.displayedYear === today.year && this.displayedMonth < today.month) ||
-						(this.displayedYear === today.year && this.displayedMonth === today.month && day < today.day))) {
-						allowToSelect = false;
-					}
-					
-					if (allowToSelect) {
-						classNames.push("selectableDay");
-					} else {
-						classNames.push("disabledDay");
+					if (day >= 1 && day <= daysPerMonth) {
+						dayText = day;
+						classNames.push("day" + day);
 						
-						if (classNames.include("today")) {
-							classNames.push("todayDisabled");
+						if (this.displayedYear === today.getFullYear() &&
+							this.displayedMonth === today.getMonth() &&
+							day === today.getDate()) {
+							classNames.push("today");
+						}
+						
+						if (this.displayedYear === selectedYear &&
+							this.displayedMonth === selectedMonth &&
+							day === selectedDay) {
+							classNames.push("selectedDay");
+						}
+						
+						var allowToSelect = !(this.options.allowWeekends === false && (i === 1 || i === 7));
+						
+						if (!this.options.allowPast && (
+							this.displayedYear < today.getFullYear() ||
+							(this.displayedYear === today.getFullYear() && this.displayedMonth < today.getMonth()) ||
+							(this.displayedYear === today.getFullYear() && this.displayedMonth === today.getMonth() && day < today.getDate()))) {
+							allowToSelect = false;
+						}
+						
+						if (allowToSelect) {
+							classNames.push("selectableDay");
+						} else {
+							classNames.push("disabledDay");
+							
+							if (classNames.include("today")) {
+								classNames.push("todayDisabled");
+							}
 						}
 					}
 					
-					data.classNames = classNames.join(" ");
+					row += "<td class=\"day " + classNames.join(" ") + "\">" + dayText  + "</td>";
 				}
-				row += dayTemplate.evaluate(data);
+				
+				output += "<tr>" + row + "</tr>";
 			}
-			output += "<tr>" + row + "</tr>";
+			
+			this.content.innerHTML = "<table cellspacing=\"0px\" cellpadding=\"0px\"><tbody>" + output + "</tbody></table>";
+			this.header.innerHTML = Date.months[this.displayedMonth] + " " + this.displayedYear;
 		}
-		
-		this.content.innerHTML = "<table cellspacing=\"0px\" cellpadding=\"0px\"><tbody>" + 
-			output + "</tbody></table>";
-		
-		this.select(".selectableDay").each((function(day) {
-			this._cachedEvents.push([day, "mousedown", this.selectDay.bind(this, parseInt(day.innerHTML, 10))]);
-		}).bind(this));
-		
-		this._cachedEvents.each(function(event) {
-			Event.observe.apply(Event, event);
-		});
-		
-		this.header.innerHTML = Date.months[this.displayedMonth] + " " + this.displayedYear;
-	},
-	
-	selectDay: function(day) {
-		if (!(day === this.selectedDate.day && this.selectedDate.month === this.displayedMonth && this.selectedDate.year === this.displayedYear)) {
-			this.setSelectedDate(new CalendarDate(day, this.displayedMonth, this.displayedYear));
-		}
-	}
-});
-
-var CalendarDate = Class.create({
-	initialize: function() {
-		if (arguments.length === 0) {
-			this.setToToday();
-		} else if (arguments.length === 1) {
-			this.setFromTimestamp(arguments[0]);
-		} else {
-			this.day = arguments[0];
-			this.month = arguments[1];
-			this.year = arguments[2];
-		}
-	},
-	
-	setFromDateObject: function(date) {
-		this.day = date.getDate();
-		this.month = date.getMonth();
-		this.year = date.getFullYear();
-	},
-	
-	setFromTimestamp: function(value) {
-		this.setFromDateObject(new Date(value * 1000));
-	},
-	
-	setToToday: function() {
-	this.setFromDateObject(new Date());
-	},
-	
-	getWeekday: function() {
-		return this.getDateObject().getDay();
-	},
-	
-	getDateObject: function() {
-		return new Date(this.year, this.month, this.day);
-	},
-	
-	getTimestamp: function() {
-		return this.getDateObject().getTimestamp();
-	},
-	
-	getMonthAsString: function() {
-		return Date.months[this.month];
-	},
-	
-	getWeekdayAsString: function() {
-		return Date.weekdays[this.getWeekday()];
-	},
-	
-	getAbbrWeekday: function() {
-		return Date.weekdaysAbbr[this.getWeekday()];
-	},
-	
-	format:	function(format) {
-		return this.getDateObject().format(format);
-	}
-});
-
-CalendarDate.getCurrentTimestamp = function() {
-	return new CalendarDate().getTimestamp();
-};
+	});
+}();
