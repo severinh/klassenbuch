@@ -1757,12 +1757,9 @@ Controls.Calendar = function() {
 				this.selectedDate.add((day === 0) ? 1 : 2, "days");
 			}
 			
-			var selectedMonth = this.selectedDate.getMonth();
-			var selectedYear = this.selectedDate.getFullYear();
-			
-			if (!(this.displayedYear === selectedYear && this.displayedMonth === selectedMonth)) {
-				this.displayedMonth = selectedMonth;
-				this.displayedYear = selectedYear;
+			if (!new Date(this.displayedYear, this.displayedMonth, this.selectedDate.getDate()).equals(this.selectedDate)) {
+				this.displayedMonth = this.selectedDate.getMonth();
+				this.displayedYear = this.selectedDate.getFullYear();
 				this.update();
 			} else {
 				this._highlightSelectedDay();
@@ -1775,11 +1772,8 @@ Controls.Calendar = function() {
 		},
 		
 		update: function() {
-			var today = new Date();
-			
-			var selectedYear = this.selectedDate.getFullYear();
-			var selectedMonth = this.selectedDate.getMonth();
-			var selectedDay = this.selectedDate.getDate()
+			var todaysTimestamp = Date.getTodaysTimestamp();
+			var selectedTimestamp = this.selectedDate.getTimestamp();
 			
 			var firstWeekdayDay = new Date(this.displayedYear, this.displayedMonth, 1).getDay();
 			
@@ -1810,27 +1804,23 @@ Controls.Calendar = function() {
 					var classNames = [];
 					
 					if (day >= 1 && day <= daysPerMonth) {
+						var dayObject = new Date(this.displayedYear, this.displayedMonth, day);
+						var dayTimestamp = dayObject.getTimestamp();
+						
 						dayText = day;
 						classNames.push("day" + day);
 						
-						if (this.displayedYear === today.getFullYear() &&
-							this.displayedMonth === today.getMonth() &&
-							day === today.getDate()) {
+						if (dayTimestamp === todaysTimestamp) {
 							classNames.push("today");
 						}
 						
-						if (this.displayedYear === selectedYear &&
-							this.displayedMonth === selectedMonth &&
-							day === selectedDay) {
+						if (dayTimestamp === selectedTimestamp) {
 							classNames.push("selectedDay");
 						}
 						
 						var allowToSelect = !(this.options.allowWeekends === false && (i === 1 || i === 7));
 						
-						if (!this.options.allowPast && (
-							this.displayedYear < today.getFullYear() ||
-							(this.displayedYear === today.getFullYear() && this.displayedMonth < today.getMonth()) ||
-							(this.displayedYear === today.getFullYear() && this.displayedMonth === today.getMonth() && day < today.getDate()))) {
+						if (!this.options.allowPast && dayTimestamp < todaysTimestamp) {
 							allowToSelect = false;
 						}
 						

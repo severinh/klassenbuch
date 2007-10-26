@@ -613,6 +613,10 @@ String.Builder = function() {
 			return this;
 		},
 		
+		equals: function(date) {
+			return this.getTimestamp() === date.getTimestamp();
+		},
+		
 		isToday: compare.curry(0),
 		wasYesterday: compare.curry(-1),
 		willBeTomorrow: compare.curry(1),
