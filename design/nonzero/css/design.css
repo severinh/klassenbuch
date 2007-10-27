@@ -1,4 +1,7 @@
 /* ------------------------ ALLGEMEIN ------------------------ */
+/* CSS Reset */
+html,body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,p,blockquote,th,td{margin:0;padding:0;}img,body,html{border:0;}address,caption,cite,code,dfn,em,strong,th,var{font-style:normal;font-weight:normal;}ol,ul {list-style:none;}caption,th {text-align:left;}h1,h2,h3,h4,h5,h6{font-size:100%;}q:before,q:after{content:'';}
+
 html {
 	overflow-x: hidden;
 	height: 100%;
@@ -11,8 +14,6 @@ body {
 	background-color: #FFF;
 	color: #585858;
 	font-size: 9pt;
-	padding: 0;
-	margin: 0;
 	min-width: 1000px;
 	cursor: default;
 	height: 100%;
@@ -30,7 +31,6 @@ h2, h3, h4, h5, h6 {
 
 h2 {
 	font-size: 1.9em;
-	padding: 0;
 	margin: 0 0 15px;
 	background-position: 0px 3px;
 }
@@ -45,7 +45,6 @@ h2, h3 {
 
 #title h1 {
 	font-family: "Trebuchet MS", Arial, sans-serif;
-	margin: 0;
 	display: inline;
 	color: #FFF;
 	font-size: 2.6em;	
@@ -81,11 +80,6 @@ select {
 ul {
 	list-style-type: square;
 	padding-left: 3.5em;
-	margin-left: 0;
-}
-
-img {
-	border: none;
 }
 
 .simpleMessage {
@@ -125,15 +119,11 @@ img {
 	position: absolute;
 	right: 15px;
 	top: 30px;
-	list-style-type: none;
-	margin: 0;
-	padding: 0;
 	color: #FFF;
 }
 
 #headerLinks li {
 	display: inline;
-	margin: 0;
 	padding: 0 5px 0 7px;
 	border-left: 1px #a94b4b solid;
 }
@@ -154,9 +144,7 @@ img {
 
 #menu {
 	height: 24px;
-	padding: 3px 15px 0px 30px;
-	margin-top: 4px;
-	border-bottom: #FFFFFF 1px solid;
+	padding: 7px 15px 0px 30px;
 }
 
 /* Der "Laden..."-Hinweis ganz rechts in der Menüleiste */
@@ -167,11 +155,6 @@ img {
 	float: right;
 	padding: 2px 0 0 25px;
 	margin-top: 1px;
-}
-
-/* Das Element, dass alle Ansichten (Controls.View) enthält */
-#content {
-	margin: 0;
 }
 
 .spriteSmallIcons {
@@ -400,11 +383,6 @@ img {
 	width: 190px;
 }
 
-.sideMenu .paneContent {
-	padding: 0;
-	margin: 0;
-}
-
 .sideMenu .closeButton {
 	position: absolute;
 	background: url(../images/sidemenuhide.gif) no-repeat;
@@ -416,25 +394,22 @@ img {
 }
 
 .sideMenu .title {
-	margin-left: 15px;
+	margin: 0;
 	letter-spacing: -1px;
 	text-transform: lowercase;
 	color: #66000F;
 	font-size: 1.5em;
 	padding: 6px 0;
-	margin: 0;
 }
 
 .sideMenu ul {
 	list-style-type: none;
 	padding: 10px 0 8px 0;
-	margin: 0;
 }
 
 /* Ein einzelner Menüpunkt im Seitenmenü */
 .sideMenu li {
 	cursor: pointer;
-	padding: 0;
 	margin: 4px 0;
 	color: #66000F;
 }
@@ -982,7 +957,7 @@ img {
 /* Infobox unten links, in welcher der Name des Benutzer, der die ausgewählte Aufgabe eingetragen hat, enthalten ist
    und das Eintragedatum */
 .tasksView .infoBox {
-	margin: -30px 0 0 25px;
+	margin: -30px 0 0 22px;
 	color: #888;
 	width: 200px;
 }
