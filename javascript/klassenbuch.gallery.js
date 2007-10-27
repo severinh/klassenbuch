@@ -979,7 +979,8 @@ Gallery.PictureUploadWindow = Class.create(Controls.Window, {
 	},
 	
 	_ready: function() {
-		this.update("<p>Klicke auf 'Durchsuchen...' und wähle die Bilder aus, die du hochladen " +
+		this.update("<h2>Foto(s) zu Album hinzufügen</h2>" +
+			"<p>Klicke auf 'Durchsuchen...' und wähle die Bilder aus, die du hochladen " +
 			"möchtest. Die Bilder werden dann automatisch hochgeladen und währenddessen kannst du sogar sogar " +
 			"weitere Bilder zur Warteschlange hinzufügen.</p>");
 		
@@ -1177,6 +1178,7 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 	 * werden.
 	 * @memberof Gallery.View
 	*/
+	// Profile (12ms, 466 calls)
 	update: function() {
 		this._albumList.innerHTML = Gallery.Albums.collect(function(album) {
 			var numberStr = album.numberOfPictures + " Bilder";
