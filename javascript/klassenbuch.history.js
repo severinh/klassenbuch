@@ -519,7 +519,7 @@ App.History.Node = Class.create({
 					this._activeSubNode._handleStateChange(state);
 					
 					this._activeSubNode.on("leave", function() {
-						this.reportNavigation("");
+						this.reportNavigation(this._lastParams || "");
 					}, this);
 					
 					this._activeSubNode.on("navigate", function(state) {
@@ -552,6 +552,13 @@ App.History.Node = Class.create({
 	},
 	
 	_handleStateChange: function(state) {
+		var self = this;
+		var changeParams = function(params) {
+			self._leaveActiveSubNode();
+			self._lastParams = $A(params).join("/");
+			self.handleParamsChange(params);
+		};
+		
 		state = (state || []).compact();
 		
 		if (this._currentState === state.join("/")) {
@@ -588,8 +595,7 @@ App.History.Node = Class.create({
 							if (this._dynamicSubNode.checkValidity(first)) {
 								this._enterSubNode(first, state);
 							} else {
-								this._leaveActiveSubNode();
-								this.handleParamsChange(first);
+								changeParams(first);
 							}
 						}, this);
 						
@@ -607,15 +613,12 @@ App.History.Node = Class.create({
 					}
 				}
 				
-				this._leaveActiveSubNode();
-				this.handleParamsChange(first);
-				
+				changeParams(first);
 				return;
 			}
 		}
 		
-		this._leaveActiveSubNode();
-		this.handleParamsChange(state);
+		changeParams(state);
 	},
 	
 	handleParamsChange: Prototype.K,
