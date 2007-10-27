@@ -465,7 +465,18 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 	},
 	
 	addressify: function() {
-		return this.replace(/([\s])/g, "").replaceAll("ü", "ue").replaceAll("ä", "ae").replaceAll("ö", "oe").toLowerCase();
+		var store = arguments.callee._STORE[this];
+		
+		if (Object.isDefined(store)) {
+			return store;
+		}
+		
+		return arguments.callee._STORE[this] = this.toLowerCase()
+			.replace(/([\s])/g, "-")
+			.replaceAll("ü", "ue")
+			.replaceAll("ä", "ae")
+			.replaceAll("ö", "oe")
+			.replace(/[^A-Z^a-z^0-9-]/g, "");
 	},
 	
 	toDate: function() {
@@ -484,6 +495,8 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 		return str;
 	}
 });
+
+String.prototype.addressify._STORE = {};
 
 String.Builder = function() {
 	var addOne = Browser.IE ? 

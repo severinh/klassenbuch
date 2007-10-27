@@ -237,7 +237,7 @@ Controls.Button = Class.create(Control, {
 		
         $super(new Element(this.options.tag, {
 			className: "unselectable " + this.options.className,
-			title: this.options.title
+			title: this.options.title || ""
 		}));
         
         this.action = action || Prototype.emptyFunction;
