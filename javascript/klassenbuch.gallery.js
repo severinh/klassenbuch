@@ -174,8 +174,12 @@ Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
 				this.numberOfPictures = response.result.length;
 				
 				response.result.each((function(picture) {
-					this.pictures.push(new Gallery.Picture(picture.id, picture.filename, picture.userid,
-						picture.submitted, picture.taken));
+					var picture = new Gallery.Picture(picture.id, picture.filename, picture.userid,
+						picture.submitted, picture.taken);
+					
+					picture.on("edited", this.fireEvent.bind(this, "updated"));
+					
+					this.pictures.push(picture);
 				}).bind(this));
 				
 				this.fireEvent("updated");
@@ -602,6 +606,8 @@ Gallery.Picture = Class.create(EventPublisher, /** @scope Gallery.Picture */ {
 		
 		this.taken = Date.fromTimestamp(taken);
 		
+		this._reloadParam = "";
+		
 		$super();
 	},
 	
@@ -611,18 +617,19 @@ Gallery.Picture = Class.create(EventPublisher, /** @scope Gallery.Picture */ {
 	 * @memberof Gallery.Picture
 	*/
 	getThumbnailPath: function() {
-		return "gallery/thumbnails/" + this.fileName;
+		return "gallery/thumbnails/" + this.fileName + "?" + this._reloadParam;
 	},
 	
 	getPicturePath: function() {
-		return "gallery/pictures/" + this.fileName;
+		return "gallery/pictures/" + this.fileName + "?" + this._reloadParam;
 	},
 	
 	rotate: function(degree, callBack) {
 		if (this.isEditable()) {
 			var request = new JSONRPC.Request("gallery_rotatepicture", [this.id, degree], {
 				onSuccess: (function() {
-					this.fireEvent("rotated", this);
+					this.reload();
+					this.fireEvent("edited", this);
 					callBack();
 				}).bind(this)
 			});
@@ -631,6 +638,10 @@ Gallery.Picture = Class.create(EventPublisher, /** @scope Gallery.Picture */ {
 	
 	isEditable: function() {
 		return User.signedIn && (User.isAdmin || User.id === this.userid);
+	},
+	
+	reload: function() {
+		this._reloadParam = Date.getCurrentTimestamp();
 	}
 });
 
@@ -1178,7 +1189,6 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 	 * werden.
 	 * @memberof Gallery.View
 	*/
-	// Profile (12ms, 466 calls)
 	update: function() {
 		this._albumList.innerHTML = Gallery.Albums.collect(function(album) {
 			var numberStr = album.numberOfPictures + " Bilder";
