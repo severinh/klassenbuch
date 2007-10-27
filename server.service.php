@@ -880,6 +880,7 @@ function gallery_rotatepicture($pictureid, $degree) {
 	$source = imagecreatefromjpeg($path);
 	$rotated = imagerotate($source, $degree, 0);
 	imagejpeg($rotated, $path, 85);
+	imagedestroy($rotated);
 	
 	gallery_generatethumbnails($picture["filename"]);
 	
