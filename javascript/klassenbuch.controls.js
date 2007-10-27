@@ -139,7 +139,7 @@ var Control = Class.create(EventPublisher, {
 	}
 });
 
-$w("setStyle addClassName removeClassName toggleClassName").each(function(a) {
+$w("setStyle addClassName removeClassName toggleClassName centerOnScreen").each(function(a) {
 	Control.prototype[a] = function(val) {
 		this.element[a](val);
 		return this;
@@ -224,12 +224,9 @@ Controls.AutoResizingControl = Class.create(Control, {
 */
 Controls.Button = Class.create(Control, {
 	initialize: function($super, caption, action, options) {
-		if (!Object.isString(caption)) {
-			return;
-		}
-		
 		// Überschreibt die mit options übergebenen Einstellungen mit den Standardwerten
-		this.setOptions({ enabled: true,
+		this.setOptions({
+			enabled: true,
 			onlySignedIn: false,
 			className: "",
 			buttonClass: "standardButton",
@@ -238,10 +235,12 @@ Controls.Button = Class.create(Control, {
 			iconAlign: "left"
 		}, options);
 		
-		this.action = action || Prototype.emptyFunction;
-		
-        $super(new Element(this.options.tag, { className: "unselectable " + this.options.className }));
+        $super(new Element(this.options.tag, {
+			className: "unselectable " + this.options.className,
+			title: this.options.title
+		}));
         
+        this.action = action || Prototype.emptyFunction;
 		this.setCaption(caption);
 		
 		this.element.innerHTML = "<div class=\"leftBoundary\">&nbsp;</div><div class=\"rightBoundary\"><div class=\"content\"></div></div>";
@@ -250,8 +249,8 @@ Controls.Button = Class.create(Control, {
 		
 		this.on("click", action);
 		
-		["Over", "Down", "Out", "Up"].each(function(a) {
-			this.element.observe(("mouse" + a).toLowerCase(), this["_on" + a].bind(this));
+		$w("over down out up").each(function(a) {
+			this.element.observe("mouse" + a, this._setState.bind(this, a));
 		}, this);
 		
 		if (this.options.onlySignedIn) {
@@ -260,8 +259,6 @@ Controls.Button = Class.create(Control, {
 		}
 		
 		this._updateContent();
-		
-		this._onOut();
 		this.enable();
 		
 		if (!this.options.enabled || (this.options.onlySignedIn && !User.signedIn)) {
@@ -270,10 +267,6 @@ Controls.Button = Class.create(Control, {
 		
 		if (!this.options.visible) {
 			this.hide();
-		}
-		
-		if (this.options.title) {
-			this.element.writeAttribute("title", this.options.title);
 		}
 	},
 
@@ -338,22 +331,6 @@ Controls.Button = Class.create(Control, {
         }
 	},
 	
-	_onOver: function() {
-		this._setBackground(-100);
-	},
-	
-	_onDown: function() {
-		this._setBackground(-200);
-	},
-	
-	_onOut: function() {
-		this._setBackground(0);
-	},
-	
-	_onUp: function() {
-		this._setBackground(-100);
-	},
-	
 	setButtonClass: function(buttonClass) {
         if (this.buttonClass) {
             this.removeClassName(this.buttonClass);
@@ -363,8 +340,17 @@ Controls.Button = Class.create(Control, {
         this.buttonClass = buttonClass;
 	},
 	
-	_setBackground: function(position) {
-		if (this.enabled) {
+	_setState: function(state) {
+		var position = {
+			out: 0,
+			enabled: 0,
+			over: -100,
+			up: -100,
+			down: -200,
+			disabled: -300
+		}[state];
+		
+		if (this.enabled && Object.isDefined(position)) {
 			this.leftBoundary.setStyle({ backgroundPosition: "0px " + position + "px" });
 			this.rightBoundary.setStyle({ backgroundPosition: "100% " + position + "px" });
 		}
@@ -377,7 +363,7 @@ Controls.Button = Class.create(Control, {
 	enable: function() {
 		if (!this.enabled) {
 			this.enabled = true;
-			this._onOut();
+			this._setState("enabled");
 			
 			this.removeClassName("disabled" + this.options.buttonClass.capitalize());
 			this.element.observe("click", this.fireEvent.bind(this, "click"));
@@ -398,7 +384,7 @@ Controls.Button = Class.create(Control, {
     */
 	disable: function() {
 		if (this.enabled) {
-            this._setBackground(-300);
+            this._setState("disabled");
             this.enabled = false;
             
             this.addClassName("disabled" + this.options.buttonClass.capitalize());
@@ -416,12 +402,15 @@ Controls.Button = Class.create(Control, {
 
 Controls.Link = Class.create(Control, {
 	initialize: function($super, caption, action) {
-		$super(new Element("a", { className: "linkControl", href: "javascript:void(null);" }));
+		$super(new Element("a", {
+			className: "linkControl",
+			href: "javascript:void(null);"
+		}));
 		
 		this.element.innerHTML = caption;
 		this.element.observe("click", this.fireEvent.bind(this, "click"));
 		
-		this.on("click", action);
+		this.on("click", action || Prototype.K);
 	}
 });
 
@@ -609,15 +598,9 @@ Controls.TabControl = Class.create(Control, {
 		this._contentParent.insertControl(tab, "bottom");
 		
 		tab.on("activate", this._onTabActivated, this);
-		
-		if (!this.activeTab) {
-			tab.activate();
-		} else {
-			tab.deactivate();
-		}
+		tab[(this.activeTab) ? "deactivate" : "activate"]();
 		
 		this.tabs.splice(index, 0, tab);
-		
 		this.fireEvent("addTab", tab);
 		
 		return tab;
@@ -675,10 +658,6 @@ Controls.TabControl = Class.create(Control, {
 
 Controls.TabControl.TabPage = Class.create(Control, App.History.Node.prototype, {
 	initialize: function($super, caption) {
-		if (!caption) {
-			return;
-		}
-		
 		$super(new Element("div"));
 		
 		this.caption = caption;
@@ -710,10 +689,6 @@ Controls.TabControl.TabPage = Class.create(Control, App.History.Node.prototype, 
 
 Controls.TabControl.TabPageWithButtonControl = Class.create(Controls.TabControl.TabPage, {
 	initialize: function($super, caption, icon, buttonClass) {
-		if (!Object.isString(caption)) {
-			return;
-		}
-		
 		this.icon = icon;
 		this._buttonClass = buttonClass || "menuItem";
 		
@@ -737,10 +712,6 @@ Controls.TabControl.TabPageWithButtonControl = Class.create(Controls.TabControl.
 
 Controls.View = Class.create(Controls.TabControl.TabPageWithButtonControl, {
 	initialize: function($super, caption, icon, title, options) {
-		if (!Object.isString(caption)) {
-			return;
-		}
-		
 		this.setOptions({ hasAdditionalCommands: true }, options);
         $super(caption, icon);
         
@@ -846,10 +817,6 @@ Controls.SideMenu = Class.create(Controls.RoundedPane, {
 	
 	setHelpText: function(text) {
 		this.help.innerHTML = text;
-	},
-	
-	getHelpText: function() {
-		return this.help.innerHTML;
 	}
 });
 
@@ -936,7 +903,6 @@ Controls.Form = Class.create(Control, {
 		}));
 		
 		this.element.observe("submit", this._onSubmit.bind(this));
-		
 		this.element.observe("keypress", (function(e) {
 			if (e.keyCode === Event.KEY_RETURN) {
 				this._onSubmit();
@@ -1143,6 +1109,8 @@ var DragAble = Class.create({
 			
 			document.observe("mouseup", this.stopDraggingListener);
 			document.observe("mousemove", this.moveListener);
+			
+			this._windowSize = Tools.getWindowSize();
 		}
 	},
 	
@@ -1155,14 +1123,15 @@ var DragAble = Class.create({
 		}
 	},
 	
-	move: function(e) {
-		if (this.draging && e) {
-			var windowSize = Tools.getWindowSize();
+	move: function(event) {
+		if (this.draging && event) {
+			var clientX = event.clientX.limitTo(0, this._windowSize.width);
+			var clientY = event.clientY.limitTo(0, this._windowSize.height);
 			
-			var clientX = e.clientX.limitTo(0, windowSize.width);
-			var clientY = e.clientY.limitTo(0, windowSize.height);
-			
-			this.target.setStyle({ left: this.offsetX + clientX - this.x + "px", top: this.offsetY + clientY - this.y + "px" });
+			this.target.setStyle({
+				left: this.offsetX + clientX - this.x + "px",
+				top: this.offsetY + clientY - this.y + "px"
+			});
 		}
 	},
 	
@@ -1252,14 +1221,6 @@ Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype,
 	
 	update: function(content) {
         this.content.innerHTML = content;
-	},
-	
-	/**
-	 * @method Zentriert das Steuerelement basierend auf seiner Grösse im Browserfenster (Wrapperfunktion).
-	 * @return {ExtendedHTMLObject} Das HTML-Element des Steuerelement.
-	*/
-	centerOnScreen: function() {
-		return this.element.centerOnScreen();
 	},
 	
 	leave: function() {

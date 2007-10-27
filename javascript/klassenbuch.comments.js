@@ -512,11 +512,12 @@ Comments.Comment.Control = Class.create(Control, {
 	refreshControl: function() {
         var comment = this.comment.text.replaceAll("[BR /]", "<br />");
         
-        [["B", "strong"], ["I", "em"], ["U", "u"]].each(function(a) {
-            if (comment.count("[" + a[0] + "]") === comment.count("[/" + a[0] + "]")) {
-                comment = comment.replaceAll("[" + a[0] + "]", "<" + a[1] + ">").replaceAll("[/" + a[0] + "]", "</" + a[1] + ">");
+		[["[B]", "[/B]", "<b>", "</b>"], ["[I]", "[/I]", "<i>", "</i>"], ["[U]", "[/U]", "<u>", "</u>"]].each(function(a) {
+			var count1 = comment.count(a[0]);
+            if (count1 && count1 === comment.count(a[1])) {
+                comment = comment.replaceAll(a[0], a[2]).replaceAll(a[1], a[3]);
             }
-         });
+        });
 		
         Comments.Emoticons.each(function(pair) {
 			pair.value.each(function(e) {
