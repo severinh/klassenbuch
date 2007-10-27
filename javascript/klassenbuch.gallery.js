@@ -1195,7 +1195,7 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 			
 			switch (album.numberOfPictures) {
 				case 0: numberStr = "Keine Bilder"; break;
-				case 1: numberStr = "Morgen"; break;
+				case 1: numberStr = "Ein Bild"; break;
 			}
 			
 			return "<div class=\"albumLink\" name=\"album" + album.id + "\"><div class=\"icon\"></div><div>" + 
