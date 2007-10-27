@@ -450,13 +450,15 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 			this._navigation.hide();
 		}
 		
-		this._thumbnailTable.innerHTML = this.album.pictures.eachSlice(this.options.picturesPerPage)[this.currentPage]
-			.collect(function(picture, i) {
-				return "<div class=\"thumbnailContainer\" name=\"" + picture.name + "\"><img src=\"" + picture.getThumbnailPath() + "\" />" +
-					"<div class=\"fileName\">" + picture.fileName.truncate(18) + "</div></div>";
-			}).join(" ");
+		this._thumbnailTable.clear();
 		
 		if (this.album.pictures.length > 0) {
+			this._thumbnailTable.innerHTML = this.album.pictures.eachSlice(this.options.picturesPerPage)[this.currentPage]
+				.collect(function(picture, i) {
+					return "<div class=\"thumbnailContainer\" name=\"" + picture.name + "\"><img src=\"" + picture.getThumbnailPath() + "\" />" +
+						"<div class=\"fileName\">" + picture.fileName.truncate(18) + "</div></div>";
+				}).join(" ");
+			
 			this._startSlideShowButton.enable();
 		}
 	},
