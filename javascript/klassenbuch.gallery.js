@@ -386,7 +386,7 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		);
 		
 		// Wenn weitere Fotos hinzugefügt werden o. ä. wird die Tabelle mit den Miniaturansichten neu generiert.
-		var h1 = this.album.on("updated", this._generatePictureTable, this);
+		this._onExternalEvent(this.album, "updated", this._generatePictureTable, this);
 		
 		// Wenn dies noch nicht geschehen ist, wird noch die Fotoliste für das Album geholt, ansonsten erfolgt
 		// die Generierung der Tabelle schon jetzt.
@@ -397,10 +397,10 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		}
 		
 		// Wenn das Fenster geschlossen wird, soll auch ein möglicherweise offenes Hochlade-Fenster geschlossen werden.
-		this.on("remove", (function() {
+		this.on("remove", function() {
 			App.Windows.closeAllOfType("PictureUploadWindow");
-			this.album.un("updated", h1);
-		}).bind(this));
+			this._thumbnailTable.stopObserving("click");
+		}, this);
 		
 		this.show();
 	},
@@ -455,7 +455,7 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		if (this.album.pictures.length > 0) {
 			this._thumbnailTable.innerHTML = this.album.pictures.eachSlice(this.options.picturesPerPage)[this.currentPage]
 				.collect(function(picture, i) {
-					return "<div class=\"thumbnailContainer\" name=\"" + picture.name + "\"><img src=\"" + picture.getThumbnailPath() + "\" />" +
+					return "<div class=\"thumbnailContainer\" name=\"" + picture.fileName + "\"><img src=\"" + picture.getThumbnailPath() + "\" />" +
 						"<div class=\"fileName\">" + picture.fileName.truncate(18) + "</div></div>";
 				}).join(" ");
 			
