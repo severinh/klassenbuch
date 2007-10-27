@@ -4,79 +4,89 @@
  * sich abmeldet. Die Kontaktliste liegt in Form eines Array vor, das Objekte vom Typ <em>Contacts.Contact</em> enthält. Diese
  * Klasse bietet zusätzlich bequeme Zugriffsfunktionen auf diese Daten. Die Klasse führt von Zeit zu Zeit automatisch eine
  * Aktualisierung der Daten durch, wobei die Serverantworten zusätzlich gecached werden.
- * @static
+ * @singleton
  * @event updated - Wird ausgelöst, wenn sich die Kontaktinformationen aktualisiert wurden.
 */
-var Contacts = Object.extend(new EventPublisher(), {
-    initialize: function() {
-        if (!Contacts.initialized) {
-            Contacts.periodicalUpdate = new PeriodicalExecuter(Contacts.update, 3200);
-            
-            var data = DirectData.get("contacts");
-            
-            if (data) {
-				Contacts._updateSuccess(new JSONRPC.Response(data.result));
-            }
-            
-            User.on("signIn", Contacts.update);
-            User.on("signOut", Contacts.hidePersonalInformation);
-            
-            Contacts.initialized = true;
-        }
+var Contacts = new (Class.create(EventPublisher, {
+    initialize: function($super) {
+		this.contacts = [];
+		
+		$super();
+		
+		var self = this;
+		var init = function() {
+			if (!self.initialized) {
+				self.periodicalUpdate = new PeriodicalExecuter(self.update.bind(self), 3200);
+				
+				var data = DirectData.get("contacts");
+				
+				if (data) {
+					self._updateSuccess(new JSONRPC.Response(data.result));
+				}
+				
+				User.on("signIn", self.update, self);
+				User.on("signOut", self.hidePersonalInformation, self);
+				
+				this.initialized = true;
+			}
+		};
+		
+		this.getContact = {
+			byId: function(id) {
+				return self._getContact("id", id);
+			},
+			
+			byNickname: function(nickname) {
+				return self._getContact("nickname", nickname);
+			},
+			
+			byFullName: function(fullName) {
+				return self._getContact(function(contact) {
+					return contact.getFullName() === fullName;
+				});
+			}
+		};
+		
+		if (App.initialized) {
+			init();
+		} else {
+			App.on("initialize", init);
+		}
     },
     
     update: function() {
-		var request = new JSONRPC.Request("getcontacts", [], { onSuccess: Contacts._updateSuccess });
+		var request = new JSONRPC.Request("getcontacts", [], { onSuccess: this._updateSuccess.bind(this) });
     },
     
     _updateSuccess: function(response) {
-		Contacts.contacts.clear();
+		this.contacts.clear();
 		
 		response.result.each(function(contact) {
-			Contacts.contacts.push(new Contacts.Contact(contact));
-		});
+			this.contacts.push(new Contacts.Contact(contact));
+		}, this);
 		
-		Contacts.fireEvent("updated");
-    },
-
-    getContact: {
-        byId: function(id) {
-            return Contacts._getContact("id", id);
-        },
-        
-        byNickname: function(nickname) {
-            return Contacts._getContact("nickname", nickname);
-        },
-        
-        byFullName: function(fullName) {
-            return Contacts._getContact(function(contact) {
-				return contact.getFullName() == fullName;
-			});
-        }
+		this.fireEvent("updated");
     },
     
     _getContact: function(a, b) {
-        return Contacts.contacts.find((Object.isFunction(a)) ? a : function(contact) {
-			return contact[a] == b;
+        return this.contacts.find((Object.isFunction(a)) ? a : function(contact) {
+			return contact[a] === b;
 		});
     },
     
     hidePersonalInformation: function() {
-        Contacts.contacts.invoke("hidePersonalInformation");
-        Contacts.fireEvent("updated");
+        this.contacts.invoke("hidePersonalInformation");
+        this.fireEvent("updated");
     },
     
     getClassMembers: function() {
-        return Contacts.contacts.findAll(function(contact) {
+        return this.contacts.findAll(function(contact) {
 			return contact.classmember;
 		});
     },
     
-    contacts: [],
     initialized: false
-});
-
-App.on("initialize", Contacts.initialize);
+}))();
 
 Contacts.View = Class.create(Controls.View, {
 	initialize: function($super) {

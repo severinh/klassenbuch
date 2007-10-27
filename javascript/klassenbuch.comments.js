@@ -7,51 +7,52 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		this.setOptions({ commentsPerPage: 15 }, options);
 		
 		var title = "Kommentare zur Aufgabe \"" + this.task.text.truncate(50) + "\"";
+		var self = this;
 		
 		if (!$super("TaskCommentsWindow", { title: title })) {
 			return;
         }
         
-        this.registerSubNode("neuerkommentar", (function() {
-				if (this.task.date.getTimestamp() >= Date.getTodaysTimestamp()) {
-					var createWindow = new Comments.CreateCommentWindow(this.task.id);
-					createWindow.on("success", this._createCommentSuccess, this);
+        this.registerSubNode("neuerkommentar", function() {
+				if (self.task.date.getTimestamp() >= Date.getTodaysTimestamp()) {
+					var createWindow = new Comments.CreateCommentWindow(self.task.id);
+					createWindow.on("success", self._createCommentSuccess, self);
 					
 					return createWindow;
 				} else {
 					(function() {
-						this.reportNavigation("");
+						self.reportNavigation("");
 						alert("Aufgaben in der Vergangenheit können leider nicht mehr kommentiert werden.");
-					}).bind(this).defer();
+					}).defer();
 					
 					return false;
 				}
-			}).bind(this), {
+			}, {
 				restrictedAccess: true
 			}
 		);
 		
 		this.registerDynamicSubNode(
-			(function(nodeName, state) {
-				return this.comments.find(function(comment) {
+			function(nodeName, state) {
+				return self.comments.find(function(comment) {
 					return comment.id === parseInt(nodeName, 10);
 				});
-			}).bind(this),
+			},
 			
-			(function(nodeName) {
-				return this.comments.pluck("id").include(parseInt(nodeName, 10));
-			}).bind(this),
+			function(nodeName) {
+				return self.comments.pluck("id").include(parseInt(nodeName, 10));
+			},
 			
 			{ needsServerCommunication: true }
 		);
 		
 		Comments.Comment.Control.on("showprofile", function(comment) {
-			this.reportNavigation(comment.id + "/profil");
-		}, this);
+			self.reportNavigation(comment.id + "/profil");
+		});
 		
 		Comments.Comment.Control.on("edit", function(comment) {
-			this.reportNavigation(comment.id + "/bearbeiten");
-		}, this);
+			self.reportNavigation(comment.id + "/bearbeiten");
+		});
         
 		this.update("<h2>" + title + "</h2>");
 		
@@ -73,16 +74,16 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		this.tabControl.hide();
 		
 		this.tabControl.on("activateTab", function() {
-			this.commentsContainer.scrollToTop();
-		}, this);
+			self.commentsContainer.scrollToTop();
+		});
 		
 		this.registerChildControl(this.newCommentButton, this.tabControl);
 		
 		this.periodicalUpdate = new PeriodicalExecuter(this.getComments.bind(this), 120);
 		
 		this.on("remove", function() {
-			this.periodicalUpdate.disable();
-		}, this);
+			self.periodicalUpdate.disable();
+		});
 		
 		this.getComments();
 		this.show();

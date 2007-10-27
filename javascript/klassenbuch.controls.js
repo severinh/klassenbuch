@@ -1578,7 +1578,6 @@ Controls.Table = Class.create(Control, {
 			});
 		}
 		
-		this.element.clear();
 		this.element.innerHTML = "<table class=\"table\" style=\"cellpadding=\"" + this.options.cellpadding + "\"><tbody>" +
 			output + "</tbody></table>";
 		

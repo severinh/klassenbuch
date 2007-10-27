@@ -5,7 +5,7 @@ App.ThemeManager = new (Class.create(EventPublisher, {
 		var updateTheme = function() {
 			this.setTheme(User.settings.get("theme"));
 		};
-	
+		
 		App.on("beforeInitialize", function() {
 			User.on("signIn", updateTheme, this);
 			User.on("signOut", updateTheme, this);

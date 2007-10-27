@@ -272,6 +272,10 @@ User.SignInWindow = Class.create(Controls.Window, {
 		
 		this.on("show", this._form.reset, this._form);
 		this.on("hide", this._form.reset, this._form);
+		
+		this.on("show", function() {
+			this._form.focusFirstField();
+		}, this);
 	},
 	
 	_submit: function(input) {
@@ -300,9 +304,10 @@ User.PasswordRequestWindow = Class.create(Controls.Window, {
 			new Controls.Form.TextField({ caption: "Passwort", name: "password", type: "password" })
 		);
 		
-		this._form.on("submit", this._submit, this);
+		this.show();
 		
-        this.show();
+		this._form.on("submit", this._submit, this);
+		this._form.focusFirstField();
     },
     
     _submit: function(input) {
@@ -352,9 +357,10 @@ User.PasswordChangeWindow = Class.create(Controls.Window, {
 			})
 		);
 		
-		this._form.on("submit", this._submit, this);
+		this.show();
 		
-        this.show();
+		this._form.on("submit", this._submit, this);
+		this._form.focusFirstField();
     },
 	
     _submit: function(input) {
@@ -635,9 +641,12 @@ User.RegisterWindow = Class.create(Controls.Window, {
 			})
 		);
 		
-		this._form.on("submit", this._submit, this);
 		this.registerChildControl(this._form);
+		
 		this.show();
+		
+		this._form.on("submit", this._submit, this);
+		this._form.focusFirstField();
 	},
 	
 	_submit: function(input) {

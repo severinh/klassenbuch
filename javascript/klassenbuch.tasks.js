@@ -408,10 +408,10 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 					var today = Date.getTodaysTimestamp();
 					
 					switch (a) {
-						case today: 		return "Heute";
-						case today + 86400: return "Morgen";
-						case today - 86400: return "Gestern";
-						default: 			return date.format("D, j. F");
+						case today: 		return "Heute"; break;
+						case today + 86400: return "Morgen"; break;
+						case today - 86400: return "Gestern"; break;
+						default: 			return date.format("D, j. F"); break;
 					}
 				}
 			}

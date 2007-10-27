@@ -1177,7 +1177,6 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 	 * werden.
 	 * @memberof Gallery.View
 	*/
-	// Profile (12ms, 466 calls)
 	update: function() {
 		this._albumList.innerHTML = Gallery.Albums.collect(function(album) {
 			var numberStr = album.numberOfPictures + " Bilder";
