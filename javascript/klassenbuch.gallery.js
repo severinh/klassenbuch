@@ -330,7 +330,14 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		 * @name _thumbnailTable
 		 * @memberof Gallery.Album.Window
 		*/
-		this._thumbnailTable = this.content.createChild({ className: "thumbnailTable" });
+		this._thumbnailTable = this.content.createChild({ className: "thumbnailTable" }).observe("click", (function(event) {
+			var element = event.element();
+			element = (element.hasClassName("thumbnailContainer")) ? element : element.up(".thumbnailContainer");
+			
+			if (element) {
+				this.reportNavigation("diashow/" + element.readAttribute("name"));;
+			}
+		}).bindAsEventListener(this));
 		
 		/**
 		 * HTML-Element, das die Steuerelemente enthält, mit denen zwischen den einzelnen Fotoseiten gewechselt werden
@@ -379,7 +386,7 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		);
 		
 		// Wenn weitere Fotos hinzugefügt werden o. ä. wird die Tabelle mit den Miniaturansichten neu generiert.
-		var h1 = this.album.on("updated", this._generatePictureTable.bind(this));
+		var h1 = this.album.on("updated", this._generatePictureTable, this);
 		
 		// Wenn dies noch nicht geschehen ist, wird noch die Fotoliste für das Album geholt, ansonsten erfolgt
 		// die Generierung der Tabelle schon jetzt.
@@ -392,19 +399,10 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		// Wenn das Fenster geschlossen wird, soll auch ein möglicherweise offenes Hochlade-Fenster geschlossen werden.
 		this.on("remove", (function() {
 			App.Windows.closeAllOfType("PictureUploadWindow");
-			this._deregisterEvents();
 			this.album.un("updated", h1);
 		}).bind(this));
 		
 		this.show();
-	},
-	
-	_deregisterEvents: function() {
-		this._cachedEvents.each(function(cachedEvent) {
-			Event.stopObserving.apply(Event, cachedEvent);
-		});
-		
-		this._cachedEvents.clear();
 	},
 	
 	showNextPage: function() {
@@ -436,11 +434,7 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		this.currentPage = this.currentPage.limitTo(0, Math.floor(this.album.pictures.length / this.options.picturesPerPage));
 		
 		if (this.options.picturesPerPage < this.album.pictures.length) {
-			if (this.currentPage > 0) {
-				this._previousButton.enable();
-			} else {
-				this._previousButton.disable();
-			}
+			this._previousButton[(this.currentPage > 0) ? "enable" : "disable"]();
 			
 			if (this.album.pictures.length > (this.currentPage + 1) * this.options.picturesPerPage) {
 				this._nextButton.enable();
@@ -456,25 +450,11 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 			this._navigation.hide();
 		}
 		
-		this._deregisterEvents();
-		this._thumbnailTable.clear();
-		
-		if (this.album.pictures.length > 0) {
-			this.album.pictures.eachSlice(this.options.picturesPerPage)[this.currentPage].each((function(picture, i) {
-				var thumbnail = this._thumbnailTable.createChild({
-					className: "thumbnailContainer",
-					content: "<img src=\"" + picture.getThumbnailPath() + "\" /><div class=\"fileName\">" + 
-						picture.fileName.truncate(18) + "</div>"
-				});
-				
-				this._cachedEvents.push([thumbnail, "click", this.reportNavigation.bind(this, "diashow/" + picture.fileName), false]);
-			}).bind(this));
-			
-		}
-		
-		this._cachedEvents.each(function(event) {
-			Event.observe.apply(Event, event);
-		});
+		this._thumbnailTable.innerHTML = this.album.pictures.eachSlice(this.options.picturesPerPage)[this.currentPage]
+			.collect(function(picture, i) {
+				return "<div class=\"thumbnailContainer\" name=\"" + picture.name + "\"><img src=\"" + picture.getThumbnailPath() + "\" />" +
+					"<div class=\"fileName\">" + picture.fileName.truncate(18) + "</div></div>";
+			}).join(" ");
 		
 		if (this.album.pictures.length > 0) {
 			this._startSlideShowButton.enable();
@@ -1157,15 +1137,30 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 					}
 				));
 				
-				// Damit die Schaltfläche korrekt entfernt wird, wenn der Menüpunkt entfernt wird (was normalerweise nie
-				// passiert ;-))
 				this.registerChildControl(this._newAlbumButton);
 				
-				this._albumList = this.content.createChild({ className: "albumList" });
+				this._albumList = this.content.createChild({ className: "albumList" }).observe("click", (function(event) {
+					var element = event.element();
+					element = (element.hasClassName("albumLink")) ? element : element.up(".albumLink");
+					
+					if (element) {
+						var albumId = parseInt(element.readAttribute("name").replace("album", ""));
+						
+						if (albumId) {
+							this.reportNavigation(Gallery.Albums.find(function(album) {
+								return album.id === albumId;
+							}).name.addressify());
+						}
+					}
+				}).bindAsEventListener(this));
+				
+				this.on("remove", function() {
+					this._albumList.stopObserving("click");
+				}, this);
 				
 				// Wenn die Albenliste neu vom Server geholt wird, soll auch die "grafische Albenliste" dieser Ansicht
 				// aktualisiert werden
-				Gallery.on("updated", this.update.bind(this));
+				Gallery.on("updated", this.update, this);
 				this.update();
 				
 				this.initialized = true;
@@ -1180,17 +1175,19 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 	 * werden.
 	 * @memberof Gallery.View
 	*/
+	// Profile (12ms, 466 calls)
 	update: function() {
-		this._albumList.clear();
-		
-		Gallery.Albums.each((function(album) {
-			this._albumList.createChild({
-				className: "albumLink",
-				content: "<div class=\"icon\"></div><div>" + album.name + "</div><div class=\"pictures\">" +
-					((album.numberOfPictures === 0) ? "Keine Bilder" : ((album.numberOfPictures === 1) ? "Ein Bild" :
-					album.numberOfPictures + " Bilder")) + "</div>"
-			}).observe("click", this.reportNavigation.bind(this, album.name.addressify()));
-		}).bind(this));
+		this._albumList.innerHTML = Gallery.Albums.collect(function(album) {
+			var numberStr = album.numberOfPictures + " Bilder";
+			
+			switch (album.numberOfPictures) {
+				case 0: numberStr = "Keine Bilder"; break;
+				case 1: numberStr = "Morgen"; break;
+			}
+			
+			return "<div class=\"albumLink\" name=\"album" + album.id + "\"><div class=\"icon\"></div><div>" + 
+				album.name + "</div><div class=\"pictures\">" + numberStr + "</div></div>";
+		}).join(" ");
 	}
 });
 
