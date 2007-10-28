@@ -1196,7 +1196,7 @@ Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype,
 		this.options.containerElement.insertControl(this);
 		
 		if (this.options.centerOnScreen) {
-			if (Browser.Opera) {
+			if (Browser.Opera || Browser.WebKit) {
 				this.on("show", this.centerOnScreen, this);
 			} else {
 				this.centerOnScreen();
