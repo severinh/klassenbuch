@@ -464,69 +464,75 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 	}
 });
 
-Comments.Comment.Control = Class.create(Control, {
-	initialize: function($super, comment) {
-		this.comment = comment;
-		
-		$super(new Element("div", { className: "comment" }));
-		
-		this.element.innerHTML = "<div class=\"profile\"></div><div class=\"commands\">" +
-			new Sprite("smallIcons", 2).toHTML("editButton") + "</div><div class=\"content\"></div>" +
-			"<div class=\"date\">" + ((this.comment.date.isToday()) ? "Heute," : ((this.comment.date.wasYesterday()) ? 
-			"Gestern," : this.comment.date.format("d.m.Y"))) + " " +  this.comment.date.format("H:i") + "</div>";
-		
-		var _profile = this.select(".profile")[0];
-		
-		this.registerChildControl(_profile.insertControl(new Controls.Link(this.comment.contact.nickname, (function() {
-			Comments.Comment.Control.fireEvent("showprofile", this.comment);
-		}).bind(this))));
-		
-		this._posts = _profile.createChild({ content: "Beiträge: " + this.comment.contact.posts });
-		
-		this._editButton = this.select(".editButton")[0];
-        
-        if (this.comment.userid === User.id && User.signedIn) {
-			this._editButton.observe("click", (function() {
-				Comments.Comment.Control.fireEvent("edit", this.comment);
-			}).bind(this));
+Comments.Comment.Control = function() {
+	var bbCodeSignatures = $H({
+		"B": "strong",
+		"I": "em",
+		"U": "u"
+	}).collect(function(pair) {
+		return ["[" + pair.key + "]", "[/" + pair.key + "]", "<" + pair.value + ">", "</" + pair.value + ">"];
+	});
+	
+	return Class.create(Control, {
+		initialize: function($super, comment) {
+			this.comment = comment;
 			
-			this.on("remove", this._editButton.stopObserving, this._editButton);
-        } else {
-			this._editButton.hide();
-        }
-		
-		this._content = this.select(".content")[0];
-		this.refreshControl();
-		
-		this._onExternalEvent(Contacts, "updated", function() {
-			this._posts.innerHTML = "Beiträge: " + this.comment.contact.posts;
-		}, this);
-		
-		var h2 = this.comment.on("edit", this.refreshControl, this);
-		
-		this.on("remove", function() {
-			this.comment.removeListener(h2);
-		}, this);
-	},
+			$super(new Element("div", { className: "comment" }));
+			
+			this.element.innerHTML = "<div class=\"profile\"></div><div class=\"commands\">" +
+				new Sprite("smallIcons", 2).toHTML("editButton") + "</div><div class=\"content\"></div>" +
+				"<div class=\"date\">" + ((this.comment.date.isToday()) ? "Heute," : ((this.comment.date.wasYesterday()) ? 
+				"Gestern," : this.comment.date.format("d.m.Y"))) + " " +  this.comment.date.format("H:i") + "</div>";
+			
+			var _profile = this.select(".profile")[0];
+			
+			this.registerChildControl(_profile.insertControl(new Controls.Link(this.comment.contact.nickname, (function() {
+				Comments.Comment.Control.fireEvent("showprofile", this.comment);
+			}).bind(this))));
+			
+			this._posts = _profile.createChild({ content: "Beiträge: " + this.comment.contact.posts });
+			
+			this._editButton = this.select(".editButton")[0];
+			
+			if (this.comment.userid === User.id && User.signedIn) {
+				this._editButton.observe("click", (function() {
+					Comments.Comment.Control.fireEvent("edit", this.comment);
+				}).bind(this));
+				
+				this.on("remove", this._editButton.stopObserving, this._editButton);
+			} else {
+				this._editButton.hide();
+			}
+			
+			this._content = this.select(".content")[0];
+			this.refreshControl();
+			
+			this._onExternalEvent(Contacts, "updated", function() {
+				this._posts.innerHTML = "Beiträge: " + this.comment.contact.posts;
+			}, this);
+			
+			this._onExternalEvent(this.comment, "edit", this.refreshControl, this);
+		},
 
-	refreshControl: function() {
-        var comment = this.comment.text.replaceAll("[BR /]", "<br />");
-        
-		[["[B]", "[/B]", "<b>", "</b>"], ["[I]", "[/I]", "<i>", "</i>"], ["[U]", "[/U]", "<u>", "</u>"]].each(function(a) {
-			var count1 = comment.count(a[0]);
-            if (count1 && count1 === comment.count(a[1])) {
-                comment = comment.replaceAll(a[0], a[2]).replaceAll(a[1], a[3]);
-            }
-        });
-		
-        Comments.Emoticons.each(function(pair) {
-			pair.value.each(function(e) {
-				comment = comment.replaceAll(e, "<img src=\"images/emoticons/" + pair.key + ".gif\" style=\"vertical-align: middle;\" />");
-			}); 
-		});
-		
-		this._content.innerHTML = comment;
-	}
-});
+		refreshControl: function() {
+			var comment = this.comment.text.replaceAll("[BR /]", "<br />");
+			
+			bbCodeSignatures.each(function(a) {
+				var count1 = comment.count(a[0]);
+				if (count1 && count1 === comment.count(a[1])) {
+					comment = comment.replaceAll(a[0], a[2]).replaceAll(a[1], a[3]);
+				}
+			});
+			
+			Comments.Emoticons.each(function(pair) {
+				pair.value.each(function(e) {
+					comment = comment.replaceAll(e, "<img src=\"images/emoticons/" + pair.key + ".gif\" style=\"vertical-align: middle;\" />");
+				}); 
+			});
+			
+			this._content.innerHTML = comment;
+		}
+	});
+}();
 
 Object.extend(Comments.Comment.Control, new EventPublisher());
