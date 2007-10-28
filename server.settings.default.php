@@ -12,7 +12,7 @@ class Settings {
 	public $mail = "{mail}";
 	public $cookieprefix = "kb_";
 	public $adminmail = "{adminmail}";
-	public $adminmail = "{adminname}";
+	public $adminname = "{adminname}";
 	public $title = "{title}";
 	public $subtitle = "{subtitle}";
 	

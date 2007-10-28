@@ -958,7 +958,7 @@ Gallery.PictureUploadWindow = Class.create(Controls.Window, {
 				this.update("<h2>" + title + "</h2>" +
 					"<p>Um Bilder zum Album hinzufügen zu können, muss auf deinem Rechner <a href=\"http://www.adobe.com/" +
 					"shockwave/download/download.cgi?P1_Prod_Version=ShockwaveFlash&promoid=BIOW\" target=\"_blank\">Adobe " +
-					"Flash 9.0</a> installiert sein.");
+					"Flash 9.0</a> installiert sein.</p>");
 			}
         }).bind(this).delay(1);
         
