@@ -489,7 +489,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 			}
 		);
 		
-		this._taskTable.addColumn("Aktionen", (function() {
+		this._taskTable.addColumn("Aktionen", (function(task) {
 				/**
 				 * Der HTML-Text für die Aktionssymbole, die angezeigt werden, wenn das Seitenmenü ausgeblendet ist.
 				 * Wird aus Performancegründen gecached, da in der Spalte "Aktionen" alle Zellen den gleichen Inhalt haben.
@@ -498,14 +498,14 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 				 * @name _getContent5Cache
 				 * @memberof TaskManagement.View
 				*/
-				this._getContent5Cache = this._getContent5Cache || "<div class=\"taskTableActions\">" +
+				this._getContent5Cache = this._getContent5Cache ||
 					new Sprite("smallIcons", 0).toHTML("actionIcon iconShowComments") + ((User.signedIn) ? 
 					new Sprite("smallIcons", 2).toHTML("actionIcon iconEditTask") +
 					new Sprite("smallIcons", 4).toHTML("actionIcon iconDeleteTask") :
 					new Sprite("smallIcons", 3).toHTML() +
-					new Sprite("smallIcons", 5).toHTML()) + "</div>";
+					new Sprite("smallIcons", 5).toHTML());
 				
-				return this._getContent5Cache;
+				return "<div class=\"taskTableActions\" name=\"" + task.id + "\">" + this._getContent5Cache + "</div>";
 			}).bind(this), {
 				width: "80px",
 				sortable: false,
@@ -517,12 +517,37 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		// eine Aufgabe markiert
         this._taskTable.on("sort", this._onSort, this);
 		this._taskTable.on("highlightRow", this._onHighlightTask, this);
-		this._taskTable.on("refresh", this._onRefreshTable, this);
+		
+		this._taskTable.on("refresh", function() {
+			this._getContent5Cache = "";
+		}, this);
 		
 		// Wird auf eine Aufgabe doppelt geklickt, wird das Kommentarfenster zu dieser Aufgabe geöffnet.
 		this._taskTable.on("selectRow", function(task) {
 			this.reportNavigation(task.id + "/kommentare");
 		}, this);
+		
+		this._taskTable.element.observe("click", (function(event) {
+			if (!this._sideMenu.visible()) {
+				var element = event.element();
+				
+				if (element.hasClassName("actionIcon")) {
+					var taskId = $(element.parentNode).readAttribute("name");
+					
+					if (taskId) {
+						if (element.hasClassName("iconShowComments")) {
+							this.reportNavigation(taskId + "/kommentare");
+						} else if (element.hasClassName("iconEditTask")) {
+							this.reportNavigation(taskId + "/bearbeiten")
+						} else if (element.hasClassName("iconDeleteTask")) {
+							this.removeTask(TaskManagement.Tasks.find(function(task) {
+								return task.id == taskId;
+							}));
+						}
+					}
+				}
+			}
+		}).bindAsEventListener(this));
 		
 		// Zeichnet die Tabelle
 		this._taskTable.refresh();
@@ -680,39 +705,6 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		if (User.signedIn) {
 			this._sideMenu.items[1].enable();
 			this._sideMenu.items[2].enable();
-		}
-	},
-
-	/**
-	 * Wird aufgerufen, wenn die Tabelle mit den Aufgaben neu "gezeichnet" wird, sei dies nun weil der Benutzer eine
-	 * andere Sortierung gewählt hat oder weil die Aufgaben aktualisiert worden sind usw.<br /><br />Einerseits ist die
-	 * Methode dafür verantwortlich, dass für den Fall, dass das Seitenmenü ausgeblendet ist, die Aktionssymbole in der
-	 * Tabelle mit den entsprechenden Funktionen verknüpft werden. Andererseits erkennt die Funktion, wenn gar keine
-	 * Aufgaben darzustellen sind, versteckt in diesem Fall die verbliebenen Spaltenüberschriften und zeigt einen Hinweis
-	 * an, dass keine Aufgaben vorhanden sind.
-	 * @memberof TaskManagement.View
-	*/		
-	_onRefreshTable: function() {
-		this._getContent5Cache = "";
-		
-		// Aktionssymbole werden nur sichtbar, wenn das Seitenmenü versteckt ist.
-		if (!this._sideMenu.visible()) {
-			var icons = this._taskTable.select(".actionIcon");
-			
-			// Wie viele Symbole gibt es pro Aufgabe
-			var f = icons.length / this._taskTable.sortedRows.length;
-			
-			icons.each(function(icon, i) {
-				var task = this._taskTable.rows.get(this._taskTable.sortedRows[Math.floor(i / f)]);
-				
-				if (icon.hasClassName("iconShowComments")) {
-					icon.observe("click", this.reportNavigation.bind(this, task.id + "/kommentare"));
-				} else if (icon.hasClassName("iconEditTask")) {
-					icon.observe("click", this.reportNavigation.bind(this, task.id + "/bearbeiten"));
-				} else if (icon.hasClassName("iconDeleteTask")) {
-					icon.observe("click", this.removeTask.bind(this, task));
-				}
-			}, this);
 		}
 	},
 	
