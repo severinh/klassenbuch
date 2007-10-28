@@ -21,7 +21,6 @@ class Singleton {
 }
 
 $database = new DatabaseConnection();
-$user = new User();
 
 function generateRandomString($size = 32) {
     $feed = "0123456789abcdefghijklmnopqrstuvwxyz";

@@ -32,7 +32,9 @@ $GLOBALS["kbsvcerr"]["user_not_found"] 		   = $usrErr + 4;
 $GLOBALS["kbsvcstr"]["user_not_found"] 		   = "Der Benutzer konnte nicht gefunden werden";
 
 function gettasks($start = 0, $end = 0) {
-	global $database, $user;
+	global $database;
+	
+	$user = User::getInstance();
     
     // Wurde kein Beginn des Zeitrahmens angegeben, wird der aktuelle Tag eingesetzt
 	if (!$start) {
@@ -105,7 +107,9 @@ function gettasks($start = 0, $end = 0) {
 }
 
 function removetask($taskid) {
-    global $database, $user;
+    global $database;
+    
+    $user = User::getInstance();
     
     if (!$user->authenticated) {
         return WebServiceError("authentication_failed");
@@ -127,7 +131,9 @@ function removetask($taskid) {
 }
 
 function createtask($subject, $date, $text, $important = false) {
-    global $database, $user;
+    global $database;
+    
+    $user = User::getInstance();
     
     // Prüft, ob der Benuzter angemeldet ist
     if (!$user->authenticated) {
@@ -160,7 +166,9 @@ function createtask($subject, $date, $text, $important = false) {
 }
 
 function edittask($id, $date, $text, $important = false) {
-    global $database, $user;
+    global $database;
+    
+    $user = User::getInstance();
     
     // Prüft, ob der Benuzter angemeldet ist
     if (!$user->authenticated) {
@@ -189,7 +197,9 @@ function edittask($id, $date, $text, $important = false) {
 }
 
 function getcomments($taskid) {
-    global $database, $user;
+    global $database;
+    
+    $user = User::getInstance();
     
     $databaseResponse = $database->query("SELECT * FROM comments WHERE taskid = " . mySQLValue($taskid) . " ORDER BY date");
     
@@ -227,7 +237,9 @@ function getcomments($taskid) {
 }
 
 function createcomment($taskid, $text) {
-    global $database, $user;
+    global $database;
+    
+    $user = User::getInstance();
     
     if (!$user->authenticated) {
         return WebServiceError("authentication_failed");
@@ -250,7 +262,9 @@ function createcomment($taskid, $text) {
 }
 
 function editcomment($id, $text) {
-    global $database, $user;
+    global $database;
+    
+    $user = User::getInstance();
     
     if (!$text) {
         return WebServiceError("invalid_input", ": Kein Kommentar angegeben.");
@@ -276,7 +290,9 @@ function editcomment($id, $text) {
 }
 
 function getcontacts() {
-    global $database, $user;
+    global $database;
+    
+    $user = User::getInstance();
     
     $databaseResponse = $database->query("SELECT * FROM users ORDER BY firstname");
     
@@ -339,7 +355,9 @@ function getfiles() {
 }
 
 function archivefile($id) {
-	global $database, $user;
+	global $database;
+	
+	$user = User::getInstance();
 	
     if (!$user->authenticated) {
         return WebServiceError("authentication_failed");
@@ -372,7 +390,9 @@ function archivefile($id) {
 }
 
 function uploadfile($description) {
-	global $database, $user;
+	global $database;
+	
+	$user = User::getInstance();
 	
 	$settings = Settings::getInstance();
 	
@@ -421,7 +441,7 @@ function uploadfile($description) {
 }
 
 function signin($nickname, $password) {
-	global $user;
+	$user = User::getInstance();
     
     if (!$user->signIn($nickname, $password)) {
         return WebServiceError("authentication_failed");
@@ -459,10 +479,12 @@ function requestpassword($username, $password) {
         return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
     }
     
-    if (!mail($user["mail"], "Neues Klassenbuchpasswort bestätigen", "Hallo " . $user["firstname"] . ",\n\n" .
-        "Du hast im Klassenbuch auf www.gymo1c.ch ein neues Passwort angefordert. Klicke auf den foldenden Link, damit dein Passwort endgültig auf \"" .
-        "$password\" gewechselt wird. Wenn du kein Passwort angefordert hast, solltest du nicht auf diesen Link klicken, " .
-        "sondern diese E-Mail gleich löschen!\n\nhttp://www.gymo1c.ch/index.php?passwordverification=$requestKey\n\nLg, Seve",
+    if (!mail($user["mail"], "Neues Klassenbuchpasswort bestätigen",
+		"Hallo " . $user["firstname"] . ",\n\n" .
+        "Du hast im Klassenbuch auf www.gymo1c.ch ein neues Passwort angefordert. Klicke auf den foldenden Link, " .
+        "damit dein Passwort endgültig auf \"$password\" gewechselt wird. Wenn du kein Passwort angefordert hast, " .
+        "solltest du nicht auf diesen Link klicken, sondern diese E-Mail gleich löschen!\n\n" .
+        $settings->domain . "?passwordverification=$requestKey",
         "From: Klassenbuch <no-reply@gymo1c.ch>")) {
         return WebServiceError("invalid_input");
     }
@@ -498,7 +520,9 @@ function verifynewpassword($key = "") {
 }
 
 function changepassword($newpassword, $currentpassword) {
-	global $database, $user;
+	global $database;
+	
+	$user = User::getInstance();
 	
     if (!$user->authenticated) {
         return WebServiceError("authentication_failed");
@@ -523,7 +547,7 @@ function changepassword($newpassword, $currentpassword) {
 }
 
 function getuserdata() {
-	global $user;
+	$user = User::getInstance();
 
     if (!$user->authenticated) {
         return WebServiceError("authentication_failed");
@@ -540,7 +564,7 @@ function getuserdata() {
 }
 
 function updateuserprofile($profileInformation) {
-	global $user;
+	$user = User::getInstance();
 	
     if (!$user->authenticated) {
         return WebServiceError("authentication_failed");
@@ -554,7 +578,7 @@ function updateuserprofile($profileInformation) {
 }
 
 function changeusersettings($settings) {
-	global $user;
+	$user = User::getInstance();
 	
     if (!$user->authenticated) {
         return WebServiceError("authentication_failed");
@@ -571,7 +595,7 @@ function changeusersettings($settings) {
 }
 
 function signout() {
-    global $user;
+    $user = User::getInstance();
     
     return $user->signOut();
 }
@@ -653,7 +677,9 @@ function gallery_getalbums() {
 }
 
 function gallery_createalbum($name, $description = "") {
-    global $database, $user;
+    global $database;
+    
+    $user = User::getInstance();
 	
 	$name = trim(smartStripSlashes($name));
 	$description = trim(smartStripSlashes($description));
@@ -675,7 +701,9 @@ function gallery_createalbum($name, $description = "") {
 }
 
 function gallery_removealbum($id) {
-	global $database, $user;
+	global $database;
+	
+	$user = User::getInstance();
 	
 	$id = intval($id);
 	
@@ -693,7 +721,9 @@ function gallery_removealbum($id) {
 }
 
 function gallery_downloadalbum($albumid) {
-	global $database, $user;
+	global $database;
+	
+	$user = User::getInstance();
 	
 	$albumid = intval($albumid);
     
@@ -773,7 +803,9 @@ function gallery_getpictures($albumid) {
 }
 
 function gallery_uploadpicture($albumid) {
-	global $database, $user;
+	global $database;
+	
+	$user = User::getInstance();
 	
     if (!$user->authenticated) {
         return WebServiceError("authentication_failed");
@@ -845,7 +877,9 @@ function gallery_uploadpicture($albumid) {
 }
 
 function gallery_rotatepicture($pictureid, $degree) {
-	global $user, $database;
+	global $database;
+	
+	$user = User::getInstance();
 	
     $pictureid = intval($pictureid);
     $degree = intval($degree);

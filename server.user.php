@@ -40,7 +40,7 @@ class User {
 		return self::$instance;
 	}
     
-    public function __construct() {
+    private function __construct() {
 		$this->_secureSession = true;
 		$this->authenticated = false;
 		$this->settings = Array();
@@ -70,37 +70,24 @@ class User {
     }
     
     public function authenticate() {
-		if ($this->authenticated) {
-			return true;
-		}
-		
-		if ($this->authenticateBySession()) {
+		if ($this->authenticated ||
+			$this->authenticateBySession() ||
+			$this->authenticateByCookie() ||
+			$this->authenticateByJSONRPCRequest() ||
+			$this->authenticateByPOSTParams()) {
 			$this->authenticated = true;
 			return true;
 		}
 		
-		if ($this->authenticateByCookie()) {
-			$this->authenticated = true;
-			return true;
-		}
-		
-		if ($this->authenticateByJSONRPCRequest()) {
-			$this->authenticated = true;
-			return true;
-		}
-		
-		if ($this->authenticateByPOSTParams()) {
-			$this->authenticated = true;
-			return true;
-		}
-        
         return false;
     }
     
     private function authenticateBySession() {
 		$this->setupSession();
 		
-		// $this->_secureSession->Check()
+		if (!$this->_secureSession->Check()) {
+			return false;
+		}
 		
 		return $this->authenticateByToken($_SESSION["userid"], $_SESSION["token"]);
     }
