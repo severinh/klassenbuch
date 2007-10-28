@@ -1,6 +1,20 @@
 /* ------------------------ ALLGEMEIN ------------------------ */
-/* CSS Reset */
-html,body,div,dl,dt,dd,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,p,blockquote,th,td{margin:0;padding:0;}img,body,html{border:0;}address,caption,cite,code,dfn,em,strong,th,var{font-style:normal;font-weight:normal;}ol,ul {list-style:none;}caption,th {text-align:left;}h1,h2,h3,h4,h5,h6{font-size:100%;}q:before,q:after{content:"";}
+html, body, div, dl, dt, dd, form, fieldset, input, th, td {
+	margin: 0;
+	padding: 0;
+}
+
+img, body, html {
+	border: 0;
+}
+
+ol, ul {
+	list-style: none;
+}
+
+caption, th {
+	text-align: left;
+}
 
 html {
 	overflow-x: hidden;
@@ -23,6 +37,7 @@ h1, h2, h3, h4, h5, h6 {
 	font-weight: normal;
 	letter-spacing: -1px;
 	text-transform: lowercase;
+	font-size: 100%;
 }
 
 h2, h3, h4, h5, h6 {
@@ -31,6 +46,7 @@ h2, h3, h4, h5, h6 {
 
 h2 {
 	font-size: 1.9em;
+	padding: 0;
 	margin: 0 0 15px;
 	background-position: 0px 3px;
 }
@@ -80,6 +96,7 @@ select {
 ul {
 	list-style-type: square;
 	padding-left: 3.5em;
+	margin-left: 0;
 }
 
 .simpleMessage {
@@ -118,12 +135,15 @@ ul {
 #headerLinks {
 	position: absolute;
 	right: 15px;
-	top: 30px;
+	top: 40px;
+	margin: 0;
+	padding: 0;
 	color: #FFF;
 }
 
 #headerLinks li {
 	display: inline;
+	margin: 0;
 	padding: 0 5px 0 7px;
 	border-left: 1px #a94b4b solid;
 }
@@ -405,6 +425,7 @@ ul {
 .sideMenu ul {
 	list-style-type: none;
 	padding: 10px 0 8px 0;
+	margin: 0;
 }
 
 /* Ein einzelner Menüpunkt im Seitenmenü */
