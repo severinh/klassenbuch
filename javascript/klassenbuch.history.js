@@ -255,17 +255,14 @@ App.History = function() {
 		App.History.started = true;
 	};
 	
-	var impl = Class.create(EventPublisher, {
+	return new (Class.create(EventPublisher, /** @scope App.History.prototype */ {
 		/**
-		 * Gibt an, ob der Browser die Funktionen, die von App.History bereitgestellt werden, unterstützt. Zur Zeit
-		 * bietet das Klassenbuch in dieser Hinsicht keine Unterstützung für Opera. Das Klassenbuch kann aber wie
-		 * gewohnt verwendet werden; einfach die Schaltflächen "Zurück" und "Weiter" und die Lesezeichenfunktion
-		 * funktionieren nicht.
+		 * Gibt an, ob der Browser die Funktionen, die von App.History bereitgestellt werden, unterstützt.
 		 * @type Boolean
 		 * @memberof App.History
 		 * @name browserSupported
 		*/
-		browserSupported: !Prototype.Browser.Opera,
+		browserSupported: !(Browser.Opera && Browser.version < 9.5),
 		
 		/**
 		 * Gibt an, ob App.History bereit ist und die Navigation des Benutzers verfolgt. Standardwert ist <em>false</em>.
@@ -284,8 +281,8 @@ App.History = function() {
 		 * @name start
 		*/
 		start: function(initialState) {
-			if (!App.History.browserSupported) {
-				return;
+			if (!this.browserSupported) {
+				return false;
 			}
 			
 			_initialState = initialState || "";
@@ -355,8 +352,8 @@ App.History = function() {
 					}
 				}, 0.05);
 				
-				App.History.fireEvent("start");
-				App.History.started = true;
+				this.fireEvent("start");
+				this.started = true;
 			}
 		},
 		
@@ -428,9 +425,7 @@ App.History = function() {
 			
 			return true;
 		}
-	});
-
-	return new impl();
+	}))();
 }();
 
 App.History.Node = Class.create({
