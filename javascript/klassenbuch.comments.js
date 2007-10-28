@@ -465,7 +465,7 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 });
 
 Comments.Comment.Control = function() {
-	var editButtonHTML = new Sprite("smallIcons", 2).toHTML("editButton hide");
+	var editButtonHTML = new Sprite("smallIcons", 2).toHTML("editButton");
 	var bbCodeSignatures = $H({
 		"B": "strong",
 		"I": "em",
@@ -484,7 +484,7 @@ Comments.Comment.Control = function() {
 				this.comment.contact.nickname + "</a></div><div class=\"numberOfComments\"></div></div>" +
 				"<div class=\"commands\">" + editButtonHTML + "</div><div class=\"content\"></div><div class=\"date\">" + 
 				((this.comment.date.isToday()) ? "Heute," : ((this.comment.date.wasYesterday()) ? "Gestern," : 
-				this.comment.date.format("d.m.Y"))) + " " + this.comment.date.format("") + "</div>";
+				this.comment.date.format("d.m.Y"))) + " " + this.comment.date.format("H:i") + "</div>";
 			
 			this.element.observe("click", (function(event) {
 				var element = event.element();
