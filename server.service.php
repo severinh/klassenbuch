@@ -393,7 +393,6 @@ function uploadfile($description) {
 	global $database;
 	
 	$user = User::getInstance();
-	
 	$settings = Settings::getInstance();
 	
     if (!$user->authenticated) {
@@ -453,6 +452,8 @@ function signin($nickname, $password) {
 function requestpassword($username, $password) {
     global $database;
 
+	$settings = Settings::getInstance();
+	
     if (!$username) {
         return WebServiceError("invalid_input", ": Keinen Benutzernamen angegeben.");
     }
@@ -481,11 +482,11 @@ function requestpassword($username, $password) {
     
     if (!mail($user["mail"], "Neues Klassenbuchpasswort bestätigen",
 		"Hallo " . $user["firstname"] . ",\n\n" .
-        "Du hast im Klassenbuch auf www.gymo1c.ch ein neues Passwort angefordert. Klicke auf den foldenden Link, " .
+        "Du hast im Klassenbuch ein neues Passwort angefordert. Klicke auf den foldenden Link, " .
         "damit dein Passwort endgültig auf \"$password\" gewechselt wird. Wenn du kein Passwort angefordert hast, " .
         "solltest du nicht auf diesen Link klicken, sondern diese E-Mail gleich löschen!\n\n" .
-        $settings->domain . "?passwordverification=$requestKey",
-        "From: Klassenbuch <no-reply@gymo1c.ch>")) {
+        $settings->domain . "index.php?passwordverification=$requestKey",
+        "From: Klassenbuch <" . $settings->mail . ">")) {
         return WebServiceError("invalid_input");
     }
     
@@ -644,9 +645,9 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 	try {
 		mail($settings->adminmail, "Neuen Klassenbuchbenutzer hinzufügen", "$firstname $surname hat sich im " .
 			"Klassenbuch unter dem Nicknamen \"$nickname\" angemeldet.\n\nE-Mail-Adresse: $mail\n" .
-			"Passwort: " . md5($password), "From: usermanagement@gymo1c.ch\r\nX-Mailer: PHP/' . phpversion()");
+			"Passwort: " . md5($password), "From: " . $settings->mail . "\r\nX-Mailer: PHP/' . phpversion()");
 	} catch(Exception $e) {
-		return WebServiceError("server_error", ": Die E-Mail an Severin konnte nicht versandt werden.");
+		return WebServiceError("server_error", ": Fehler beim E-Mailversand.");
 	}
 	
 	return true;

@@ -956,11 +956,9 @@ Gallery.PictureUploadWindow = Class.create(Controls.Window, {
 		(function() {
 			if (!this.flashReady) {
 				this.update("<h2>" + title + "</h2>" +
-					"<p>Um Bilder zum Album hinzufügen zu können, muss auf deinem Computer <a href=\"http://www.adobe.com/" +
+					"<p>Um Bilder zum Album hinzufügen zu können, muss auf deinem Rechner <a href=\"http://www.adobe.com/" +
 					"shockwave/download/download.cgi?P1_Prod_Version=ShockwaveFlash&promoid=BIOW\" target=\"_blank\">Adobe " +
-					"Flash 9.0</a> installiert sein. Falls dies bereits der Fall sein sollte und dieser Hinweis nicht nach " +
-					"wenigen Sekunde verschwindet, ist ein Fehler aufgetreten, den Severin eigentlich mal beheben sollte. " +
-					"Wenn du Lust hast, kannst du ihn diesbezüglich nerven gehen.");
+					"Flash 9.0</a> installiert sein.");
 			}
         }).bind(this).delay(1);
         

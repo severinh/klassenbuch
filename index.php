@@ -28,6 +28,8 @@ $designList = Array("default", "nonzero");
 
 $tmpl->set_var("TITLE", $settings->title);
 $tmpl->set_var("SUBTITLE", $settings->subtitle);
+$tmpl->set_var("ADMINMAIL", $settings->adminmail);
+$tmpl->set_var("ADMINNAME", $settings->adminname);
 
 if (!$settings->online) {
 	$tmpl->set_var("SIMPLEMESSAGE", true);
@@ -46,7 +48,7 @@ if (!$settings->online) {
 			$tmpl->set_var("SIMPLEMESSAGETITLE", "Dein Passwort wurde erfolgreich geändert");
 			$tmpl->set_var("SIMPLEMESSAGEBODY", "<p>Du hast die Passwortänderung nun bestätigt. Du kannst nun das " .
 				"Klassenbuch aufrufen und dich mit deinem neuen Passwort anmelden.</p>" .
-				"<ul><li><a href=\"http://www.gymo2c.ch\">Klassenbuch öffnen</a></li></ul>");
+				"<ul><li><a href=\"" . $settings->domain . "\">Klassenbuch öffnen</a></li></ul>");
 		} else {
 			$tmpl->set_var("PAGETITLE", "Fehler");
 			$tmpl->set_var("SIMPLEMESSAGETITLE", "Es ist ein Fehler aufgetreten");

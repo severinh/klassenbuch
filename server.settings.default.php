@@ -8,8 +8,11 @@ class Settings {
 	
 	public $online = true;
 	
+	public $domain = "{domain}";
+	public $mail = "{mail}";
 	public $cookieprefix = "kb_";
 	public $adminmail = "{adminmail}";
+	public $adminmail = "{adminname}";
 	public $title = "{title}";
 	public $subtitle = "{subtitle}";
 	
