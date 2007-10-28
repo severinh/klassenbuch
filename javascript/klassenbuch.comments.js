@@ -162,16 +162,16 @@ Comments.MainWindow = Class.create(Controls.Window, {
 Comments.Emoticons = $H({
     angry:    ["*angry*"],
     biggrin:  [":-D", ":D", "=D"],
-    blink:    ["o.O", "oO", "o_O"],
+    blink:    ["o.O", "oO"],
     blush:    ["*blush*", ":-*)"],
     cool:     ["B-)", "B)", "8-D", "8D"],
-    dry:      ["-.-", "- . -"],
+    dry:      ["-.-"],
     excl:     ["*excl*"],
     happy:    ["^^"],
     huh:      ["*huh*"],
     laugh:    ["lol"],
     mellow:   ["*mellow*", ":-|"],
-    ohmy:     [":-o", ":o"],
+    ohmy:     [":-o"],
     rolleyes: ["*rolleyes*"],
     sad:      [":-(", ":(", "=("],
     sleep:    ["-_-"],
@@ -465,6 +465,7 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 });
 
 Comments.Comment.Control = function() {
+	var editButtonHTML = new Sprite("smallIcons", 2).toHTML("editButton hide");
 	var bbCodeSignatures = $H({
 		"B": "strong",
 		"I": "em",
@@ -479,39 +480,41 @@ Comments.Comment.Control = function() {
 			
 			$super(new Element("div", { className: "comment" }));
 			
-			this.element.innerHTML = "<div class=\"profile\"></div><div class=\"commands\">" +
-				new Sprite("smallIcons", 2).toHTML("editButton") + "</div><div class=\"content\"></div>" +
-				"<div class=\"date\">" + ((this.comment.date.isToday()) ? "Heute," : ((this.comment.date.wasYesterday()) ? 
-				"Gestern," : this.comment.date.format("d.m.Y"))) + " " +  this.comment.date.format("H:i") + "</div>";
+			this.element.innerHTML = "<div class=\"profile\"><div><a class=\"profileLink\" href=\"javascript:void(null);\">" +
+				this.comment.contact.nickname + "</a></div><div class=\"numberOfComments\"></div></div>" +
+				"<div class=\"commands\">" + editButtonHTML + "</div><div class=\"content\"></div><div class=\"date\">" + 
+				((this.comment.date.isToday()) ? "Heute," : ((this.comment.date.wasYesterday()) ? "Gestern," : 
+				this.comment.date.format("d.m.Y"))) + " " + this.comment.date.format("") + "</div>";
 			
-			var _profile = this.select(".profile")[0];
-			
-			this.registerChildControl(_profile.insertControl(new Controls.Link(this.comment.contact.nickname, (function() {
-				Comments.Comment.Control.fireEvent("showprofile", this.comment);
-			}).bind(this))));
-			
-			this._posts = _profile.createChild({ content: "Beiträge: " + this.comment.contact.posts });
-			
-			this._editButton = this.select(".editButton")[0];
-			
-			if (this.comment.userid === User.id && User.signedIn) {
-				this._editButton.observe("click", (function() {
-					Comments.Comment.Control.fireEvent("edit", this.comment);
-				}).bind(this));
+			this.element.observe("click", (function(event) {
+				var element = event.element();
 				
-				this.on("remove", this._editButton.stopObserving, this._editButton);
-			} else {
-				this._editButton.hide();
+				if (element.hasClassName("editButton")) {
+					Comments.Comment.Control.fireEvent("edit", this.comment);
+				} else if (element.hasClassName("profileLink")) {
+					Comments.Comment.Control.fireEvent("showprofile", this.comment);
+				}
+			}).bindAsEventListener(this));
+			
+			if (!(User.signedIn && this.comment.userid === User.id)) {
+				this.select(".editButton")[0].hide();
 			}
 			
 			this._content = this.select(".content")[0];
-			this.refreshControl();
-			
-			this._onExternalEvent(Contacts, "updated", function() {
-				this._posts.innerHTML = "Beiträge: " + this.comment.contact.posts;
-			}, this);
-			
 			this._onExternalEvent(this.comment, "edit", this.refreshControl, this);
+			
+			this.refreshControl();
+
+			var _refreshPosts = (function() {
+				if (!this._posts) {
+					this._posts = this.select(".numberOfComments")[0];
+				}
+				
+				this._posts.innerHTML = "Beiträge: " + this.comment.contact.posts;
+			}).bind(this);
+
+			this._onExternalEvent(Contacts, "updated", _refreshPosts);
+			_refreshPosts();
 		},
 
 		refreshControl: function() {
