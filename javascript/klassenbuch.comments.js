@@ -46,11 +46,11 @@ Comments.MainWindow = Class.create(Controls.Window, {
 			{ needsServerCommunication: true }
 		);
 		
-		Comments.Comment.Control.on("showprofile", function(comment) {
+		this._onExternalEvent(Comments.Comment.Control, "showprofile", function(comment) {
 			self.reportNavigation(comment.id + "/profil");
 		});
 		
-		Comments.Comment.Control.on("edit", function(comment) {
+		this._onExternalEvent(Comments.Comment.Control, "edit", function(comment) {
 			self.reportNavigation(comment.id + "/bearbeiten");
 		});
         
