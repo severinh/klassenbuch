@@ -382,9 +382,9 @@ Storage.View = Class.create(Controls.View, {
 						if (User.signedIn && !a.archived && a.userid === User.id) {
 							return "<a href=\"javascript:void(null);\" class=\"archiveLink\" fileid=\"" + a.id +"\">" + 
 								new Sprite("smallIcons", 31).toHTML("archiveIcon") + " Archivieren</a>";
-						} else {
-							return "";
 						}
+						
+						return "";
 					}, {
 						width: "85px",
 						sortable: false,
@@ -392,26 +392,26 @@ Storage.View = Class.create(Controls.View, {
 					}
 				);
 				
-				this.filesTable.on("refresh", function() {
+				this.filesTable.element.observe("click", (function(event) {
 					if (User.signedIn && this.currentMediaGroup !== "archived") {
-						this.filesTable.select(".archiveLink").each(function(link, i) {
-							link.observe("click", (function() {
-								var fileId = link.readAttribute("fileid");
-								var file = Storage.files.find(function(file) {
-									if (file.id == fileId) {
-										return file;
-									}
-								});
-								
-								if (confirm("Möchtest du die Datei " + file.name + " wirklich " +
-									"archivieren? Die Datei wird nicht gelöscht, sondern erscheint weiderhin in der " +
-									"Ansicht \"Alte Dateien\".")) {
-									file.archive();
+						var element = event.element();
+						
+						if (element.hasClassName("archiveLink")) {
+							var fileId = parseInt(element.readAttribute("fileid"));
+							
+							var file = Storage.files.find(function(file) {
+								if (file.id === fileId) {
+									return file;
 								}
-							}).bind(this));
-						}, this);
+							});
+							
+							if (confirm("Möchtest du die Datei " + file.name + " wirklich archivieren? Die Datei wird " +
+								"nicht gelöscht, sondern erscheint weiderhin in der Ansicht \"Alte Dateien\".")) {
+								file.archive();
+							}
+						}
 					}
-				}, this);
+				}).bindAsEventListener(this));
 				
 				this.filesTable.sortAfterColumn = 4;
 				
