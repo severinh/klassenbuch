@@ -54,7 +54,7 @@ Object.extend(Object, /** @scope Object */ {
 	 * @static
 	*/
 	isDefined: function(object) {
-		return typeof object != "undefined";
+		return typeof object !== "undefined";
 	},
 	
 	/**
@@ -390,12 +390,6 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 
 JSONRPC.Upload.UPLOAD_ERROR = SWFUpload.UPLOAD_ERROR;
 JSONRPC.Upload.QUEUE_ERROR = SWFUpload.QUEUE_ERROR;
-
-Object.extend(Hash.prototype, {
-	getLength: function() {
-		return this.values().length;
-	}
-});
 
 Object.extend(Number.prototype, {
 	limitTo: function(a, b) {
@@ -750,16 +744,16 @@ Element.addMethods({
 		var windowSize = Tools.getWindowSize();
         var top = (windowSize.height - parseInt(element.getStyle("height"), 10)) / 2;
         
-        return element.setStyle({ top: ((top >= 0) ? top : 0) + "px" });
+        return element.setStyle({ top: top.limitTo(0, windowSize.height) + "px" });
 	},
 	
 	centerHorizontally: function(element) {
 		var windowSize = Tools.getWindowSize();
 		var left = (windowSize.width - parseInt(element.getStyle("width"), 10)) / 2;
 		
-		return element.setStyle({ left: ((left >= 0) ? left : 0) + "px" });
+		return element.setStyle({ left: left.limitTo(0, windowSize.width) + "px" });
 	},
-    
+	
     createChild: function(element, options, position) {
         options = Object.extend({ tag: "div" }, options || {});
         position = position || "bottom";
@@ -883,17 +877,21 @@ var Tools = {
 	}
 };
 
-Event.isNavigationKey = (function() {
-	var navEvents = $w("TAB ESC LEFT UP RIGHT DOWN HOME END PAGEUP PAGEDOWN INSERT");
-	
-	return function(e) {
-		var k = e.keyCode;
+Object.extend(Event, (function() {
+		var navEvents = $w("TAB ESC LEFT UP RIGHT DOWN HOME END PAGEUP PAGEDOWN INSERT");
 		
-		navEvents.any(function(navEvent) {
-			return k === Event["KEY_" + navEvent];
-		});
-	};
-})();
+		return {
+			isNavigationKey: function(e) {
+				var k = e.keyCode;
+				
+				navEvents.any(function(navEvent) {
+					return k === Event["KEY_" + navEvent];
+				});
+			},
+			
+			KEY_SPACE: 32
+		};
+})());
 
 var Collection = Class.create(Hash, EventPublisher.prototype, {
 	initialize: function($super, object) {
