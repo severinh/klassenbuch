@@ -89,8 +89,8 @@ var Control = Class.create(EventPublisher, {
 	},
 	
 	enableShortcuts: function() {
-		if (!this._shortcutObserver) {
-			this._shortcutObserver = (function(event) {
+		if (!this._shortCutObserver) {
+			this._shortCutObserver = (function(event) {
 				if (this._shortcutsEnabled) {
 					var handler = this._shortcuts[event.keyCode];
 					
@@ -100,7 +100,7 @@ var Control = Class.create(EventPublisher, {
 				}
 			}).bindAsEventListener(this);
 			
-			document.observe("keydown", this._shortcutObserver);
+			document.observe("keydown", this._shortCutObserver);
 		}
 		
 		this._shortcutsEnabled = true;
@@ -146,8 +146,8 @@ var Control = Class.create(EventPublisher, {
         if (this.element && this.fireEvent("beforeremove")) {
 			this._childControls.invoke("remove");
 			
-			if (this._shortcutObserver) {
-				document.stopObserving("keydown", this._shortcutObserver);
+			if (this._shortCutObserver) {
+				document.stopObserving("keydown", this._shortCutObserver);
 			}
 			
 			this.element.stopObserving();
@@ -938,12 +938,11 @@ Controls.Form = Class.create(Control, {
 			icon: this.options.submitButtonIcon
 		}));
 		
-		this.element.observe("submit", this._onSubmit.bind(this));
-		this.element.observe("keypress", (function(e) {
-			if (e.keyCode === Event.KEY_RETURN) {
+		this.element.observe("keypress", (function(event) {
+			if (event.keyCode === Event.KEY_RETURN) {
 				this._onSubmit();
 			}
-		}).bind(this));
+		}).bindAsEventListener(this));
 	},
 	
 	add: function() {

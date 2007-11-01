@@ -555,8 +555,10 @@ Gallery.Album.CreationWindow = Class.create(Controls.Window, {
 	
 	_submit: function(input) {
 		if (Gallery.Albums.pluck("name").include(input.name)) {
-			this._form.fields[0].markAsInvalid("Dieser Albumname wird bereits verwendet.");
-			alert("Dieser Albumname wird bereits verwendet.");
+			var msg = "Dieser Albumname wird bereits verwendet.";
+			
+			this._form.fields[0].markAsInvalid(msg);
+			alert(msg);
 			return false;
 		}
 		
