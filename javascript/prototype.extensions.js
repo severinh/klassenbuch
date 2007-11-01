@@ -762,8 +762,10 @@ Element.addMethods({
     
     createChild: function(element, options, position) {
         options = Object.extend({ tag: "div" }, options || {});
+        position = position || "bottom";
         
         var attributes = {};
+        var insertion = {};
         
         for (a in options) {
             if (a === "tag" || a === "style" || a === "content") {
@@ -783,13 +785,20 @@ Element.addMethods({
 			child.innerHTML = options.content;
 		}
         
-        $(element).insert(child, position);
+        insertion[position] = child;
+        
+        $(element).insert(insertion);
         
         return child;
     },
     
     insertControl: function(element, control, position) {
-        $(element).insert(control.element, position);
+		var insertion = {};
+		
+		position = position || "bottom";
+		insertion[position] = control.element;
+		
+        $(element).insert(insertion);
         
 		control.fireEvent("insert");
         

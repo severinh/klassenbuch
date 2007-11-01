@@ -587,12 +587,14 @@ Controls.TabControl = Class.create(Control, {
 	},
 	
 	addTab: function(tab, index) {
-		index = index || this.tabs.length;
+		if (!Object.isNumber(index)) {
+			index = this.tabs.length;
+		}
 		
 		if (index === this.tabs.length) {
-			this._tabParent.insert(tab.tabElement, "bottom");
+			this._tabParent.insert(tab.tabElement);
 		} else {
-			this.tabs[index + 1].tabElement.insert(tab.tabElement, "before"); // Funktioniert evtl. nicht
+			this.tabs[index].tabElement.insert({ before: tab.tabElement });
 		}
 		
 		this._contentParent.insertControl(tab, "bottom");
@@ -625,9 +627,7 @@ Controls.TabControl = Class.create(Control, {
 	},
 	
 	removeAllTabs: function() {
-		while (this.tabs.length) {
-			this.removeTab(this.tabs.first());
-		}
+		this.tabs.invoke("remove");
 	},
 	
 	activateTab: function(tab) {
