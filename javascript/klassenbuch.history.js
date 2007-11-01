@@ -262,7 +262,7 @@ App.History = function() {
 		 * @memberof App.History
 		 * @name browserSupported
 		*/
-		browserSupported: !(Browser.Opera && Browser.version < 9.5),
+		browserSupported: !Browser.Opera,
 		
 		/**
 		 * Gibt an, ob App.History bereit ist und die Navigation des Benutzers verfolgt. Standardwert ist <em>false</em>.
@@ -521,6 +521,8 @@ App.History.Node = Class.create({
 						this.reportNavigation(this._activeSubNodeName + "/" + state);
 					}, this);
 					
+					this.fireEvent("enterSubNode");
+					
 					return true;
 				} else {
 					this._activeSubNodeName = "";
@@ -537,6 +539,8 @@ App.History.Node = Class.create({
 			this._activeSubNode.leave();
 			this._activeSubNode = null;
 			this._activeSubNodeName = "";
+			
+			this.fireEvent("leaveSubNode");
 		}
 	},
 	

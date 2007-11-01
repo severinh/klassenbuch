@@ -392,6 +392,9 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		// Wenn weitere Fotos hinzugefügt werden o. ä. wird die Tabelle mit den Miniaturansichten neu generiert.
 		this._onExternalEvent(this.album, "updated", this._generatePictureTable, this);
 		
+		this.registerShortcut([Event.KEY_DOWN, Event.KEY_RIGHT], this.showNextPage, this);
+		this.registerShortcut([Event.KEY_UP, Event.KEY_LEFT], this.showPreviousPage, this);
+		
 		// Wenn dies noch nicht geschehen ist, wird noch die Fotoliste für das Album geholt, ansonsten erfolgt
 		// die Generierung der Tabelle schon jetzt.
 		if (this.album.pictures.length !== this.album.numberOfPictures) {
@@ -726,6 +729,13 @@ Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.N
 			this.startSlideShow();
 		}
 		
+		this.registerShortcut([Event.KEY_SPACE], this.toggleSlideShow, this);
+		this.registerShortcut([Event.KEY_ESC], this.remove, this);
+		this.registerShortcut([Event.KEY_DOWN, Event.KEY_RIGHT], this.showNextPicture, this);
+		this.registerShortcut([Event.KEY_UP, Event.KEY_LEFT], this.showPreviousPicture, this);
+		
+		this.enableShortcuts();
+		
 		this.on("remove", function() {
 			this.fireEvent("leave");
 			this._overlay.remove();
@@ -847,9 +857,10 @@ Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.N
 	handleParamsChange: function(state) {
 		var index = -1;
 		
-		this.pictures.each(function(picture, i) {
+		this.pictures.find(function(picture, i) {
 			if (picture.fileName === state) {
 				index = i;
+				return true;
 			}
 		});
 		

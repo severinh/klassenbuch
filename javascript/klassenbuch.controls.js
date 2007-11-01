@@ -46,6 +46,7 @@ var Control = Class.create(EventPublisher, {
 		this.id = this.element.identify();
 		
 		this._childControls = [];
+		this._shortcuts = {};
 	},
 	
 	/**
@@ -77,6 +78,36 @@ var Control = Class.create(EventPublisher, {
 		});
 		
 		return handler;
+	},
+	
+	registerShortcut: function(keys, handler, scope) {
+		$A(keys).each(function(key) {
+			if (Object.isNumber(key)) {
+				this._shortcuts[key] = handler.bind(scope);
+			}
+		}, this);
+	},
+	
+	enableShortcuts: function() {
+		if (!this._shortcutObserver) {
+			this._shortcutObserver = (function(event) {
+				if (this._shortcutsEnabled) {
+					var handler = this._shortcuts[event.keyCode];
+					
+					if (handler) {
+						handler();
+					}
+				}
+			}).bindAsEventListener(this);
+			
+			document.observe("keydown", this._shortcutObserver);
+		}
+		
+		this._shortcutsEnabled = true;
+	},
+	
+	disableShortcuts: function() {
+		this._shortcutsEnabled = false;
 	},
 	
 	makePropertiesFromClassNames: function() {
@@ -114,6 +145,11 @@ var Control = Class.create(EventPublisher, {
 	remove: function() {
         if (this.element && this.fireEvent("beforeremove")) {
 			this._childControls.invoke("remove");
+			
+			if (this._shortcutObserver) {
+				document.stopObserving("keydown", this._shortcutObserver);
+			}
+			
 			this.element.stopObserving();
 			
 			if (this.element.parentNode) {
@@ -1178,7 +1214,7 @@ Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype,
 		
 		this.closeButton = this.element.createChild({ className: "closeButton", content: 
 			(new Sprite("smallIcons", (this.options.showTitleBar) ? 22 : 21)).toHTML()
-		}).observe("click", this[(this.options.onClickCloseButton === "close") ? "close" : "hide"].bind(this));
+		}).observe("mousedown", this[(this.options.onClickCloseButton === "close") ? "close" : "hide"].bind(this));
 		
 		// Needs rewrite
 		if (this.options.dragAble) {
@@ -1206,6 +1242,12 @@ Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype,
 		if (this.options.onClickCloseButton !== "close") {
 			this.on("hide", this.fireEvent.bind(this, "leave"));
 		}
+		
+		this.registerShortcut([Event.KEY_ESC], this.close, this);
+		this.enableShortcuts();
+		
+		this.on("enterSubNode", this.disableShortcuts, this);
+		this.on("leaveSubNode", this.enableShortcuts, this);
 		
 		this.on("remove", function() {
 			this.closeButton.stopObserving("click");
