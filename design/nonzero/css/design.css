@@ -167,6 +167,10 @@ ul {
 	padding: 7px 15px 0px 30px;
 }
 
+.webkit #menu {
+	padding-top: 10px;
+}
+
 /* Der "Laden..."-Hinweis ganz rechts in der Menüleiste */
 #activeRequest {
 	color: #FFF;
@@ -199,15 +203,42 @@ ul {
 
 /* ------------------------ STEUERELEMENTE ------------------------ */
 
+.button {
+	cursor: pointer;
+	white-space: nowrap;
+	position: relative;
+	overflow: hidden;
+	vertical-align: middle;
+}
+
+.button,
+.button span {
+	display: inline-block;
+}
+
+.button .leftBoundary,
+.button .rightBoundary,
+.button .content,
+.button .icon {
+	float: left;
+}
+
+.gecko .button,
+.gecko .button * {
+	display: -moz-inline-box;
+}
+
+.webkit .button .icon {
+	margin-top: -2px;
+}
+
 /* Eine normale Schaltfläche vom Typ "Controls.Button" */
 .standardButton {
-	cursor: pointer;
 	height: 21px;
 }
 
 .standardButton .rightBoundary,
 .standardButton .leftBoundary {
-	float: left;
 	height: 21px;
 	background-image: url(../images/button.png);
 }
@@ -221,22 +252,18 @@ ul {
 }
 
 .standardButton .content {
-	float: left;
-	height: 16px;
-	padding: 2px 4px 1px;
-	font-size: 12px;
+	height: 17px;
+	padding: 2px 4px 0px;
 	margin: 0px;
+}
+
+.webkit .standardButton .content {
+	padding-top: 4px;
 }
 
 .standardButton .icon {
 	margin-right: 4px;
-	float: left;
 }
-
-.standardButton .rightAlignedIcon {
-	margin: 0px 0px 0px 4px;
-}
-
 
 /** Wenn die Schaltfläche nur ein Symbol enthält */
 .standardButton .withoutCaption {
@@ -257,14 +284,12 @@ ul {
 /* Ebenfalls für eine Instanz vom Typ "Controls.Button", aber mit veränderten Design-Angaben */
 .menuItem {
 	float: left;
-	cursor: pointer;
 	margin-right: 2px;
 	height: 24px;
 }
 
 .menuItem .rightBoundary,
 .menuItem .leftBoundary {
-	float: left;
 	height: 24px;
 	background-image: url(../images/menuButtons.gif);
 }
@@ -280,17 +305,16 @@ ul {
 .menuItem .content {
 	color: #616161;
 	font-weight: bold;
-	font-size: 1.0em;
-	float: left;
 	padding: 4px 6px 2px 5px;
 	height: 14px;
-	margin: 0px;
+}
+
+.webkit .menuItem .content {
+	padding-top: 6px;
 }
 
 .menuItem .icon {
-	float: left;
 	margin-right: 5px;
-	position: relative;
 }
 
 /* Der aktive Menüpunkt */
@@ -380,18 +404,18 @@ ul {
    (Beispiel: Der Datei-Filter in der Dateiablage) */
 .viewPane .additionalCommands {
 	position: absolute;
-	top: 8px;
+	top: 5px;
 	right: 10px;
 }
 
-.viewPane .additionalCommands > div {
+.viewPane .additionalCommands > span {
 	float: right;
 }
 
 .viewPane .additionalCommands .divider {
 	height: 20px;
-	width: 0;
-	border-right: #AAA 1px solid;
+	width: 1px;
+	background-color: #AAA;
 	margin: 0 8px;
 }
 
@@ -526,17 +550,14 @@ ul {
 }
 
 /* Das Drow-Down-Auswahlmenü (Controls.DropDownSelection) */
-.dropDownSelection .content {
-	position: relative;
-	padding-left: 2px;
-	padding-right: 16px;
-	overflow: hidden;
+.dropDownSelection .rightBoundary {
+	padding-right: 20px;
 }
 
 .dropDownSelection .arrow {
 	position: absolute;
 	top: 3px;
-	right: -4px;
+	right: 0px;
 }
 
 /* Die Auswahlliste */
@@ -1063,7 +1084,11 @@ ul {
 }
 
 .createEditTaskWindow .buttonContainer {
-	margin: auto;
+	text-align: center;
+}
+
+.createEditTaskWindow .buttonContainer .button {
+	margin: 0px 2px;
 }
 
 .createEditTaskWindow .dropDownSelection {

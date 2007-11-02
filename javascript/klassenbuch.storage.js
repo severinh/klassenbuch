@@ -435,7 +435,7 @@ Storage.View = Class.create(Controls.View, {
 					this.update();
 				 }, this);
 				
-				this.additionalCommands.createChild({ className: "divider" });
+				this.additionalCommands.insert("<span class=\"divider\">&nbsp;</span>");
 				
 				this.uploadButton = this.additionalCommands.insertControl(new Controls.Button("Datei hochladen",
 					this.reportNavigation.bind(this, "hochladen"), {

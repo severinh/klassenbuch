@@ -615,7 +615,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		// die Spalte "Aktionen" in der Aufgabentabelle angezeigt
 		this._sideMenu.on("hide", function() {
 			if (!this._newTaskButton) {
-				this.additionalCommands.insert("<div class=\"divider\"></div>");
+				this.additionalCommands.insert("<span class=\"divider\">&nbsp;</span>");
 				
 				/**
 				 * Schaltfläche zum Hinzufügen von Aufgaben, die nur angezeigt wird, wenn das Seitenmenü ausgeblendet
@@ -839,7 +839,7 @@ TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope Tas
 			"		<td><input name=\"important\" type=\"checkbox\" class=\"importantInput\" /></td>" +
 			"	</tr>" + 
 			"</table></form>" +
-			"<table class=\"buttonContainer\"><tr><td></td><td></td></tr></table>";
+			"<div class=\"buttonContainer\"></div>";
 		
 		// Macht es möglich, dass man das Formular auch mit <em>Enter</em> absenden kann
 		/**
@@ -860,13 +860,13 @@ TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope Tas
 		this.importantInput = this.select(".importantInput").first();
 		this.dateSelection = this.select("td")[1].insertControl(new Controls.Calendar({ allowWeekends: false, allowPast: false }));
 		
-		this.cancelButton = this.select(".buttonContainer td")[0].insertControl(new Controls.Button("Abbrechen", 				  
+		this.cancelButton = this.select(".buttonContainer")[0].insertControl(new Controls.Button("Abbrechen", 				  
 			this.close.bind(this), {
 				icon: new Sprite("smallIcons", 4)
 			}
 		));
 		
-		this.submitButton = this.select(".buttonContainer td")[1].insertControl(new Controls.Button("<strong>Speichern</strong>",
+		this.submitButton = this.select(".buttonContainer")[0].insertControl(new Controls.Button("<strong>Speichern</strong>",
 			this._prepareSubmit.bind(this), {
 				icon: new Sprite("smallIcons", 25),
 				iconDisabled: new Sprite("smallIcons", 26),

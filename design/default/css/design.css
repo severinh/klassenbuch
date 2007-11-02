@@ -193,16 +193,42 @@ img {
 }
 
 /* ------------------------ STEUERELEMENTE ------------------------ */
+.button {
+	cursor: pointer;
+	white-space: nowrap;
+	position: relative;
+	overflow: hidden;
+	vertical-align: middle;
+}
+
+.button,
+.button span {
+	display: inline-block;
+}
+
+.button .leftBoundary,
+.button .rightBoundary,
+.button .content,
+.button .icon {
+	float: left;
+}
+
+.gecko .button,
+.gecko .button * {
+	display: -moz-inline-box;
+}
+
+.webkit .button .icon {
+	margin-top: -2px;
+}
 
 /* Eine normale Schaltfläche vom Typ "Controls.Button" */
 .standardButton {
-	cursor: pointer;
 	height: 21px;
 }
 
 .standardButton .rightBoundary,
 .standardButton .leftBoundary {
-	float: left;
 	height: 21px;
 	background-image: url(../images/button.png);
 }
@@ -216,15 +242,16 @@ img {
 }
 
 .standardButton .content {
-	float: left;
 	height: 16px;
 	padding: 3px 4px 2px;
-	font-size: 12px;
+}
+
+.webkit .standardButton .content {
+	padding-top: 4px;
 }
 
 .standardButton .icon {
 	margin-right: 4px;
-	float: left;
 }
 
 /** Wenn die Schaltfläche nur ein Symbol enthält */
@@ -247,13 +274,11 @@ img {
 .menuItem {
 	float: left;
 	margin-right: 2px;
-	cursor: pointer;
 	height: 24px;
 }
 
 .menuItem .rightBoundary,
 .menuItem .leftBoundary {
-	float: left;
 	height: 24px;
 	background-image: url(../images/menuButtons.gif);
 }
@@ -267,16 +292,12 @@ img {
 }
 
 .menuItem .content {
-	float: left;
 	padding: 5px 7px 5px 5px;
 	height: 14px;
 }
 
 .menuItem .icon {
-	float: left;
 	margin-right: 5px;
-	position: relative;
-	top: -1px;
 }
 
 /* Der aktive Menüpunkt */
@@ -365,18 +386,18 @@ img {
    (Beispiel: Der Datei-Filter in der Dateiablage) */
 .viewPane .additionalCommands {
 	position: absolute;
-	top: 8px;
+	top: 5px;
 	right: 10px;
 }
 
-.viewPane .additionalCommands > div {
+.viewPane .additionalCommands > span {
 	float: right;
 }
 
 .viewPane .additionalCommands .divider {
 	height: 20px;
-	width: 0;
-	border-right: #AAA 1px solid;
+	width: 1px;
+	background-color: #AAA;
 	margin: 0 8px;
 }
 
@@ -548,17 +569,14 @@ img {
 
 /* Das Drow-Down-Auswahlmenü (Controls.DropDownSelection) */
 .dropDownSelection .content {
-	position: relative;
-	padding-left: 2px;
-	padding-right: 16px;
+	padding-right: 20px;
 	font: normal 12px Arial, sans-serif;
-	overflow: hidden;
 }
 
 .dropDownSelection .arrow {
 	position: absolute;
 	top: 3px;
-	right: -4px;
+	right: 0px;
 }
 
 /* Die Auswahlliste */
@@ -1077,7 +1095,11 @@ img {
 }
 
 .createEditTaskWindow .buttonContainer {
-	margin: auto;
+	text-align: center;
+}
+
+.createEditTaskWindow .buttonContainer .button {
+	margin: 0px 2px;
 }
 
 .createEditTaskWindow .dropDownSelection {

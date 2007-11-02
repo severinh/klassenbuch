@@ -250,7 +250,7 @@ Controls.AutoResizingControl = Class.create(Control, {
 /**
  * @class Ermöglicht es, eine grafische Schaltfläche zu generieren, die aktiviert bzw. deaktivert werden kann,
  * auf Aktionen des Benutzers reagiert (Darüberfahren mit dem Mauszeiger) und zudem wahlweise über ein Symbol, einen
- * Text oder beides als Inhalt kann.
+ * Text oder beides als Inhalt haben kann.
  * @extends Control
  * @param {String} caption Der Schaltflächentext
  * @param {Function} action Die Funktion, die aufgerufen werden soll, wenn der Benutzer auf die Schaltfläche klickt
@@ -266,22 +266,23 @@ Controls.Button = Class.create(Control, {
 			onlySignedIn: false,
 			className: "",
 			buttonClass: "standardButton",
-			tag: "div",
-			visible: true,
-			iconAlign: "left"
+			tag: "span",
+			visible: true
 		}, options);
 		
         $super(new Element(this.options.tag, {
-			className: "unselectable " + this.options.className,
+			className: "button unselectable " + this.options.className,
 			title: this.options.title || ""
 		}));
         
         this.action = action || Prototype.emptyFunction;
-		this.setCaption(caption);
 		
-		this.element.innerHTML = "<div class=\"leftBoundary\">&nbsp;</div><div class=\"rightBoundary\"><div class=\"content\"></div></div>";
+		this.element.innerHTML = "<span class=\"leftBoundary\">&nbsp;</span><span class=\"rightBoundary\">" + 
+			"<span class=\"content\"></span></span>";
+		
 		this.makePropertiesFromClassNames("leftBoundary", "rightBoundary", "content");
 		this.setButtonClass(this.options.buttonClass);
+		this.setCaption(caption);
 		
 		this.on("click", action);
 		
@@ -316,10 +317,7 @@ Controls.Button = Class.create(Control, {
          * @private
         */
         this._caption = caption || "";
-        
-        if (this.content) {
-            this._updateContent();
-        }
+        this._updateContent();
     },
     
     setIcon: function(icon, iconDisabled) {
@@ -341,7 +339,8 @@ Controls.Button = Class.create(Control, {
 	},
 	
     /**
-     * @method Aktualisiert den Inhalt der Schaltfläche. Dies wird beispielsweise nötig, wenn sich beim Deaktivieren der Schaltfläche das Symbol ändern soll.
+     * @method Aktualisiert den Inhalt der Schaltfläche. Dies wird beispielsweise nötig, wenn sich beim Deaktivieren
+     * der Schaltfläche das Symbol ändern soll.
      * @private
     */
 	_updateContent: function() {
@@ -354,14 +353,7 @@ Controls.Button = Class.create(Control, {
 				icon = this.options.iconDisabled;
 			}
 			
-			var iconString = icon.toHTML(((caption) ? "icon" : "icon withoutCaption") + " " + 
-				((this.options.iconAlign === "right") ? "rightAlignedIcon" : "leftAlignedIcon"));
-			
-			if (this.options.iconAlign === "right") {
-				this.content.innerHTML = caption + iconString;
-			} else {
-				this.content.innerHTML = iconString + caption;
-			}
+			this.content.innerHTML = icon.toHTML((caption) ? "icon" : "icon withoutCaption", "span") + caption;
 		} else {
             this.content.innerHTML = caption;
         }
@@ -475,7 +467,6 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		
 		$super("Auswählen...", this._toggleList.bind(this), {
 			icon: new Sprite("smallIcons", 18, "arrow"),
-			iconAlign: "right",
 			className: "dropDownSelection"
 		});
 		
@@ -488,7 +479,7 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		
 		this.addItems(items || []);
 		
-		// Beim Entfernen des Steuerelements werden alle Ereignisse deregistriert und die Auswahlliste ebenfalls entfernt
+		// Beim Entfernen des Steuerelements werden alle Ereignisse deregistriert und die Auswahlliste ebenfalls entfernt.
 		this.on("remove", function() {
 			this._list.remove();
 		}, this);
@@ -659,7 +650,7 @@ Controls.TabControl = Class.create(Control, {
 		}
 		
 		tab.remove();
-		this.tabs.splice(index, 1);		
+		this.tabs.splice(index, 1);
 	},
 	
 	removeAllTabs: function() {
@@ -808,9 +799,8 @@ Controls.SideMenu = Class.create(Controls.RoundedPane, {
 			
 			this.showButton = view.element.createChild({
 				className: "closedSideMenu",
-				style: { display: "none" },
 				title: "Seitenmenü anzeigen"
-			});
+			}).hide();
 			
 			this.hideButton.observe("click", this.hide.bindAsEventListener(this));
 			this.showButton.observe("click", this.show.bindAsEventListener(this));

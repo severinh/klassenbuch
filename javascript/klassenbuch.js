@@ -122,6 +122,14 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
 	*/
 	checkBrowserCompatibility: function() {
 		if (Browser.supported) {
+			var body = $$("body")[0];
+			
+			$w("Gecko Opera IE WebKit").each(function(a) {
+				if (Browser[a]) {
+					body.addClassName(a.toLowerCase());
+				}
+			});
+			
 			return true;
 		}
 		
@@ -165,13 +173,15 @@ var Sprite = Object.extend(Class.create({
 			this.className = className || "";
 		},
 		
-		toHTML: function(additionalClassName) {
+		toHTML: function(additionalClassName, tag) {
+			tag = tag || "div";
+			
 			var sprite = Sprite.List[this.spriteName];
 			var position = ((this.index > 0) ? "-" : "") + (sprite.offset * this.index) + "px";
 			
-			return "<div class=\"sprite sprite" + this.spriteName.capitalize() + " " + this.className + " " + 
+			return "<" + tag + " class=\"sprite sprite" + this.spriteName.capitalize() + " " + this.className + " " +
 				(additionalClassName || "") + "\" style=\"background-position: " +
-				((sprite.alignment === "horizontal") ? position + " 0px" : "0px " + position) + "\"></div>";
+				((sprite.alignment === "horizontal") ? position + " 0px" : "0px " + position) + "\"></" + tag + ">";
 		}
 	}), {
 		List: {
