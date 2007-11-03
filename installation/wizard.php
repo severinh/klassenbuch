@@ -183,23 +183,6 @@ class Wizard {
 		// Nice when using MODE_BUFFER
 		return $this->out;
 	}
-	
-	/**
-	 * Private: Helper, displays progress bar
-	 */
-	function _displayProgress($message = '') {
-		$this->page = <<<EOB
-<script type="text/javascript" language="JavaScript">
-aimg=new Image();
-aimg.src="progressbar.gif";
-</script>
-<br /><br /><br /><br />
-<table width="100%" border="0"><tr><td align="center">
-<div id="progresstext"><b>{$message}</b></div>
-<img src="progressbar.gif">
-</td></tr></table>
-EOB;
-	}
 
 	/**
 	 * Private: display the wizard (for real!)
@@ -351,9 +334,9 @@ EOB;
 		$tmpl = new Template;
 		$tmpl->read_file("installation.tmpl");
 		
-		$tmpl->set_var("WIZARDTITLE", $this->title);
 		$tmpl->set_var("WIZARDBODY", $this->_getPageBody());
 		$tmpl->set_var("WIZARDBUTTONS", $this->_getButtons());
+		$tmpl->set_var("WIZARDTITLE", $this->title);
 		
 		$tmpl->parse();
 		
@@ -457,12 +440,7 @@ EOB;
 	function _getPageBody() {
 		$p = $this->wizard == null ? $this->bProgress : $this->wizard->bProgress;
 		
-		// if (!$p) {
-			$this->setPage();
-		/* } else {
-			$this->setNext($this->wizard->pagename);
-			$this->_displayProgress("Wählen Sie [Weiter] um fortzufahren");
-		} */
+		$this->setPage();
 		
 		$out =  $this->page;
 		
@@ -521,60 +499,29 @@ EOB;
 		}
 		
 		// Done
-		return "<form method=\"post\" action=\"{$_SERVER['PHP_SELF']}\" name=\"WIZARDFORM\">" . $hf . $out;
+		return "<form method=\"post\" action=\"{$_SERVER['PHP_SELF']}\" id=\"wizardForm\">" . $hf . $out;
 	}
 
 	/**
 	 * Private: 'display' buttons panel
 	 */
 	function _getButtons() {
-		$b_out = "<script type=\"text/javascript\" language=\"JavaScript\">
-			document.onkeypress = function enterHandler(ev) {
-				if (!ev) {
-					ev = window.event;
-				}
-				
-				k = ev.keyCode;
-				
-				if (k == 13) {
-					if (!document.WIZARDFORM.next.disabled) {
-						document.WIZARDFORM.next.click();
-					} else if (!document.WIZARDFORM.prev.disabled) {
-						document.WIZARDFORM.prev.click();
-					}
-				}
-			};
-			</script>";
-		
 		$b_out = "<div id=\"buttons\">";
 		
 		if ($this->prevPage) {
 			$b_out .= "<input type=\"hidden\" name=\"onprev\" value=\"" . 
-				$this->prevPage. "\"><input type=\"submit\" name=\"prev\" tabindex=\"1\" value=\"" . 
+				$this->prevPage. "\"><input type=\"submit\" id=\"prevButton\" name=\"prev\" tabindex=\"1\" value=\"" . 
 				$this->prevCaption . "\">";
 		}
 		
 		if ($this->nextPage) {
 			$b_out .= "<input type=\"hidden\" name=\"onnext\" tabindex=\"0\" value=\"" . 
-				$this->nextPage . "\"><input type=\"submit\" name=\"next\" value=\"" .
+				$this->nextPage . "\"><input type=\"submit\" id=\"nextButton\" name=\"next\" value=\"" .
 				$this->nextCaption . "\">";
 		}
-
+		
 		$b_out .= "</div>";
 		
-		if ($this->wizard->bProgress) {
-			$b_out .= "<input type=\"hidden\" name=\"autosubmit\" value=\"" . $this->wizard->pagename . "\">";
-			$b_out .= <<<EOB
-
-<script type=\"text/javascript\" language=\"JavaScript\">
-document.WIZARDFORM.next.disabled=true;
-document.getElementById(\"progresstext\").innerHTML=\"<b>Please Wait</b>\";
-setTimeout(\"document.WIZARDFORM.submit()\", 1000);
-</script>
-
-EOB;
-		}
-
 		return $b_out;
 	}
 

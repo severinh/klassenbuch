@@ -5,6 +5,44 @@
 	<link href="../design/{DESIGN}/css/design.css" media="screen, projection" type="text/css" rel="stylesheet" />
 	<link href="installation.css" media="screen, projection" type="text/css" rel="stylesheet" />
 	
+	<script src="../javascript/prototype.js" type="text/javascript"></script>
+	
+	<script type="text/javascript">
+		document.observe("dom:loaded", function() {
+			var form = $("wizardForm");
+			var prevButton = $("prevButton");
+			var nextButton = $("nextButton");
+			
+			document.observe("keypress", function(event) {
+				if (Event.KEY_RETURN === event.keyCode) {
+					if (nextButton) {
+						nextButton.click();
+					} else if (prevButton) {
+						prevButton.click();
+					}
+				}
+			});
+			
+			nextButton.observe("click", function(event) {
+				var error = false;
+				
+				form.getElements().each(function(element) {
+					if (element.type !== "hidden" && !element.present()) {
+						element.addClassName("invalidInputField");
+						error = true;
+					} else {
+						element.removeClassName("invalidInputField");
+					}
+				});
+				
+				if (error) {
+					event.stop();
+					return false;
+				}
+			});
+		});
+	</script>
+	
 	<title>Klassenbuch - Installation{IF WIZARDTITLE} - {WIZARDTITLE}{ENDIF}</title>
 </head>
 <body>
