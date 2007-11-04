@@ -118,7 +118,7 @@ class JSONRPCResponse {
 		
 		$this->payload = "{";
 		
-		$json = new Services_JSON();
+		$json = new Services_JSON(SERVICES_JSON_LOOSE_TYPE);
 		
 		if ($this->errno) {
 			// Let non-ASCII response messages be tolerated by clients by encoding non ascii chars

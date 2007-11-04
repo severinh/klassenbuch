@@ -477,7 +477,7 @@ function requestpassword($username, $password) {
     return true;
 }
 
-function verifynewpassword($key = "") {
+function verifynewpassword($key) {
     global $database;
     
     if (!$key) {
@@ -943,163 +943,186 @@ function gallery_generatethumbnails($fileName) {
 // Die Dispatch Map für diesen Webservice: In ihr enthalten sind die Namen aller Methoden, die dieser Service bereitstellt.
 // Zusätzlich enthält sie Angaben darüber, welche Parameter die bestimmten Methoden erwarten. 
 // Eine kurze Beschreibung aller Methoden ist ebenfalls enthalten.
-// Siehe auch: http://phpxmlrpc.sourceforge.net/doc-2/ch07s05.html - 5.2. The dispatch map
-
-// Die Methodensignaturen funktionieren momentan noch nicht wie gewünscht
-$dispatchMap = array(
-    "gettasks" => array(
+$dispatchMap = Array(
+    "gettasks" => Array(
         "function"  => "gettasks",
-        "docstring" => "Gibt die Hausaufgaben für einen bestimmten Zeitraum aus. Standardmässig werden alle anstehenden " .
-					   "Aufgaben zurückgegeben."
+        "signature" => Array(Array("array"), Array("array", "int"), Array("array", "int", "int")),
+        "docstring" => "Gibt die Hausaufgaben für einen bestimmten Zeitraum aus. Standardmässig werden alle " .
+					   "anstehenden Aufgaben zurückgegeben.",
     ),
-
-    "removetask" => array(
+	
+    "removetask" => Array(
         "function"  => "removetask",
+        "signature" => Array(Array("boolean", "int")),
         "docstring" => "Markiert eine bestimmte Aufgabe im Klassenbuch als entfernt, löscht sie also nicht endgültig aus" .
 					   "der Datenbank."
     ),
-        
-    "createtask" => array(
+    
+    "createtask" => Array(
         "function"  => "createtask",
-        "docstring" => "Trägt eine Aufgabe in die Datenbank ein."
+        "signature" => Array(Array("int", "string", "int", "string"), Array("int", "string", "int", "string", "boolean")),
+        "docstring" => "Trägt eine Aufgabe in die Datenbank ein und gibt die ID der Aufgabe zurück."
     ),
-        
-    "edittask" => array(
+    
+    "edittask" => Array(
         "function"  => "edittask",
+        "signature" => Array(Array("boolean", "int", "int", "string"), Array("boolean", "int", "int", "string", "boolean")),
         "docstring" => "Bearbeitet eine bestehende Aufgabe. Dabei kann nur das Datum, der Aufgabetext und die " .
 					   "Wichtigkeit verändert werden."
     ),
-
-    "getcomments" => array(
+    
+    "getcomments" => Array(
         "function"  => "getcomments",
+        "signature" => Array(Array("array", "int")),
         "docstring" => "Gibt die Kommentare zu einer bestimmten Aufgabe an und markiert die Kommentare als gelesen, wenn" .
 					   "der Benutzer angemeldet ist."
     ),
-
-    "createcomment" => array(
+    
+    "createcomment" => Array(
         "function"  => "createcomment",
-        "docstring" => "Erstellt einen neuen Kommentar zu einer bestimmten Aufgabe."
+        "signature" => Array(Array("int", "int", "string")),
+        "docstring" => "Erstellt einen neuen Kommentar zu einer bestimmten Aufgabe und gibt die ID des Kommentars zurück."
     ),
-
-    "editcomment" => array(
+	
+    "editcomment" => Array(
         "function"  => "editcomment",
+        "signature" => Array(Array("boolean", "int", "string")),
         "docstring" => "Bearbeitet einen bestimmten Kommentar."
     ),
-
-    "getcontacts" => array(
+	
+    "getcontacts" => Array(
         "function"  => "getcontacts",
+        "signature" => Array(Array("array")),
         "docstring" => "Gibt eine Liste aller Kontakte aus. Wenn der Benutzer nicht angemeldet ist, werden die Felder " .
 					   "mit persönlichen Informationen nicht übertragen."
     ),
     
-    "getfiles" => array(
+    "getfiles" => Array(
         "function"  => "getfiles",
+        "signature" => Array(Array("array")),
         "docstring" => "Gibt eine Liste der Dateien in der Dateiablage aus."
     ),
-    
-    "archivefile" => array(
+	
+    "archivefile" => Array(
         "function"  => "archivefile",
-        "docstring" => "Markiert eine bestimmte Datei in der Dateiablage als \"archiviert\"."
+        "signature" => Array(Array("boolean", "int")),
+        "docstring" => "Markiert eine bestimmte Datei in der Dateiablage als archiviert."
     ),
-
-    "uploadfile" => array(
+	
+    "uploadfile" => Array(
         "function"  => "uploadfile",
-        "docstring" => "Lädt eine beliebige Datei in die Dateiablage hoch."
+        "signature" => Array(Array("int", "string")),
+        "docstring" => "Lädt eine beliebige Datei in die Dateiablage hoch und gibt die ID der Datei zurück."
     ),
-
-    "signin" => array(
+	
+    "signin" => Array(
         "function"  => "signin",
+        "signature" => Array(Array("array", "string", "string")),
         "docstring" => "Erkennt einen Benutzer anhand eines eingegebenen Passworts und meldet ihn beim Klassenbuch an. " .
 					   "Zusätzlich werden Informationen über den Benutzer zurückgegeben."
     ),
 
-    "requestpassword" => array(
+    "requestpassword" => Array(
         "function"  => "requestpassword",
+        "signature" => Array(Array("boolean", "string", "string")),
         "docstring" => "Wenn der Benutzer sein Passwort vergessen hat, kann er mit dieser Funktion sein Bestehendes " .
 					   "ändern. Er gibt seinen Benutzernamen und ein neues Passwort nach Wahl ein und erhält dann eine " .
 					   "E-Mail mit einem Bestätigungslink."
     ),
 
-    "verifynewpassword" => array(
+    "verifynewpassword" => Array(
         "function"  => "verifynewpassword",
+        "signature" => Array(Array("boolean", "string")),
         "docstring" => "Bestätigt ein neu angefordertes Passwort mit Hilfe des Bestätigungs-Schlüssels."
     ),
     
-    "changepassword" => array(
+    "changepassword" => Array(
         "function"  => "changepassword",
+        "signature" => Array(Array("boolean", "string", "string")),
         "docstring" => "Ändert das Passwort des aktuell angemeldeten Benutzers. Aus Sicherheitsgründen muss das alte " .
 					   "Passwort ebenfalls angegeben werden."
     ),
-
-    "getuserdata" => array(
+	
+    "getuserdata" => Array(
         "function"  => "getuserdata",
+        "signature" => Array(Array("array")),
         "docstring" => "Wenn der Benutzer angemeldet ist, können mit dieser Methode benutzerspezifische Informationen " .
-					   "und zusätzlich auch die aktuell gültige Session-ID abgerufen werden. Die Methode signin ruft " .
-					   "diese Methode automatisch auf und gibt deren Ausgabe an den Client weiter."
+					   "und zusätzlich auch die aktuell gültige Session-ID abgerufen werden."
     ),
     
-    "updateuserprofile" => array(
+    "updateuserprofile" => Array(
         "function"  => "updateuserprofile",
+        "signature" => Array(Array("boolean", "array")),
         "docstring" => "Verändert das Profil des angemeldeten Benutzers."
     ),
     
-    "changeusersettings" => array(
+    "changeusersettings" => Array(
         "function"  => "changeusersettings",
+        "signature" => Array(Array("boolean", "array")),
         "docstring" => "Verändert die Einstellungen des angemeldeten Benutzers. Wenn eine bestimmte Einstellung bereits " .
 					   "vorhanden ist, wird sie durch die neue überschrieben und falls eine Einstellung noch nicht " .
 					   "vorhanden ist, wird diese hinzugefügt."
     ),
     
-    "signout" => array(
+    "signout" => Array(
         "function"  => "signout",
-        "docstring" => "Meldet einen Benutzer vom Klassenbuch ab, indem es die Session und alles was dazugehört löscht."
+        "signature" => Array(Array("boolean")),
+        "docstring" => "Meldet einen Benutzer vom Klassenbuch ab, indem es die Session und alles was dazu gehört löscht."
     ),
     
-    "registeruser" => array(
+    "registeruser" => Array(
         "function"  => "registeruser",
+        "signature" => Array(Array("boolean", "string", "string", "string", "string", "string")),
         "docstring" => "Ermöglicht es einem Benutzer, ein neues Konto beim Klassenbuch zu erstellen. Dazu muss er " .
 					   "lediglich einen Nicknamen, Vor- und Nachnamen, eine gültige E-Mail-Adresse und ein Passwort " .
 					   "angegeben. Die restlichen Profildaten kann er dann selber eintragen. Der Verwalter des " .
-					   "Klassenbuchs muss dann noch den Sperr-Hinweis vom Passwort-Feld in der Datenbank entfernen, " .
-					   "damit der Benutzer unter seinem neuen Konto anmelden kann."
+					   "Klassenbuchs erhält daraufhin eine E-Mail mit diesen Informationen, welche er dann noch in die " .
+					   "Datenbank eintragen muss"
     ),
-        
-    "gallery_getalbums" => array(
+    
+    "gallery_getalbums" => Array(
         "function"  => "gallery_getalbums",
-        "docstring" => "Gibt eine Liste aller Alben in der Fotogalerie aus. Die Datenausgabe enthält auch Informationen " .
+        "signature" => Array(Array("array")),
+        "docstring" => "Gibt eine Liste aller Alben in der Fotogalerie aus. Die Ausgabe enthält auch Informationen " .
 					   "über die Anzahl Fotos in diesem Album."
-	),        
-        
-    "gallery_createalbum" => array(
+	),
+	
+    "gallery_createalbum" => Array(
         "function"  => "gallery_createalbum",
+        "signature" => Array(Array("int", "string"), Array("int", "string", "string")),
         "docstring" => "Erstellt ein neues Album in der Fotogalerie. Ein Name muss zwingend angegeben werden, während " .
 					   "eine kurze Beschreibung optional ist."
 	),  
-        
-    "gallery_removealbum" => array(
+    
+    "gallery_removealbum" => Array(
         "function"  => "gallery_removealbum",
+        "signature" => Array(Array("boolean", "int")),
         "docstring" => "Löscht ein Album komplett aus der Fotogalerie. Bei diesem Vorgang werden auch alle im Album " .
 					   "enthaltenen Fotos gelöscht."
     ),
     
-    "gallery_downloadalbum" => array(
+    "gallery_downloadalbum" => Array(
         "function"  => "gallery_downloadalbum",
+        "signature" => Array(Array("string", "int")),
         "docstring" => "Erstellt aus allen Originalfotos in einem einzelnen Album ein mit Datum versehenes ZIP-Archiv " .
 					   "im 'files'-Verzeichnis. Die Funktion gibt im Erfolgsfall den Namen der Datei zurück."
     ),
     
-    "gallery_getpictures" => array(
+    "gallery_getpictures" => Array(
         "function"  => "gallery_getpictures",
+        "signature" => Array(Array("array", "int")),
         "docstring" => "Gibt eine Liste aller Fotos in einem bestimmten Album aus."
     ),
     
-    "gallery_uploadpicture" => array(
+    "gallery_uploadpicture" => Array(
         "function"  => "gallery_uploadpicture",
-        "docstring" => "Lädt ein Bild zum Server hoch in ein bestimmtes Album."),
+        "signature" => Array(Array("int", "int")),
+        "docstring" => "Lädt ein Bild zum Server hoch und legt es in einem bestimmten Album ab."),
         
     
-    "gallery_rotatepicture" => array(
+    "gallery_rotatepicture" => Array(
         "function"  => "gallery_rotatepicture",
+        "signature" => Array(Array("boolean", "int", "int")),
         "docstring" => "Ermöglicht es, ein Foto in der Fotogalerie um einen bestimmten Winkel zu drehen. Erlaubt sind " .
 					   "nur Vielfache von 90°. Diese Aktion kann nur vom Administrator, oder von demjenigen Benutzer, " .
 					   "der das Foto hochgeladen hat, durchgeführt werden.")

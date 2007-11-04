@@ -56,18 +56,18 @@
 			{SIMPLEMESSAGEBODY}
 		</div>
 	{ELSE}
-		<ul id="headerLinks" class="notSignedIn">
+		<ul id="headerLinks" class="notSignedIn unselectable">
 			<li><a href="javascript:User.showRegisterWindow();">Registrieren</a></li>
 			<li><a href="javascript:User.showSignInWindow();">Anmelden</a></li>
 		</ul>
 		
-		<ul id="headerLinks" class="signedIn" style="display: none;">
+		<ul id="headerLinks" class="signedIn unselectable" style="display: none;">
 			<li><span id="welcomeMessage"></span></li>
 			<li><a href="javascript:User.showSettingsWindow();">Einstellungen</a></li>
 			<li><a href="javascript:User.signOut();">Abmelden</a></li>
 		</ul>
 		
-		<div id="menu">
+		<div id="menu" class="unselectable">
 			<div id="activeRequest">Laden...</div>
 		</div>
 		

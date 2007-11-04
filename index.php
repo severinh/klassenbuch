@@ -70,8 +70,8 @@ if (!$settings->online) {
 		if ($userData->val) {
 			$directData[] = "userdata: " . $userData->payload;
 			
-			if ($userData->val->settings && in_array($userData->val->settings->theme, $designList)) {
-				$tmpl->set_var("DESIGN", $userData->val->settings->theme);
+			if ($userData->val["settings"] && in_array($userData->val["settings"]["theme"], $designList)) {
+				$tmpl->set_var("DESIGN", $userData->val["settings"]["theme"]);
 			}
 		}
 		

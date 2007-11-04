@@ -136,7 +136,7 @@ class User {
     }
     
     private function insertData($data) {
-		$json = new Services_JSON();
+		$json = new Services_JSON(SERVICES_JSON_LOOSE_TYPE);
 		
 		if ($data !== false) {
 			$this->id 		   	= (int)    $data["id"];
@@ -243,8 +243,8 @@ class User {
                 $_SESSION["userid"] = $this->id;
                 $_SESSION["token"] = $this->token;
                 
-				setcookie($settings->cookieprefix . "userid", $this->id, 	 time() + 60 * 60 * 24 * 30);
-				setcookie($settings->cookieprefix . "token",  $this->token, time() + 60 * 60 * 24 * 30);
+				setcookie($settings->cookieprefix . "userid", $this->id, time() + 60 * 60 * 24 * 30);
+				setcookie($settings->cookieprefix . "token", $this->token, time() + 60 * 60 * 24 * 30);
 				
                 $this->authenticated = true;
                 
@@ -264,8 +264,8 @@ class User {
 		session_destroy();
 		
 		setcookie($settings->cookieprefix . "sessionid",  "", time() - 3600);
-		setcookie($settings->cookieprefix . "userid", 	"", time() - 3600);
-		setcookie($settings->cookieprefix . "token",  	"", time() - 3600);
+		setcookie($settings->cookieprefix . "userid", "", time() - 3600);
+		setcookie($settings->cookieprefix . "token", "", time() - 3600);
 		
 		return true;
     }

@@ -219,7 +219,6 @@ class JSONRPCService {
 		}
 		
 		$r = call_user_func_array($func, $params);
-		$json = new Services_JSON();
 		
 		// The return type should be plain php value...
 		if (!is_a($r, "JSONRPCResponse")) {
@@ -484,16 +483,16 @@ class JSONRPCService {
 	}
 	
 	private function parseRequest($data, $content_encoding = "") {
-		$json = new Services_JSON();
+		$json = new Services_JSON(SERVICES_JSON_LOOSE_TYPE);
 		$data = $json->decode(utf8_decode($data));
 		
-		if (!$data || !$data->method) {
+		if (!$data || !$data["method"]) {
 			return new JSONRPCErrorResponse("invalid_request", "JSON parsing did not return correct jsonrpc request object");
 		} else {
-			$method = $data->method;
+			$method = $data["method"];
 			
-			if (is_array($data->params)) {
-				$params = $data->params;
+			if (is_array($data["params"])) {
+				$params = $data["params"];
 				$paramsType = Array();
 				
 				foreach ($params as $key => $value) {
