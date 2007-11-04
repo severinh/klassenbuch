@@ -4,32 +4,16 @@
 define("_KBSECURE", true);
 
 require_once("server.common.php");
-require_once("server.xmlrpc.php");
-require_once("server.xmlrpc.server.php");
-require_once("server.jsonrpc.php");
-require_once("server.jsonrpc.server.php");
-require_once("server.xmlrpc.wrappers.php");
+require_once("server.jsonrpc.service.php");
 require_once("server.compression.php");
 require_once("phpthumb/phpthumb.class.php");
 
-// Übersetzung der von PHP-XMLRPC bereitgestellten Fehlermeldungen
-$GLOBALS["xmlrpcstr"]["unknown_method"]   = "Unbekannte Methode";
-$GLOBALS["xmlrpcstr"]["incorrect_params"] = utf8_decode("Unzulässige Parameter an die Methode übergeben");
-$GLOBALS["xmlrpcstr"]["server_error"] 	  = "Interner Server-Fehler";
-
 // Selbst definierte Fehlermeldungen
-$usrErr = $GLOBALS["xmlrpcerruser"];
-
-$GLOBALS["kbsvcerr"]["authentication_failed"]  = $usrErr;
-$GLOBALS["kbsvcstr"]["authentication_failed"]  = "Authentifizierung fehlgeschlagen";
-$GLOBALS["kbsvcerr"]["invalid_database_query"] = $usrErr + 1;
-$GLOBALS["kbsvcstr"]["invalid_database_query"] = "Ungültige Datenbankabfrage";
-$GLOBALS["kbsvcerr"]["invalid_input"] 		   = $usrErr + 2;
-$GLOBALS["kbsvcstr"]["invalid_input"] 		   = "Ungültige Eingabewerte";
-$GLOBALS["kbsvcerr"]["server_error"] 		   = $usrErr + 3;
-$GLOBALS["kbsvcstr"]["server_error"] 		   = "Interner Server-Fehler";
-$GLOBALS["kbsvcerr"]["user_not_found"] 		   = $usrErr + 4;
-$GLOBALS["kbsvcstr"]["user_not_found"] 		   = "Der Benutzer konnte nicht gefunden werden";
+JSONRPCErrorCodes::add("authentication_failed", 800, "Authentifizierung fehlgeschlagen");
+JSONRPCErrorCodes::add("invalid_database_query", 801, "Ungültige Datenbankabfrage");
+JSONRPCErrorCodes::add("invalid_input", 802, "Ungültige Eingabewerte");
+JSONRPCErrorCodes::add("server_error", 803, "Interner Server-Fehler");
+JSONRPCErrorCodes::add("user_not_found", 804, "Der Benutzer konnte nicht gefunden werden");
 
 function gettasks($start = 0, $end = 0) {
 	global $database;
@@ -50,7 +34,7 @@ function gettasks($start = 0, $end = 0) {
 		"$cond ORDER BY date");
 		
 	if (!$tasksResponse) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
 	
 	$tasks = Array();
@@ -80,7 +64,7 @@ function gettasks($start = 0, $end = 0) {
 		mySQLValue($oldestSumbission) . " GROUP BY taskid");
     
 	if (!$commentsResponse) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     $commentsCount = Array();
@@ -112,19 +96,19 @@ function removetask($taskid) {
     $user = User::getInstance();
     
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
 	}
 	
     if (!$taskid) {
-        return WebServiceError("invalid_input", ": Keine Aufgabe angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Keine Aufgabe angegeben.");
     }
     
     if (!$database->query("UPDATE tasks SET removed = 1 WHERE id = " . mySQLValue($taskid))) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
     }
     
     if (mysql_affected_rows() != 1) {
-        return WebServiceError("invalid_input", ": Eine Aufgabe mit der ID $taskid existiert nicht.");
+        return new JSONRPCErrorResponse("invalid_input", "Eine Aufgabe mit der ID $taskid existiert nicht.");
 	}
 	
     return true;
@@ -137,20 +121,20 @@ function createtask($subject, $date, $text, $important = false) {
     
     // Prüft, ob der Benuzter angemeldet ist
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     // Überprüft die Eingabewerte
     if (!$subject) {
-        return WebServiceError("invalid_input", ": Kein Fach angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Kein Fach angegeben.");
     }
     
     if (!$date) {
-        return WebServiceError("invalid_input", ": Kein Datum angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Kein Datum angegeben.");
     }
     
     if (!$text) {
-        return WebServiceError("invalid_input", ": Keine Aufgabe angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Keine Aufgabe angegeben.");
     }
     
     // Der aktuelle Timestamp
@@ -159,7 +143,7 @@ function createtask($subject, $date, $text, $important = false) {
     // Trägt die Aufgabe in die Datenbank ein
     if (!$database->query("INSERT INTO tasks (date, subject, text, important, userid, added) VALUES(" . mySQLValue($date) . ", " . 
         mySQLValue($subject) . ", " . mySQLValue($text) . ", " . mySQLValue($important) . ", " . $user->id . ", $time)")) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     return mysql_insert_id();
@@ -172,25 +156,25 @@ function edittask($id, $date, $text, $important = false) {
     
     // Prüft, ob der Benuzter angemeldet ist
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     // Überprüft die Eingabewerte
     if ($id <= 0) {
-        return WebServiceError("invalid_input", ": Keine gültige Aufgaben-ID angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Keine gültige Aufgaben-ID angegeben.");
     }
     
     if (!$date) {
-        return WebServiceError("invalid_input", ": Kein Datum angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Kein Datum angegeben.");
     }
     
     if (!$text) {
-        return WebServiceError("invalid_input", ": Keine Aufgabe angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Keine Aufgabe angegeben.");
     }
     
     if (!$database->query("UPDATE tasks SET date = " . mySQLValue($date) . ", text = " . mySQLValue($text) . ", important = " .
         mySQLValue($important) . " WHERE id = " . mySQLValue($id))) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     return true;
@@ -204,7 +188,7 @@ function getcomments($taskid) {
     $databaseResponse = $database->query("SELECT * FROM comments WHERE taskid = " . mySQLValue($taskid) . " ORDER BY date");
     
     if (!$databaseResponse) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 	}
 	
     $comments = Array();
@@ -242,16 +226,16 @@ function createcomment($taskid, $text) {
     $user = User::getInstance();
     
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
 	}
 	
     if (!$text) {
-        return WebServiceError("invalid_input", ": Kein Kommentar angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", ": Kein Kommentar angegeben.");
     }
     
     if (!$database->query("INSERT INTO comments (taskid, userid, date, comment) VALUES(" . mySQLValue($taskid) . ", " . mySQLValue($user->id) . 
 		", " . mySQLValue(time()) . ", " . mySQLValue($text) . ")")) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     $id = mysql_insert_id();
@@ -267,22 +251,22 @@ function editcomment($id, $text) {
     $user = User::getInstance();
     
     if (!$text) {
-        return WebServiceError("invalid_input", ": Kein Kommentar angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Kein Kommentar angegeben.");
 	}
 	
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     $databaseResponse = $database->query("UPDATE comments SET comment = " . mySQLValue($text) . " WHERE id = " .
 		mySQLValue($id) . " AND userid = " . mySQLValue($user->id));
 		
 	if (!$databaseResponse) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     if (mysql_affected_rows() != 1) {
-        return WebServiceError("invalid_input", ": Entweder existiert der Kommentar nicht oder du bist nicht " .
+        return new JSONRPCErrorResponse("invalid_input", "Entweder existiert der Kommentar nicht oder du bist nicht " .
 			"autorisiert, den Kommentar zu bearbeiten");
 	}
     
@@ -297,7 +281,7 @@ function getcontacts() {
     $databaseResponse = $database->query("SELECT * FROM users ORDER BY firstname");
     
     if (!$databaseResponse) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     $contacts = Array();
@@ -329,7 +313,7 @@ function getfiles() {
     $databaseResponse = $database->query("SELECT * FROM files ORDER BY uploaded");
     
     if (!$databaseResponse) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     $files = Array();
@@ -360,30 +344,30 @@ function archivefile($id) {
 	$user = User::getInstance();
 	
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
 	
     $response = $database->query("SELECT * FROM files WHERE id = " . mySQLValue($id));
     
     if (!$response) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 	}
 	
     if (mysql_num_rows($response) != 1) {
-        return WebServiceError("invalid_input", ": Keine gültige Datei angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Keine gültige Datei angegeben.");
     }
     
     $file = mysql_fetch_array($response);
 	
     if ($file["userid"] != $user->id) {
-		return WebServiceError("invalid_input", ": Du darfst diese Datei leider nicht archivieren. " .
+		return new JSONRPCErrorResponse("invalid_input", "Du darfst diese Datei leider nicht archivieren. " .
 			"Dies ist dem Benutzer vorbehalten, der die Datei hochgeladen hat.");
     }
     
     $response = $database->query("UPDATE files SET forcedarchiving = 1 WHERE id = " . mySQLValue($id));
     
     if (!$response) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 	}
 	
 	return true;
@@ -396,11 +380,11 @@ function uploadfile($description) {
 	$settings = Settings::getInstance();
 	
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     if (!$description) {
-        return WebServiceError("invalid_input", ": Keine Beschreibung eingegeben");    
+        return new JSONRPCErrorResponse("invalid_input", "Keine Beschreibung eingegeben");    
     }
     
     if ($_FILES["Filedata"]) {
@@ -409,7 +393,7 @@ function uploadfile($description) {
         $fnParts = parseFileName(utf8_decode($_FILES["Filedata"]["name"]));
         
         if (in_array(strtolower($fnParts["ext"]), $settings->upload_extblacklist)) {
-			return WebServiceError("invalid_input", ": Aus Sicherheitsgründen sind keine " . 
+			return new JSONRPCErrorResponse("invalid_input", "Aus Sicherheitsgründen sind keine " . 
 				strtoupper($fnParts["ext"]) . "-Dateien erlaubt");
         }
         
@@ -429,13 +413,13 @@ function uploadfile($description) {
 				mySQLValue($description) . ", $fileSize, " . $user->id . ", $date)")) {
 				return mysql_insert_id();
 			} else {
-				return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+				return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 			}
 		} else {
-			return WebServiceError("server_error");
+			return new JSONRPCErrorResponse("server_error");
 		}
     } else {
-        return WebServiceError("invalid_input", ": Keine Datei hochgeladen");
+        return new JSONRPCErrorResponse("invalid_input", "Keine Datei hochgeladen");
     }
 }
 
@@ -443,7 +427,7 @@ function signin($nickname, $password) {
 	$user = User::getInstance();
     
     if (!$user->signIn($nickname, $password)) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     return getuserdata();
@@ -455,21 +439,21 @@ function requestpassword($username, $password) {
 	$settings = Settings::getInstance();
 	
     if (!$username) {
-        return WebServiceError("invalid_input", ": Keinen Benutzernamen angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Keinen Benutzernamen angegeben.");
     }
     
     if (!$password) {
-        return WebServiceError("invalid_input", ": Kein Passwort angegeben.");    
+        return new JSONRPCErrorResponse("invalid_input", "Kein Passwort angegeben.");    
     }
     
     $databaseResponse = $database->query("SELECT * FROM users WHERE nickname = " . mySQLValue($username));
     
     if (!$databaseResponse) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
 	}
 	
     if (mysql_num_rows($databaseResponse) != 1) {
-        return WebServiceError("invalid_input", ": Benutzer existiert nicht.");
+        return new JSONRPCErrorResponse("invalid_input", "Benutzer existiert nicht.");
 	}
 	
     $user = mysql_fetch_array($databaseResponse);
@@ -477,7 +461,7 @@ function requestpassword($username, $password) {
     
     if (!$database->query("UPDATE users SET newpassword = " . mySQLValue(md5($password)) . ", newpasswordkey = " . mySQLValue($requestKey) .
         " WHERE nickname = " . mySQLValue($username))) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     if (!mail($user["mail"], "Neues Klassenbuchpasswort bestätigen",
@@ -487,7 +471,7 @@ function requestpassword($username, $password) {
         "solltest du nicht auf diesen Link klicken, sondern diese E-Mail gleich löschen!\n\n" .
         $settings->domain . "index.php?passwordverification=$requestKey",
         "From: Klassenbuch <" . $settings->mail . ">")) {
-        return WebServiceError("invalid_input");
+        return new JSONRPCErrorResponse("invalid_input");
     }
     
     return true;
@@ -497,24 +481,24 @@ function verifynewpassword($key = "") {
     global $database;
     
     if (!$key) {
-        return WebServiceError("invalid_input", ": Kein Bestätigungsschlussel angegeben");
+        return new JSONRPCErrorResponse("invalid_input", "Kein Bestätigungsschlussel angegeben");
     }
     
     $databaseResponse = $database->query("SELECT * FROM users WHERE newpasswordkey = " . mySQLValue($key));
     
     if (!$databaseResponse) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     if (mysql_num_rows($databaseResponse) != 1) {
-        return WebServiceError("invalid_input", ": Ungültiger Bestätigungsschlüssel.");
+        return new JSONRPCErrorResponse("invalid_input", "Ungültiger Bestätigungsschlüssel.");
     }
     
     $user = mysql_fetch_array($databaseResponse);    
     
     if (!$database->query("UPDATE users SET password = " . mySQLValue($user["newpassword"]) . ", newpasswordkey = '', newpassword = '' " .
         "WHERE id = " . mySQLValue($user["id"]))) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
     }
     
     return true;
@@ -526,22 +510,22 @@ function changepassword($newpassword, $currentpassword) {
 	$user = User::getInstance();
 	
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     if (!$newpassword || !$currentpassword) {
-		return WebServiceError("invalid_input");
+		return new JSONRPCErrorResponse("invalid_input");
 	}
 	
     $response = $database->query("UPDATE users SET password = " . mySQLValue(md5($newpassword)) .
 		" WHERE password = " . mySQLValue(md5($currentpassword)) . " AND id = " . mySQLValue($user->id));
 	
 	if (!$response) {
-		return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());	
+		return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());	
     }
     
     if (mysql_affected_rows() != 1) {
-		return WebServiceError("invalid_input", ": Falsches Passwort angegeben.");
+		return new JSONRPCErrorResponse("invalid_input", "Falsches Passwort angegeben.");
     }
     
     return true;
@@ -551,7 +535,7 @@ function getuserdata() {
 	$user = User::getInstance();
 
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     return Array(
@@ -568,11 +552,11 @@ function updateuserprofile($profileInformation) {
 	$user = User::getInstance();
 	
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     if (!$user->update($profileInformation)) {
-        return WebServiceError("invalid_input");
+        return new JSONRPCErrorResponse("invalid_input");
     }
     
 	return true;
@@ -582,7 +566,7 @@ function changeusersettings($settings) {
 	$user = User::getInstance();
 	
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     $userSettings = Array();
@@ -607,30 +591,30 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 	$settings = Settings::getInstance();
 	
     if (!$nickname) {
-        return WebServiceError("invalid_input", ": Kein Nickname angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Kein Nickname angegeben.");
     }
     
     if (!$firstname) {
-        return WebServiceError("invalid_input", ": Kein Vorname angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Kein Vorname angegeben.");
     }
     
     if (!$surname) {
-        return WebServiceError("invalid_input", ": Kein Nachname angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Kein Nachname angegeben.");
     }
     
     if (!$mail) {
-        return WebServiceError("invalid_input", ": Keine E-Mail-Adresse angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Keine E-Mail-Adresse angegeben.");
     }
     
     if (!$password) {
-        return WebServiceError("invalid_input", ": Keine Passwort angegeben.");
+        return new JSONRPCErrorResponse("invalid_input", "Keine Passwort angegeben.");
     }
     
     /* $response = $database->query("SELECT * FROM users WHERE nickname = " . mySQLValue($nickname) . " OR mail = " . 
 		mySQLValue($mail));
 	
 	if (mysql_num_rows($response) != 0) {
-		return WebServiceError("invalid_input", ": Ein Benutzer mit diesem Nicknamen bzw. dieser E-Mail-Adresse existiert " .
+		return new JSONRPCErrorResponse("invalid_input", "Ein Benutzer mit diesem Nicknamen bzw. dieser E-Mail-Adresse existiert " .
 			"bereits.");
 	} */
 	
@@ -639,7 +623,7 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 		mySQLValue(md5($password)) . ", " .  mySQLValue($mail) . ")");
     
     if (!$response) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 	} else { */
 	
 	try {
@@ -647,7 +631,7 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 			"Klassenbuch unter dem Nicknamen \"$nickname\" angemeldet.\n\nE-Mail-Adresse: $mail\n" .
 			"Passwort: " . md5($password), "From: " . $settings->mail . "\r\nX-Mailer: PHP/' . phpversion()");
 	} catch(Exception $e) {
-		return WebServiceError("server_error", ": Fehler beim E-Mailversand.");
+		return new JSONRPCErrorResponse("server_error", "Fehler beim E-Mailversand.");
 	}
 	
 	return true;
@@ -659,7 +643,7 @@ function gallery_getalbums() {
 	$databaseResponse = $database->query("SELECT * FROM gallery_albums");
 	
     if (!$databaseResponse) {
-        return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+        return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 	}
 	
     $albums = Array();
@@ -686,16 +670,16 @@ function gallery_createalbum($name, $description = "") {
 	$description = trim(smartStripSlashes($description));
 	
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");	
+        return new JSONRPCErrorResponse("authentication_failed");	
 	}
 	
     if (!$name) {
-        return WebServiceError("invalid_input", ": Keinen Albumnamen angegeben");
+        return new JSONRPCErrorResponse("invalid_input", "Keinen Albumnamen angegeben");
     }
     
     if (!$database->query("INSERT INTO gallery_albums (name, description, date) VALUES(" . mySQLValue($name) . ", " . mySQLValue($description) . ", " . 
 		time() . ")")) {
-		return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+		return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 	}
 	
 	return mysql_insert_id();
@@ -709,11 +693,11 @@ function gallery_removealbum($id) {
 	$id = intval($id);
 	
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     if ($id <= 0) {
-		return WebServiceError("invalid_input", ": Kein gültiges Album angegeben");
+		return new JSONRPCErrorResponse("invalid_input", "Kein gültiges Album angegeben");
     }
     
     $database->query("DELETE FROM gallery_albums WHERE id = " . mySQLValue($id));
@@ -729,17 +713,17 @@ function gallery_downloadalbum($albumid) {
 	$albumid = intval($albumid);
     
     if ($albumid <= 0) {
-		return WebServiceError("invalid_input", ": Kein gültiges Album angegeben");
+		return new JSONRPCErrorResponse("invalid_input", "Kein gültiges Album angegeben");
     }
     
     $response = $database->query("SELECT * FROM gallery_albums WHERE id = " . mySQLValue($albumid));
     
     if (!$response) {
-		return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+		return new JSONRPCErrorResponse("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
     }
     
     if (mysql_num_rows($response) !== 1) {
-		return WebServiceError("invalid_input", ": Kein gültiges Album angegeben");
+		return new JSONRPCErrorResponse("invalid_input", "Kein gültiges Album angegeben");
     }
     
     $album = mysql_fetch_array($response);
@@ -758,7 +742,7 @@ function gallery_downloadalbum($albumid) {
 		$response = $database->query("SELECT * FROM gallery_pictures WHERE albumid = " . mySQLValue($albumid));
 		
 		if (!$response) {
-			return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+			return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 		}
 		
 		while ($picture = mysql_fetch_array($response)) {
@@ -766,7 +750,7 @@ function gallery_downloadalbum($albumid) {
 		}
 		
 		if ($zippedFile->create_archive() === 0) {
-			return WebServiceError("server_error", ": Archiv konnte nicht erstellt werden");
+			return new JSONRPCErrorResponse("server_error", "Archiv konnte nicht erstellt werden");
 		}
 	}
     
@@ -779,13 +763,13 @@ function gallery_getpictures($albumid) {
 	$albumid = intval($albumid);
     
     if (!$albumid) {
-        return WebServiceError("invalid_input", ": Kein gültiges Album");    
+        return new JSONRPCErrorResponse("invalid_input", "Kein gültiges Album");    
     }
     
     $databaseResponse = $database->query("SELECT * FROM gallery_pictures WHERE albumid = " . mySQLValue($albumid) . " ORDER BY taken ASC");
     
 	if (!$databaseResponse) {
-		return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+		return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 	}
 	
     $pictures = Array();
@@ -809,13 +793,13 @@ function gallery_uploadpicture($albumid) {
 	$user = User::getInstance();
 	
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     $albumid = intval($albumid);
     
     if (!$albumid)
-        return WebServiceError("invalid_input", ": Kein gültiges Album");
+        return new JSONRPCErrorResponse("invalid_input", "Kein gültiges Album");
     
     if ($_FILES["Filedata"]) {
 		$allowedExtensions = array("jpg", "bmp", "gif", "png");
@@ -861,19 +845,19 @@ function gallery_uploadpicture($albumid) {
 						$user->id . ", " . time() . ", " . mySQLValue($taken) . ")")) {
 						return mysql_insert_id();
 					} else {
-						return WebServiceError("invalid_database_query", "\nMySQL-Fehlermeldung: " . mysql_error());
+						return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 					}
 				} else {
-					return WebServiceError("server_error");
+					return new JSONRPCErrorResponse("server_error");
 				}
             } else {
-                return WebServiceError("invalid_input", ": Kein gültiges Album");
+                return new JSONRPCErrorResponse("invalid_input", "Kein gültiges Album");
             }
         } else {
-            return WebServiceError("invalid_input", ": Entweder eine 0-Byte-Datei oder nicht unterstütztes Format");
+            return new JSONRPCErrorResponse("invalid_input", "Entweder eine 0-Byte-Datei oder nicht unterstütztes Format");
         }
     } else {
-        return WebServiceError("invalid_input", ": Kein Foto hochgeladen");
+        return new JSONRPCErrorResponse("invalid_input", "Kein Foto hochgeladen");
     }
 }
 
@@ -886,28 +870,28 @@ function gallery_rotatepicture($pictureid, $degree) {
     $degree = intval($degree);
 
     if (!$user->authenticated) {
-        return WebServiceError("authentication_failed");
+        return new JSONRPCErrorResponse("authentication_failed");
     }
     
     if ($degree % 90 != 0) {
-		return WebServiceError("invalid_input", ": Kein gültiger Winkel angegeben.");
+		return new JSONRPCErrorResponse("invalid_input", "Kein gültiger Winkel angegeben.");
     }
     
     $response = $database->query("SELECT * FROM gallery_pictures WHERE id = " . mySQLValue($pictureid));
     
     if (mysql_num_rows($response) != 1) {
-		return WebServiceError("invalid_input", ": Kein gültiges Bild angegeben.");
+		return new JSONRPCErrorResponse("invalid_input", "Kein gültiges Bild angegeben.");
     }
     
     $picture = mysql_fetch_array($response);
 	
     if (!($user->isadmin || $picture["userid"] == $user->id)) {
-		return WebServiceError("authentication_failed", ": Fotos dürfen nur von demjenigen Benutzer bearbeitet werden, " .
+		return new JSONRPCErrorResponse("authentication_failed", "Fotos dürfen nur von demjenigen Benutzer bearbeitet werden, " .
 			"der das betreffende Foto hochgeladen hat. Ansonsten hat nur der Administrator das Recht dazu.");
     }
     
     if (!function_exists("gd_info")) {
-		return WebServiceError("server_error", "Der Server nicht über eine benötigte Grafikbibliothek zu verfügen.");
+		return new JSONRPCErrorResponse("server_error", "Der Server nicht über eine benötigte Grafikbibliothek zu verfügen.");
     }
     
     $path = "gallery/originals/" . $picture["filename"];
@@ -932,10 +916,10 @@ function gallery_generatethumbnails($fileName) {
 	
 	if (!$phpThumb->GenerateThumbnail() || !$phpThumb->RenderToFile("gallery/thumbnails/$fileName")) {
 		if (strpos(implode(",", $phpThumb->debugmessages), "Source image is too large")) {
-			return WebServiceError("server_error", ": Das Bild ist zu gross. Bitte zuerst verkleinern.");
+			return new JSONRPCErrorResponse("server_error", "Das Bild ist zu gross. Bitte zuerst verkleinern.");
 		}
 		
-		return WebServiceError("server_error", ": Miniaturansicht konnte nicht erstellt werden");
+		return new JSONRPCErrorResponse("server_error", "Miniaturansicht konnte nicht erstellt werden");
 	}
 	
 	$phpThumb2 = new phpThumb();
@@ -946,7 +930,7 @@ function gallery_generatethumbnails($fileName) {
 	$phpThumb->q = 85;
 	
 	if (!$phpThumb2->GenerateThumbnail() || !$phpThumb2->RenderToFile("gallery/pictures/$fileName")) {
-		return WebServiceError("server_error", ": Diashow-Version des Fotos konnte nicht erstellt werden");
+		return new JSONRPCErrorResponse("server_error", "Diashow-Version des Fotos konnte nicht erstellt werden");
 	}
 		
 	// Setzt die Zugriffsrechte
@@ -955,10 +939,6 @@ function gallery_generatethumbnails($fileName) {
 	
 	return true;
 }
-
-function WebServiceError($error, $addition = "") {
-    return new xmlrpcresp(0, $GLOBALS["kbsvcerr"][$error], utf8_decode($GLOBALS["kbsvcstr"][$error] . $addition));
-};
 
 // Die Dispatch Map für diesen Webservice: In ihr enthalten sind die Namen aller Methoden, die dieser Service bereitstellt.
 // Zusätzlich enthält sie Angaben darüber, welche Parameter die bestimmten Methoden erwarten. 
@@ -1125,35 +1105,23 @@ $dispatchMap = array(
 					   "der das Foto hochgeladen hat, durchgeführt werden.")
 );
 
-$service = new jsonrpc_server($dispatchMap, false);
+$service = new JSONRPCService($dispatchMap, false);
 $service->response_charset_encoding = "UTF-8";
 
-// Dient der Vereinfachung des Codes. Die in der Dispatch Map registrierten Methoden müssen keine Objekte vom Typ "jsonrpcmsg" zurückgeben,
-// sondern normale PHP-Werte.
-// Siehe auch: http://phpxmlrpc.sourceforge.net/doc-2/ch07s05.html - 5.7. 'New style' servers
-$service->functions_parameters_type = "phpvals";
-
 if ($_POST["jsonrpc"]) {
- 	$service->service(strip_tags(stripcslashes($_POST["jsonrpc"])));
+ 	$service->service(strip_tags(stripcslashes($_POST["jsonrpc"])), true);
 } elseif (!(defined("INTERNAL_REQUEST") && INTERNAL_REQUEST)) {
-    $service->service();
+    $service->service(null, true);
 }
 
 function doInternalRequest($method = "", $params = Array()) {
     global $service;
     
-    $response = Array();
-    
     $json = new Services_JSON();
-    $rawData = $service->service($json->encode(Array(
+	return $service->service($json->encode(Array(
 		"method" => $method,
 		"params" => $params
-    )), true);
-    
-    $response = $json->decode($rawData);
-    $response->raw = $rawData;
-    
-    return $response;
+    )), false);
 }
 
 ?>

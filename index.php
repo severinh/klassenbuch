@@ -1,5 +1,4 @@
 <?php
-
 // Der Zugriff auf das Klassenbuch erfolgt über diese Datei.
 define("_KBSECURE", true);
 
@@ -68,28 +67,28 @@ if (!$settings->online) {
 		$files 	  = doInternalRequest("getfiles");
 		$albums   = doInternalRequest("gallery_getalbums");
 		
-		if ($userData->result) {
-			$directData[] = "userdata: " . $userData->raw;
+		if ($userData->val) {
+			$directData[] = "userdata: " . $userData->payload;
 			
-			if ($userData->result->settings && in_array($userData->result->settings->theme, $designList)) {
-				$tmpl->set_var("DESIGN", $userData->result->settings->theme);
+			if ($userData->val->settings && in_array($userData->val->settings->theme, $designList)) {
+				$tmpl->set_var("DESIGN", $userData->val->settings->theme);
 			}
 		}
 		
-		if ($albums->result) {
-			$directData[] = "albums: " . $albums->raw;
+		if ($albums->val) {
+			$directData[] = "albums: " . $albums->payload;
 		}
 		
-		if ($tasks->result) {
-			$directData[] = "tasks: " . $tasks->raw;
+		if ($tasks->val) {
+			$directData[] = "tasks: " . $tasks->payload;
 		}
 		
-		if ($contacts->result) {
-			$directData[] = "contacts: " . $contacts->raw;
+		if ($contacts->val) {
+			$directData[] = "contacts: " . $contacts->payload;
 		}
 		
-		if ($files->result) {
-			$directData[] = "files: " . $files->raw;
+		if ($files->val) {
+			$directData[] = "files: " . $files->payload;
 		}
 		
 		$tmpl->set_var("DIRECTDATA", implode(",\n", $directData) . "\n");
