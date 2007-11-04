@@ -812,7 +812,7 @@ function gallery_uploadpicture($albumid) {
         if ($size != 0 && in_array($fnParts["ext"], $allowedExtensions)) {
 			if (mysql_num_rows($database->query("SELECT id FROM gallery_albums WHERE id = " . mySQLValue($albumid))) == 1) {
 				$i = 1;
-				while (is_file("files/" . $fnPartsNew["base"] . "." . $fnPartsNew["ext"])) {
+				while (is_file("gallery/originals/" . $fnPartsNew["base"] . "." . $fnPartsNew["ext"])) {
 					$fnPartsNew["base"] = $fnParts["base"] . "_(" . ++$i .")";
 				}
 				
