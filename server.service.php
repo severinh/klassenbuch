@@ -411,7 +411,7 @@ function uploadfile($description) {
 		if (move_uploaded_file($_FILES["Filedata"]["tmp_name"], "files/$newFileName")) {
 			if ($database->query("INSERT INTO files (name, description, size, userid, uploaded) VALUES(" . mySQLValue($newFileName) . ", " .
 				mySQLValue($description) . ", $fileSize, " . $user->id . ", $date)")) {
-				return mysql_insert_id();
+				return Array("id" => mysql_insert_id(), "filename" => $newFileName);
 			} else {
 				return new JSONRPCErrorResponse("invalid_database_query", "MySQL-Fehlermeldung: " . mysql_error());
 			}
@@ -1011,8 +1011,9 @@ $dispatchMap = Array(
 	
     "uploadfile" => Array(
         "function"  => "uploadfile",
-        "signature" => Array(Array("int", "string")),
-        "docstring" => "Lädt eine beliebige Datei in die Dateiablage hoch und gibt die ID der Datei zurück."
+        "signature" => Array(Array("array", "string")),
+        "docstring" => "Lädt eine beliebige Datei in die Dateiablage hoch und gibt die ID und der endgültige Name der " .
+					   "Datei zurück."
     ),
 	
     "signin" => Array(

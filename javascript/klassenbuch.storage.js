@@ -652,10 +652,10 @@ Storage.UploadWindow = Class.create(Controls.Window, /** @scope Storage.UploadWi
 			this._selectUploadView(2);
 			
 			this.fireEvent("success", new Storage.File({
-				id: response.result,
+				id: response.result.id,
 				uploaded: Date.getCurrentTimestamp(),
 				size: file.size,
-				name: file.name,
+				name: response.result.filename,
 				userid: User.id,
 				description: this.getDescription()
 			}));
