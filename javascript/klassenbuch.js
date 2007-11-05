@@ -157,7 +157,7 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
 	 * Gibt an, um welche Version des Klassenbuchs es sich handelt.
 	 * @type String
 	*/
-	version: "2.8 RC 0",
+	version: "2.8 RC 1",
 	
 	/**
      * Gibt an, ob das Klassenbuch bereits initialisiert worden ist. Standartwert ist <em>false</em>.
