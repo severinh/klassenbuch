@@ -1536,8 +1536,6 @@ ul {
 }
 
 .pictureInfoWindow .standardButton {
-	float: left;
-	clear: both;
 	margin-top: 3px;
 }
 
