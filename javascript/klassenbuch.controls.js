@@ -819,15 +819,6 @@ Controls.SideMenu = Class.create(Controls.RoundedPane, {
 				view.contentPane.addClassName("withSideMenu");
 				this.showButton.hide();
 			}, this);
-			
-			if (Browser.IE6) {
-				this.showButton.setStyle({ left: "-15px" });
-			}
-		}
-		
-		if (Browser.IE6) {
-			this.setStyle({ left: "-216px" });
-			this.help.setStyle({ paddingLeft: "2px" });
 		}
 		
 		this.on("remove", function() {

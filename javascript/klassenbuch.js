@@ -124,7 +124,7 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
 		if (Browser.supported) {
 			var body = $$("body")[0];
 			
-			$w("Gecko Opera IE WebKit").each(function(a) {
+			$w("Gecko Opera IE IE6 WebKit").each(function(a) {
 				if (Browser[a]) {
 					body.addClassName(a.toLowerCase());
 				}

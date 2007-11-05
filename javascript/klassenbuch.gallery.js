@@ -287,7 +287,8 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 			this.reportNavigation.bind(this, "hochladen"), {
 				icon: new Sprite("smallIcons", 11),
 				iconDisabled: new Sprite("smallIcons", 12),
-				onlySignedIn: true
+				onlySignedIn: true,
+				className: "addPicturesButton"
 			}
 		));
 
@@ -302,7 +303,8 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 			this.reportNavigation.bind(this, "diashow"), {
 				icon: new Sprite("smallIcons", 27),
 				iconDisabled: new Sprite("smallIcons", 28),
-				enabled: false
+				enabled: false,
+				className: "slideShowButton"
 			}
 		));
 
@@ -321,12 +323,10 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 				this.album.download();
 			}).bind(this), {
 				icon: new Sprite("smallIcons", 25),
-				iconDisabled: new Sprite("smallIcons", 26)
+				iconDisabled: new Sprite("smallIcons", 26),
+				className: "downloadButton"
 			}
 		));
-		
-		this._startSlideShowButton.addClassName("slideShowButton");
-		this._downloadButton.addClassName("downloadButton");
 
 		/**
 		 * Container, in dem die Miniaturansichten der Fotos angezeigt wird.
@@ -351,22 +351,7 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		 * @memberof Gallery.Album.Window
 		*/
 		this._navigation = this.content.createChild({ className: "navigation" }).hide();
-
-		/**
-		 * Die Schaltfläche, mit welcher der Benutzer zur nächsten Seite wechseln kann.
-		 * @type {Controls.Button}
-		 * @name _nextButton
-		 * @memberof Gallery.Album.Window
-		*/
-		this._nextButton = this._navigation.insertControl(new Controls.Button("Nächste Seite",
-			this.showNextPage.bind(this), {
-				enabled: false
-			}
-		));
 		
-		// Legt das Element an, in welche 
-		this._navigation.createChild({ tag: "div", className: "currentPage" });
-
 		/**
 		 * Die Schaltfläche, mit welcher der Benutzer zur vorherigen Seite wechseln kann.
 		 * @type {Controls.Button}
@@ -375,6 +360,21 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		*/		
 		this._previousButton = this._navigation.insertControl(new Controls.Button("Vorherige Seite",
 			this.showPreviousPage.bind(this), {
+				enabled: false
+			}
+		));
+		
+		// Legt das Element an, in welche 
+		this._navigation.createChild({ tag: "span", className: "currentPage" });
+		
+		/**
+		 * Die Schaltfläche, mit welcher der Benutzer zur nächsten Seite wechseln kann.
+		 * @type {Controls.Button}
+		 * @name _nextButton
+		 * @memberof Gallery.Album.Window
+		*/
+		this._nextButton = this._navigation.insertControl(new Controls.Button("Nächste Seite",
+			this.showNextPage.bind(this), {
 				enabled: false
 			}
 		));

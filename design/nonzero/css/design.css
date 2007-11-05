@@ -427,6 +427,10 @@ ul {
 	width: 190px;
 }
 
+.ie6 .sideMenu {
+	left: -202px;
+}
+
 .sideMenu .closeButton {
 	position: absolute;
 	background: url(../images/sidemenuhide.gif) no-repeat;
@@ -496,6 +500,10 @@ ul {
 	width: 22px;
 	height: 144px;
 	cursor: pointer;
+}
+
+.ie6 .closedSideMenu {
+	left: -25px;
 }
 
 .form {
@@ -1351,6 +1359,7 @@ ul {
 	position: relative;
 	border: 1px #406090 solid;
 	cursor: pointer;
+	overflow: hidden;
 }
 
 .galleryView .albumLink .icon {
@@ -1401,13 +1410,16 @@ ul {
 }
 
 .albumWindow .standardButton {
-	float: left;
 	margin: 0 2px 10px 0;
 }
 
 .albumWindow .slideShowButton,
 .albumWindow .downloadButton {
 	float: right;
+}
+
+.albumWindow .addPicturesButton {
+	float: left;
 }
 
 .albumWindow .thumbnailTable {
@@ -1419,11 +1431,8 @@ ul {
 }
 
 .albumWindow .navigation {
-	margin-top: 20px;
-}
-
-.albumWindow .navigation > div {
 	float: right;
+	margin-top: 10px;
 }
 
 .albumWindow .navigation .currentPage {

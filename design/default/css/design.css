@@ -409,6 +409,10 @@ img {
 	width: 200px;
 }
 
+.ie6 .sideMenu {
+	left: -220px;
+}
+
 .sideMenu .corner {
 	background-image: url(../images/roundedSideMenu.gif);
 }
@@ -1410,8 +1414,11 @@ img {
 }
 
 .albumWindow .standardButton {
-	float: left;
 	margin: 0 2px 10px 0;
+}
+
+.albumWindow .addPicturesButton {
+	float: left;
 }
 
 .albumWindow .slideShowButton,
@@ -1428,11 +1435,8 @@ img {
 }
 
 .albumWindow .navigation {
-	margin-top: 20px;
-}
-
-.albumWindow .navigation > div {
-	float: right;
+	text-align: right;
+	margin-top: 10px;
 }
 
 .albumWindow .navigation .currentPage {
