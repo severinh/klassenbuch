@@ -457,7 +457,15 @@ Controls.Link = Class.create(Control, {
 */
 Controls.DropDownSelection = Class.create(Controls.Button, {
 	initialize: function($super, items) {
-		this._hideListListener = this._hideList.bindAsEventListener(this);
+		this._handleClick = (function(event) {
+			var element = event.element();
+			
+			if (element.match(".dropDownSelectionList li")) {
+				this.selectItem(element.innerHTML);
+			} else if (!element.up("#" + this.id)) {
+				this._hideList();
+			}
+		}).bindAsEventListener(this);
 		
 		/**
 		 * @field {String[]} Die Auswahlmöglichkeiten, die das Steuerelement zu bieten hat.
@@ -473,9 +481,7 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		this._list = $$("body")[0].createChild({
 			tag: "ul",
 			className: "dropDownSelectionList"
-		}).observe("click", (function(event) {
-			this.selectItem(event.element().innerHTML);
-		}).bindAsEventListener(this)).hide();
+		}).hide();
 		
 		this.addItems(items || []);
 		
@@ -534,20 +540,12 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		this._list.setStyle({ top: top + "px", left: (buttonPos[0] - listSize.width + elementSize.width) + "px" }).show();
 		
 		// Drückt der Benutzer die Maustaste, wird die Auswahlliste sofort wieder entfernt
-		(function() {
-			Event.observe(document, "mousedown", this._hideListListener);
-		}).bind(this).defer();
+		document.observe("mousedown", this._handleClick);
 	},
-
-    /**
-     * @method Macht die Liste mit den Auswahlmöglichkeiten wieder unsichtbar, sofern diese Methode nicht durch einen
-     * Klick innerhalb der Auswahlliste aufgerufen wurde.
-    */
-	_hideList: function(e) {
-		if (!Position.within(this._list, Event.pointerX(e), Event.pointerY(e))) {
-			this._list.hide();
-			document.stopObserving("mousedown", this._hideListListener);
-		}
+	
+	_hideList: function() {
+		document.stopObserving("mousedown", this._handleClick);
+		this._list.hide();
 	},
 	
     /**
