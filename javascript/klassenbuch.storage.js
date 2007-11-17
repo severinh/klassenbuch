@@ -529,8 +529,7 @@ Storage.UploadWindow = Class.create(Controls.Window, /** @scope Storage.UploadWi
          * @memberof Storage.UploadWindow
         */
         this._flashUpload = new JSONRPC.Upload("uploadfile", [], {
-			file_upload_limit: 1,
-			begin_upload_on_queue: false
+			file_upload_limit: 1
 		});
 		
 		this._flashUpload.on("ready", this._ready, this);

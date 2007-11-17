@@ -60,40 +60,42 @@ require_once("server.jsonrpc.response.php");
 require_once("server.jsonservice.php");
 
 class JSONRPCService {
-	// Array defining php functions exposed as jsonrpc methods by this server
+	// Array defining PHP functions exposed as JSONRPC methods by this server
 	private $dispatchMap = Array();
 	
 	/**
 	* When set to true, it will enable HTTP compression of the response, in case the client has declared its support
 	* for compression in the request.
 	*/
-	public $compress_response = false;
+	public $compressResponse = false;
 	
 	/**
 	* Controls wether the server is going to echo debugging messages back to the client as comments in response body.
-	* valid values: 0,1,2,3
+	* Valid values: 0,1,2,3
 	*/
 	public $debug = 0;
 	
 	/**
 	* List of http compression methods accepted by the server for requests.
-	* NB: PHP supports deflate, gzip compressions out of the box if compiled w. zlib
+	* PHP supports deflate, gzip compressions out of the box if compiled with zlib
 	*/
-	public $accepted_compression = Array();
+	public $acceptedCompression = Array();
 	
 	// Shall we serve calls to system.* methods?
-	public $allow_system_funcs = true;
+	public $allowSystemFunctions = true;
 	
 	// List of charset encodings natively accepted for requests
-	public $accepted_charset_encodings = Array();
+	public $acceptedCharsetEncodings = Array();
 	
 	// Charset encoding to be used for response.
-	public $response_charset_encoding = "";
+	public $responseCharsetEncoding = "";
 	
 	// Storage for internal debug info
-	public $debug_info = "";
+	public $debugInfo = "";
 	
-	public static $system_dmap = Array(
+	// Several system method that provide access to information about the method served by this service.
+	// Enabled if "allowSystemFunctions" is set to true.
+	public static $systemDispatchMap = Array(
 		"system.listMethods" => Array(
 			"function" => "JSONRPCService::listMethods",
 			"signature" => Array(Array("array")),
@@ -124,11 +126,11 @@ class JSONRPCService {
 		// If ZLIB is enabled, let the server by default accept compressed requests, and compress responses sent to
 		// clients that support them
 		if (function_exists("gzinflate")) {
-			$this->accepted_compression = Array("gzip", "deflate");
-			$this->compress_response = true;
+			$this->acceptedCompression = Array("gzip", "deflate");
+			$this->compressResponse = true;
 		}
 		
-		$this->accepted_charset_encodings = Array("UTF-8");
+		$this->acceptedCharsetEncodings = Array("UTF-8", "ISO-8859-1");
 		
 		/**
 		* The dispatch map is a dispatch array of methods mapped to function names and signatures if a method
@@ -158,7 +160,7 @@ class JSONRPCService {
 	public function setDebug($in) {
 		$this->debug = $in;
 	}
-
+	
 	/**
 	* Return a string with the serialized representation of all debug info
 	* @return String A JSON comment
@@ -166,8 +168,8 @@ class JSONRPCService {
 	public function serializeDebug() {
 		$out = "";
 		
-		if ($this->debug_info != "") {
-			$out .= "/* SERVER DEBUG INFO:\n" . base64_encode($this->debug_info) ."\n*/\n";
+		if ($this->debugInfo != "") {
+			$out .= "/* SERVER DEBUG INFO:\n" . base64_encode($this->debugInfo) ."\n*/\n";
 		}
 		
 		return $out;
@@ -177,12 +179,12 @@ class JSONRPCService {
 	* @access private
 	*/
 	private function execute($method, $params = Array(), $paramtypes = null) {
-		$sysCall = $this->allow_system_funcs && ereg("^system\.", $method);
-		$dmap = $sysCall ? self::$system_dmap : $this->dispatchMap;
+		$sysCall = $this->allowSystemFunctions && ereg("^system\.", $method);
+		$dmap = $sysCall ? self::$systemDispatchMap : $this->dispatchMap;
 		
 		if (!isset($dmap[$method]["function"])) {
 			// No such method
-			return new JSONRPCErrorResponse("unknown_method");
+			return new JSONRPCErrorResponse("UNKNOWN_METHOD");
 		}
 		
 		// Check signature
@@ -191,7 +193,7 @@ class JSONRPCService {
 			
 			if (!$ok) {
 				// Didn't match.
-				return new JSONRPCErrorResponse("incorrect_params", $errstr);
+				return new JSONRPCErrorResponse("INCORRECT_PARAMS", $errstr);
 			}
 		}
 
@@ -204,7 +206,7 @@ class JSONRPCService {
 		
 		// Verify that function to be invoked is in fact callable
 		if (!is_callable($func)) {
-			return new JSONRPCErrorResponse("server_error", "No function matches method");
+			return new JSONRPCErrorResponse("SERVER_ERROR", "No function matches method");
 		}
 		
 		// If debug level is 3, we should catch all errors generated during
@@ -239,8 +241,8 @@ class JSONRPCService {
 	}
 	
 	/**
-	* Execute the jsonrpc request, printing the response
-	* @param string $data The request body. If null, the http POST request will be examined
+	* Execute the JSONRPC request, printing the response
+	* @param string $data The request body. If null, the HTTP POST request will be examined
 	* @return JSONRPCResponse The response object
 	*/
 	public function service($data = null, $print_payload = true) {
@@ -251,7 +253,7 @@ class JSONRPCService {
 		$raw_data = $data;
 		
 		// Reset internal debug info
-		$this->debug_info = "";
+		$this->debugInfo = "";
 		
 		// Echo back what we received, before parsing it
 		if ($this->debug > 1) {
@@ -286,17 +288,19 @@ class JSONRPCService {
 		
 		if ($print_payload) {
 			// If we get a warning/error that has output some text before here, then we cannot
-			// add a new header. We cannot say we are sending xml, either...
+			// add a new header. We cannot say we are sending JSON, either...
 			if (!headers_sent()) {
 				header("Content-Type: " . $r->content_type);
-				// We do not know if client actually told us an accepted charset, but if he did we have to tell him what we did
+				// We do not know if client actually told us an accepted charset,
+				// but if he did we have to tell him what we did
 				header("Vary: Accept-Charset");
 				
-				// Http compression of output: only
-				// If we can do it, and we want to do it, and client asked us to, and php ini settings do not force it already
+				// HTTP compression of output: only
+				// If we can do it, and we want to do it, and client asked us to, 
+				// and php ini settings do not force it already
 				$php_no_self_compress = ini_get("zlib.output_compression") == "" && ini_get("output_handler") != "ob_gzhandler";
 				
-				if ($this->compress_response && function_exists("gzencode") && $resp_encoding != "" && $php_no_self_compress) {
+				if ($this->compressResponse && function_exists("gzencode") && $resp_encoding != "" && $php_no_self_compress) {
 					if (strpos($resp_encoding, "gzip") !== false) {
 						$payload = gzencode($payload);
 						header("Content-Encoding: gzip");
@@ -314,14 +318,14 @@ class JSONRPCService {
 					header("Content-Length: " . (int)strlen($payload));
 				}
 			} else {
-				error_log("JSONRPC: JSONRPCService::service: HTTP headers already sent before response is fully generated. " .
+				error_log("JSONRPCService::service: HTTP headers already sent before response is fully generated. " .
 					"Check for php warning or error messages");
 			}
 		
 			echo $payload;
 		}
 		
-		// Return request, in case subclasses want it
+		// Return request
 		return $r;
 	}
 	
@@ -330,7 +334,7 @@ class JSONRPCService {
 	* @param String $strings
 	*/
 	public function debugmsg($string) {
-		$this->debug_info .= $string . "\n";
+		$this->debugInfo .= $string . "\n";
 	}
 	
 	/**
@@ -339,9 +343,8 @@ class JSONRPCService {
 	* @param String $function The PHP function that will get invoked
 	* @param Array $sig The array of valid method signatures
 	* @param String $doc Method documentation
-	* @access public
 	*/
-	public function add_to_map($methodName, $function, $sig = null, $doc = "") {
+	public function addToMap($methodName, $function, $sig = null, $doc = "") {
 		$this->dispatchMap[$methodName] = Array(
 			"function"	=> $function,
 			"docstring" => $doc
@@ -354,7 +357,7 @@ class JSONRPCService {
 	
 	/**
 	* Verify type and number of parameters received against a list of known signatures
-	* @param Array $in Array of either xmlrpcval objects or xmlrpc type definitions
+	* @param Array $in Array of type definitions
 	* @param Array $sig Array of known signatures to match against
 	* @access private
 	*/
@@ -369,7 +372,7 @@ class JSONRPCService {
 				for ($n = 0; $n < $numParams; $n++) {
 					$pt = $in[$n];
 					
-					// Param index is $n+1, as first member of sig is return type
+					// Param index is $n + 1, as first member of sig is return type
 					if ($pt != $cursig[$n + 1] && $cursig[$n + 1] != "undefined") {
 						$error = true;
 						$pno = $n + 1;
@@ -417,32 +420,27 @@ class JSONRPCService {
 		if ($content_encoding != "" && strlen($data)) {
 			if ($content_encoding == "deflate" || $content_encoding == "gzip") {
 				// If decoding works, use it. else assume data wasnt gzencoded
-				if (function_exists("gzinflate") && in_array($content_encoding, $this->accepted_compression)) {
-					if ($content_encoding == "deflate" && $degzdata = @gzuncompress($data)) {
+				if (function_exists("gzinflate") && in_array($content_encoding, $this->acceptedCompression)) {
+					if (($content_encoding == "deflate" && $degzdata = @gzuncompress($data)) ||
+						($content_encoding == "gzip" && $degzdata = @gzinflate(substr($data, 10)))) {
 						$data = $degzdata;
 						
 						if ($this->debug > 1) {
 							$this->debugmsg("\n+++INFLATED REQUEST+++[" . strlen($data) . " chars]+++\n" . $data . "\n+++END+++");
 						}
-					} elseif ($content_encoding == "gzip" && $degzdata = @gzinflate(substr($data, 10))) {
-						$data = $degzdata;
-						
-						if ($this->debug > 1) {
-							$this->debugmsg("+++INFLATED REQUEST+++[" . strlen($data) . " chars]+++\n" . $data . "\n+++END+++");
-						}
 					} else {
-						$r =& new JSONRPCErrorResponse("server_decompress_fail");
+						$r =& new JSONRPCErrorResponse("SERVER_DECOMPRESS_FAIL");
 						return $r;
 					}
 				} else {
-					$r =& new JSONRPCErrorResponse("server_cannot_decompress");
+					$r =& new JSONRPCErrorResponse("SERVER_CANNOT_DECOMPRESS");
 					return $r;
 				}
 			}
 		}
 		
 		// Check if client specified accepted charsets, and if we know how to fulfill the request
-		if ($this->response_charset_encoding == "auto") {
+		if ($this->responseCharsetEncoding == "auto") {
 			$resp_encoding = "";
 			
 			if (isset($_SERVER["HTTP_ACCEPT_CHARSET"])) {
@@ -467,7 +465,7 @@ class JSONRPCService {
 				}
 			}
 		} else {
-			$resp_encoding = $this->response_charset_encoding;
+			$resp_encoding = $this->responseCharsetEncoding;
 		}
 
 		if (isset($_SERVER["HTTP_ACCEPT_ENCODING"])) {
@@ -476,7 +474,7 @@ class JSONRPCService {
 			$resp_compression = "";
 		}
 		
-		// 'guestimate' request encoding
+		// 'Guestimate' request encoding
 		$req_encoding = guess_encoding(isset($_SERVER["CONTENT_TYPE"]) ? $_SERVER["CONTENT_TYPE"] : "", $data);
 		
 		return null;
@@ -487,7 +485,7 @@ class JSONRPCService {
 		$data = $json->decode(utf8_decode($data));
 		
 		if (!$data || !$data["method"]) {
-			return new JSONRPCErrorResponse("invalid_request", "JSON parsing did not return correct jsonrpc request object");
+			return new JSONRPCErrorResponse("INVALID_REQUEST", "JSON parsing did not return correct jsonrpc request object");
 		} else {
 			$method = $data["method"];
 			
@@ -526,7 +524,7 @@ class JSONRPCService {
 	/**
 	* Error handler used to track errors that occur during server-side execution of PHP code.
 	* This allows to report back to the client whether an internal error has occurred or not
-	* using an xmlrpc response object, instead of letting the client deal with the html junk
+	* using an JSONRPCResponse object, instead of letting the client deal with the HTML junk
 	* that a PHP execution error on the server generally entails.
 	*
 	* NB: in fact a user defined error handler can only handle WARNING, NOTICE and USER_* errors.
@@ -561,6 +559,9 @@ class JSONRPCService {
 		}
 	}
 	
+	/**
+	* This method lists all the methods that the JSONRPC server knows how to dispatch.
+	*/
 	public static function listMethods($service) {
 		$outAr = Array();
 		
@@ -568,8 +569,8 @@ class JSONRPCService {
 			$outAr[] = $key;
 		}
 		
-		if ($server->allow_system_funcs) {
-			foreach (self::$system_dmap as $key => $val) {
+		if ($server->allowSystemFunctions) {
+			foreach (self::$systemDispatchMap as $key => $val) {
 				$outAr[] = $key;
 			}
 		}
@@ -577,9 +578,12 @@ class JSONRPCService {
 		return $outAr;
 	}
 	
+	/**
+	* Returns help text if defined for the method passed, otherwise returns an empty string.
+	*/
 	public static function methodHelp($service, $method = "") {
 		if (strpos($method, "system.") === 0) {
-			$dmap = self::$system_dmap;
+			$dmap = self::$systemDispatchMap;
 			$sysCall = 1;
 		} else {
 			$dmap = $service->dispatchMap;
@@ -594,12 +598,16 @@ class JSONRPCService {
 			}
 		}
 		
-		return new JSONRPCErrorResponse("introspect_unknown");
+		return new JSONRPCErrorResponse("INTROSPECT_UNKNOWN");
 	}
 	
+	/**
+	* Returns an array of known signatures (an array of arrays) for the method name passed. 
+	* If no signatures are known, returns a none-array (test for type != array to detect missing signature).
+	*/
 	public static function methodSignature($service, $method) {
 		if (strpos($method, "system.") === 0) {
-			$dmap = self::$system_dmap;
+			$dmap = self::$systemDispatchMap;
 			$sysCall = 1;
 		} else {
 			$dmap = $service->dispatchMap;
@@ -626,49 +634,49 @@ class JSONRPCService {
 			}
 		}
 		
-		return new JSONRPCErrorResponse("introspect_unknown");
+		return new JSONRPCErrorResponse("INTROSPECT_UNKNOWN");
 	}
 }
 
 class JSONRPCErrorCodes {
 	private static $codes = Array(
-		"unknown_method" => 1,
-		"invalid_return" => 2,
-		"incorrect_params" => 3,
-		"introspect_unknown" => 4,
-		"http_error" => 5,
-		"no_data" => 6,
-		"no_ssl" => 7,
-		"curl_fail" => 8,
-		"invalid_request" => 15,
-		"no_curl" => 16,
-		"server_error" => 17,
-		"cannot_decompress" => 103,
-		"decompress_fail" => 104,
-		"dechunk_fail" => 105,
-		"server_cannot_decompress" => 106,
-		"server_decompress_fail" => 107,
-		"unknown_error" => 999
+		"UNKNOWN_METHOD" => 1,
+		"INVALID_RETURN" => 2,
+		"INCORRECT_PARAMS" => 3,
+		"INTROSPECT_UNKNOWN" => 4,
+		"HTTP_ERROR" => 5,
+		"NO_DATA" => 6,
+		"NO_SSL" => 7,
+		"CURL_FAIL" => 8,
+		"INVALID_REQUEST" => 15,
+		"NO_CURL" => 16,
+		"SERVER_ERROR" => 17,
+		"CANNOT_DECOMPRESS" => 103,
+		"DECOMPRESS_FAIL" => 104,
+		"DECHUNK_FAIL" => 105,
+		"SERVER_CANNOT_DECOMPRESS" => 106,
+		"SERVER_DECOMPRESS_FAIL" => 107,
+		"UNKNOWN_ERROR" => 999
 	);
 	
 	private static $strings = Array(
-		"unknown_method" => "Unknown method öäp AE",
-		"invalid_return" => "Invalid return payload: enable debugging to examine incoming payload",
-		"incorrect_params" => "Incorrect parameters passed to method",
-		"introspect_unknown" => "Can't introspect: method unknown",
-		"http_error" => "Didn't receive 200 OK from remote server.",
-		"no_data" => "No data received from server",
-		"no_ssl" => "No SSL support compiled in",
-		"curl_fail" => "CURL error",
-		"invalid_request" => "Invalid request payload",
-		"no_curl" => "No CURL support compiled in",
-		"server_error" => "Internal server error",
-		"cannot_decompress" => "Received from server compressed HTTP and cannot decompress",
-		"decompress_fail" => "Received from server invalid compressed HTTP",
-		"dechunk_fail" => "Received from server invalid chunked HTTP",
-		"server_cannot_decompress" => "Received from client compressed HTTP request and cannot decompress",
-		"server_decompress_fail" => "Received from client invalid compressed HTTP request",
-		"unknown_error" => "Unknown error"
+		"UNKNOWN_METHOD" => "Unknown method",
+		"INVALID_RETURN" => "Invalid return payload: enable debugging to examine incoming payload",
+		"INCORRECT_PARAMS" => "Incorrect parameters passed to method",
+		"INTROSPECT_UNKNOWN" => "Can't introspect: method unknown",
+		"HTTP_ERROR" => "Didn't receive 200 OK from remote server.",
+		"NO_DATA" => "No data received from server",
+		"NO_SSL" => "No SSL support compiled in",
+		"CURL_FAIL" => "CURL error",
+		"INVALID_REQUEST" => "Invalid request payload",
+		"NO_CURL" => "No CURL support compiled in",
+		"SERVER_ERROR" => "Internal server error",
+		"CANNOT_DECOMPRESS" => "Received from server compressed HTTP and cannot decompress",
+		"DECOMPRESS_FAIL" => "Received from server invalid compressed HTTP",
+		"DECHUNK_FAIL" => "Received from server invalid chunked HTTP",
+		"SERVER_CANNOT_DECOMPRESS" => "Received from client compressed HTTP request and cannot decompress",
+		"SERVER_DECOMPRESS_FAIL" => "Received from client invalid compressed HTTP request",
+		"UNKNOWN_ERROR" => "Unknown error"
 	);
 	
 	public static function add($name, $code, $string) {
@@ -683,7 +691,7 @@ class JSONRPCErrorCodes {
 		if ($code && $string) {
 			return Array($code, $string);
 		} else {
-			return JSONRPCErrorCodes::get("unknown_error");
+			return JSONRPCErrorCodes::get("UNKNOWN_ERROR");
 		}
 	}
 }
@@ -691,11 +699,9 @@ class JSONRPCErrorCodes {
 /**
 * JSON charset encoding guessing helper function.
 * Tries to determine the charset encoding of an JSON chunk received over HTTP.
-* @param string $httpheaders The HTTP Content-type header
-* @param string $jsonchunk json content buffer
-* @param string $encoding_prefs comma separated list of character encodings to be used as default (when mb extension is enabled)
-*
-* @todo explore usage of mb_http_input(): does it detect http headers + post data? if so, use it instead of hand-detection!!!
+* @param String $httpheaders The HTTP Content-type header
+* @param String $jsonchunk JSON content buffer
+* @param String $encoding_prefs Comma separated list of character encodings to be used as default (when mb extension is enabled)
 */
 function guess_encoding($httpheader = "", $jsonchunk = "", $encoding_prefs = null) {
 	// Discussion: see http://www.yale.edu/pclt/encoding/
@@ -717,7 +723,7 @@ function guess_encoding($httpheader = "", $jsonchunk = "", $encoding_prefs = nul
 	//     NOTE: actually, according to the spec, even if we find the BOM and determine
 	//     an encoding, we should check if there is an encoding specified
 	//     in the xml declaration, and verify if they match.
-	if(preg_match('/^(\x00\x00\xFE\xFF|\xFF\xFE\x00\x00|\x00\x00\xFF\xFE|\xFE\xFF\x00\x00)/', $jsonchunk)) {
+	if (preg_match('/^(\x00\x00\xFE\xFF|\xFF\xFE\x00\x00|\x00\x00\xFF\xFE|\xFE\xFF\x00\x00)/', $jsonchunk)) {
 		return 'UCS-4';
 	} elseif(preg_match('/^(\xFE\xFF|\xFF\xFE)/', $jsonchunk)) {
 		return 'UTF-16';
@@ -728,7 +734,7 @@ function guess_encoding($httpheader = "", $jsonchunk = "", $encoding_prefs = nul
 	// 3 - if mbstring is available, let it do the guesswork
 	// NB: we favour finding an encoding that is compatible with what we can process
 	if (extension_loaded("mbstring")) {
-		if($encoding_prefs) {
+		if ($encoding_prefs) {
 			$enc = mb_detect_encoding($jsonchunk, $encoding_prefs);
 		} else {
 			$enc = mb_detect_encoding($jsonchunk);

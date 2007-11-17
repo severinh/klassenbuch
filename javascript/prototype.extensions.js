@@ -141,92 +141,110 @@ Object.extend(Prototype.Browser, (function() {
 	};
 })());
 
+/**
+ * Provides several classes that are connected with JSONRPC-specific server communication in order to enable simple JSONRPC requests and 
+ * file uploads using JSONRPC.
+ * @namespace
+*/
 var JSONRPC = {
-	SERVICE_FILE: "server.service.php",
+	/**
+	 * The relative path to the JSONRPC service.
+	 * @type String
+	*/
+	"SERVICE_FILE": "server.service.php",
 	
-	ERROR_CODE: {
-		AUTHENTICATION_FAILED: 800,
-		INVALID_DATABASE_QUERY: 801,
-		INVALID_INPUT: 802,
-		SERVER_ERROR: 803,
-		USER_NOT_FOUND: 804,
-		INVALID_RESPONSE: 850,
-		UNKNOWN_ERROR: 999
+	"ERROR_CODE": {
+		"UNKNOWN_METHOD": 1,
+		"INVALID_RETURN": 2,
+		"INCORRECT_PARAMS": 3,
+		"INTROSPECT_UNKNOWN": 4,
+		"HTTP_ERROR": 5,
+		"NO_DATA": 6,
+		"NO_SSL": 7,
+		"CURL_FAIL": 8,
+		"INVALID_REQUEST": 15,
+		"NO_CURL": 16,
+		"SERVER_ERROR": 17,
+		"CANNOT_DECOMPRESS": 103,
+		"DECOMPRESS_FAIL": 104,
+		"DECHUNK_FAIL": 105,
+		"SERVER_CANNOT_DECOMPRESS": 106,
+		"SERVER_DECOMPRESS_FAIL": 107,
+		"AUTHENTICATION_FAILED": 800,
+		"INVALID_DATABASE_QUERY": 801,
+		"INVALID_RESPONSE": 850,
+		"UNKNOWN_ERROR": 999
 	}
 };
 
 /**
- * Diese Klasse ermöglicht es, eine JSON-Anfrage an den Server zu senden, wobei sie das Einlesen und Validieren der
- * Antwort, die ebenfalls im JSON-Format erfolgt, übernimmt. Bei einer 
- * @param {String} method Der Name der Methode, die auf dem Server aufgerufen werden soll. Z. B. <em>gettasks</em>,
- * um eine Liste der Aufgaben zu erhalten.
- * @param {Array} params Allfällige Parameter, die an die Funktion auf Serverseite übergeben werden sollen.
- * Standardwert ist <em>[]</em>.
- * @param {Object} options Enthält die verschiedenen Callback-Funktionen wie <em>onSuccess</em>, <em>onFailure</em>
- * und <em>onComplete</em>. Diese werden aufgerufen, wenn die Abfrage erfolgreich verläuft bzw. fehlschlägt usw.
- * @class
- * @inherits Ajax.Request
+ * @class Initiates and processes JSONRPC requests.  and handles response parsing and validation.
+ * @extends Ajax.Request
+ * @param {String} method Name of the method to be called on the server. E. g. <em>gettasks</em> to get a list of upcoming tasks.
+ * @param {Array} params Optional parameter that are passed to the service function. Default value is <em>[]</em>.
+ * @param {Object} options May contain various callback function such as <em>onSuccess</em>, <em>onFailure</em>
+ * and <em>onComplete</em>, which are called in case the request is successful respectively if it has failed.
 */
 JSONRPC.Request = Class.create(Ajax.Request, /** @scope JSONRPC.Request.prototype */ {
-	/** @ignore */
 	initialize: function($super, method, params, options) {
-		// Legt die Standardfunktionen für die Callback-Funktionen fest. Wird für "onFailure" keine Funktion übergeben,
-		// wird eine Funktion aufgerufen, die eine simple Fehlermeldung ausgibt.
+		// Default callback functions. 
 		options = Object.extend({
 			onSuccess: Prototype.K,
 			onComplete: Prototype.K,
 			
+			// If <em>onFailure</em> isn't overriden using the <em>options</em> argument, a simple standard error
+			// message shows up if the request fails.
 			onFailure: function(response) {
 				response.standardErrorAlert();
-			}
+			},
+			
+			// Generally, the <em>serviceFile</em> options shouldn't be overridden.
+			serviceFile: JSONRPC.SERVICE_FILE
 		}, options || {});
 		
-		// Der Inhalt von postBody ist der eigentliche Inhalt, der an den Server gesendet wird. Falls der Browser
-		// Cookies nicht unterstützt, muss zusätzlich die Benutzer-ID und das Benutzer-Token mitgesendet werden,
-		// sofern der Benutzer angemeldet ist
-		var postBody = $H(Object.extend((User.signedIn && !Prototype.Browser.supportsCookies) ? {
-			userid: User.id,
-			token: User.token
-		} : {}, {
+		// Prepare request body.
+		var requestParams = $H({
 			method: method,
 			params: params || []
-		})).toJSON();
+		});
 		
-		// Der Konstruktor von Ajax.Request wird aufgerufen.
-		// Der Dateiname der JSONRPC-Service-Datei ist in "JSONRPC.SERVICE_FILE" festgelegt.
-		$super(JSONRPC.SERVICE_FILE, {
-			// Falls irgendein client-seitiger Fehler auftritt.
+		// If the browser doesn't support cookies we have to transmit the user id and the user token along with the method name and the
+		// parameters in case the user is signed in.
+		if (User.signedIn && !Prototype.Browser.supportsCookies) {
+			requestParams.set("userid", User.id);
+			requestParams.set("token", User.token);
+		}
+		
+		// Calling Ajax.Request's constructor.
+		$super(options.serviceFile, {
+			// In case an unexpected client side error occures.
 			onException: (function(e) {
-				options.onFailure(new JSONRPC.Response(null, 999, e.message || "Unbekannter Fehler." ));
+				options.onFailure(new JSONRPC.Response(null, 999, e.message || "Unbekannter Fehler"));
 			}).bind(this),
 			
-			// Verarbeitet die Antwort des Servers
+			// Processes the server response.
 			onComplete: (function(response) {
-				if (this.success()) { // Kein HTTP-Fehler aufgetreten
-					var json = response.responseJSON;
+				if (this.success()) { // We did the job without triggering a HTTP error up to now.
+					response = JSONRPC.Response.fromAjaxResponse(response);
 					
-					if (json) { // Antwort konnte eingelesen werden (Gültiges JSON-Format)
-						if (json.result && Object.isNull(json.error)) { // Positive Antwort
-							options.onSuccess(new JSONRPC.Response(json.result));
-						} else {
-							options.onFailure(new JSONRPC.Response(null, json.error.faultCode, json.error.faultString));
-						}
-					} else {
-						options.onFailure(new JSONRPC.Response(null, 850, "Einlesen der Server-Antwort fehlgeschlagen"));
-					}
-				} else {
-					options.onFailure(new JSONRPC.Response(null, this.transport.status, "HTTP-Fehler " + this.transport.status));
+					// Calls the appropriate callback function.
+					options["on" + ((response.success() ? "Success" : "Failure"))](response);
+				} else { // Bad luck. We ran into a HTTP error.
+					response = new JSONRPC.Response(null, this.transport.status, "HTTP-Fehler " + this.transport.status);
+					
+					options.onFailure(response);
 				}
 				
 				options.onComplete(response);
-			}).bind(this) || Prototype.K,
+			}).bind(this),
 			
 			contentType: "application/javascript",
-			postBody: postBody,
 			
-			// Muss gesetzt werden, damit die Antwort von der Basisklasse automatisch eingelesen wird, auch wenn im
-			// Antwort-Header als Datentyp JSON nicht angegeben ist. (?)
-			evalJSON: "force"
+			// The request body actually sent to the server.
+			postBody: requestParams.toJSON(),
+			
+			// Force base class to parse the response, even if the response's content type header isn't correctly set.
+			evalJSON: false
 		});
 	}
 });
@@ -253,38 +271,61 @@ JSONRPC.Response = Class.create( /** @scope JSONRPC.Response.prototype */ {
 	 * @static
 	*/
     standardErrorAlert: function() {
-		if (this.faultCode) {
+		if (!this.success()) {
 			alert("Es ist ein Problem bei der Kommunikation mit dem Server aufgetreten. Lade das Klassenbuch neu und " +
 				"versuche es erneut. Wende dich an Severin, falls das Problem bestehen bleibt.\n\nFehlermeldung: " +
 				this.faultString + "\nFehlercode: " + this.faultCode);
 		}
-    }
+    },
+	
+	success: function() {
+		return !this.faultCode;
+	}
 });
+
+JSONRPC.Response.fromAjaxResponse = function(response) {
+	response = response.responseText || response;
+	
+	if (Object.isString(response)) {
+		try {
+			response = response.evalJSON(true);
+		} catch(e) {
+			return new JSONRPC.Response(null, 850, "Einlesen der Server-Antwort fehlgeschlagen");
+		}
+	}
+	
+	if (response) {
+		if (Object.isNull(response.error) && response.result) {
+			return new JSONRPC.Response(response.result);
+		} else {
+			return new JSONRPC.Response(null, response.error.faultCode, response.error.faultString);
+		}
+	} else {
+		return new JSONRPC.Response(null, 850, "Einlesen der Server-Antwort fehlgeschlagen");
+	}
+};
 
 JSONRPC.Upload = Class.create(SWFUpload, {
 	initialize: function($super, method, params, options) {
 		this.method = method;
 		
-		if (options.begin_upload_on_queue) {
-			this._autoStartUpload = true;
-		}
+		options = Object.extend({
+			service_file: 					JSONRPC.SERVICE_FILE,
+			begin_upload_on_queue: 			false,
+			
+			file_size_limit: 				10240,
+			file_types: 					"*.*",
+			file_types_description: 		"Alle Dateien"
+		}, options || {});
 		
 		var uploadComplete = function(file, data) {
 			this.fireEvent("uploadComplete", file, data);
 			
-			var parsedData = data.evalJSON();
+			var response = JSONRPC.Response.fromAjaxResponse(data);
 			
-			if (parsedData) {
-				if (Object.isNull(parsedData.error) && parsedData.result) {
-					this.fireEvent("uploadSuccess", file, new JSONRPC.Response(parsedData.result));
-				} else {
-					this.fireEvent("uploadFailure", file, new JSONRPC.Response(null, parsedData.error.faultCode, parsedData.error.faultString));
-				}
-			} else {
-				this.fireEvent("uploadFailure", file, new JSONRPC.Response(null, 850, "Einlesen der Server-Antwort fehlgeschlagen"));
-			}
+			this.fireEvent((response.success()) ? "uploadSuccess" : "uploadFailure", file, response);
 			
-			if (this._autoStartUpload) {
+			if (options.begin_upload_on_queue) {
 				this.startUpload();
 			}
 		};
@@ -351,13 +392,9 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 			this.fireEvent("uploadError", file, new JSONRPC.Response(null, errorCode, message));
 		};
 		
-		$super(Object.extend({
+		$super(Object.extend(options, {
 			// Backend-Einstellungen
-			upload_url: 					"../" + JSONRPC.SERVICE_FILE,
-			
-			file_size_limit: 				"10240",
-			file_types: 					"*.*",
-			file_types_description: 		"Alle Dateien",
+			upload_url: 					"../" + options.service_file,
 			
 			// Flash-Einstellungen
 			flash_url: 					    "flash/swfupload.swf",
@@ -374,7 +411,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
             file_queue_error_handler:       fileQueueError.bind(this),
             upload_complete_handler:		uploadComplete.bind(this),
             upload_error_handler:			uploadError.bind(this)
-		}, options));
+		}));
 		
 		this.on("ready", this.setJSONParams.bind(this, params || []));
 		
@@ -384,7 +421,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 			}
 		}, this);
 		
-		if (this._autoStartUpload) {
+		if (options.begin_upload_on_queue) {
 			this.on("fileDialogComplete", function() {
 				this.startUpload.bind(this).defer();
 			}, this);
