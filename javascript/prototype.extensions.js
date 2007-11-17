@@ -73,42 +73,71 @@ Object.extend(Object, /** @scope Object */ {
 	}
 });
 
+/**
+ * Some extensions to Prototype's browser detection functionality (<em>Prototype.Browser</em>). It checks whether the browser supportes
+ * cookies or is supported in general.
+ * @namespace
+*/
 Object.extend(Prototype.Browser, (function() {
-	var version = 0;
-	var ua = navigator.userAgent.toLowerCase();
-	var isFirefox = (Prototype.Browser.Gecko && ua.include("firefox"));
+	var version;
 	
-	if (Prototype.Browser.IE) {
-		version = (!Object.isNull((new RegExp("msie ([0-9]{1,}[\.0-9]{0,})")).exec(ua))) ? parseFloat(RegExp.$1) : 3;
-	} else if (Prototype.Browser.Opera) {
+	// Some shortcuts
+	var B = Prototype.Browser;
+	var ua = navigator.userAgent.toLowerCase();
+	
+	var isFirefox = B.Gecko && ua.include("firefox");
+	
+	// Browser version detection (only applies to IE, Opera and Firefox)
+	if (B.IE) {
+		version = (!Object.isNull(/msie ([0-9]{1,}[\.0-9]{0,})/.exec(ua))) ? parseFloat(RegExp.$1) : 3;
+	} else if (B.Opera) {
 		version = (window.opera.version) ? parseFloat(window.opera.version()) : 7.5;
 	} else if (isFirefox) {
 		version = parseFloat(ua.substr(ua.indexOf("firefox") + 8, 3));
 	}
 	
-	return {
+	return /** @scope Prototype.Browser */ {
+		/**
+		 * Indicates whether the browser supports setting, getting and removing cookies using JavaScript. This is achieved by setting a
+		 * temporary cookie.
+		 * @type Boolean
+		*/
 		supportsCookies: (function() {
-			if (navigator.cookieEnabled) {
+			if (Object.isDefined(navigator.cookieEnabled)) {
+				return navigator.cookieEnabled;
+			} else if (Cookie.set("testcookie", "testvalue") === "testvalue") {
+				Cookie.remove("testcookie");
 				return true;
-			}
-			
-			if (Object.isUndefined(navigator.cookieEnabled)) {
-				Cookie.set("testcookie", "testvalue");
-				
-				if (Cookie.get("testcookie") === "testvalue") {
-					Cookie.remove("testcookie");
-					return true;
-				}
 			}
 			
 			return false;
 		})(),
 		
+		/**
+		 * Indicates whether Firefox is used to access the application.
+		 * @type Boolean
+		*/
 		Firefox: isFirefox,
-		IE6: (Prototype.Browser.IE && version === 6),
+		
+		/**
+		 * Indicates whether good ol' Internet Explorer 6 is used to access the application. Perish the thought this property might ever
+		 * be <em>true</em>.
+		 * @type Boolean
+		*/
+		IE6: (B.IE && version === 6),
+		
+		/**
+		 * Provides the browser version, in case the quite basic version detection did it's job properly.
+		 * @type Boolean
+		*/
 		version: version,
 		
-		supported: !((isFirefox && version < 1.5) || (Prototype.Browser.IE && version < 6))
+		/**
+		 * Indicates whether the used browser should be able to run the application smoothly. Currently 
+		 * @todo Should be moved to a more reasonable place.
+		 * @type Boolean
+		*/
+		supported: !((isFirefox && version < 1.5) || (B.IE && version < 6))
 	};
 })());
 
