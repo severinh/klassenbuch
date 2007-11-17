@@ -19,58 +19,51 @@
 */
 
 /**
- * @fileOverview Hilfsdatei, die eine Reihe von grundlegenden Klassen und Funktionen bereitstellt, die überall im
- * Klassenbuch Verwendung finden. Ein Teil davon sind direkte Ergänzungen zum Funktionsumfang des verwendeten
- * JavaScript-Frameworks <a href="http://www.prototypejs.org/">Prototype</a> wie zum Beispiel die Funktionen, die
- * mit Prototype den DOM-Elementen hinzugefügt werden. In dieser Datei sind weitere Klassen zur Kommunikation mit dem
- * Server enthalten (speziell für das JSON-Format), ein Objekt, dass zusätzliche Informationen über den verwendeten
- * Browser bereitstellt usw..
+ * @fileOverview Auxiliry file that provides a series of basic classes and functions used all over the Klassenbuch's
+ * code. They consist of direct additions to Prototype's functionality such as methods that are applied to all DOM
+ * nodes passed to <em>Element.extend</em>, of JSON-specific server communication classes and an
+ * object that provides additional information about the user's browser etc.
  * @author <a href="mailto:severinheiniger@gmail.com">Severin Heiniger</a>
 */
 
 /**
- * Verschiedene zusätzliche statische Methoden für <em>Object</em>, die grundlegendste "Klasse" in JavaScript. Bereits
- * Prototype fügt mit <em>extend</em> usw. verschiedene sehr grundlegende statische Methoden hinzu. Diese Funktionen
- * werden in der <a href="http://www.prototypejs.org/api/object">API-Dokumentation von Prototype</a> ausführlich
- * beschrieben.
- * @class
+ * <em>Object</em> is used as a namespace for several basic functions in the same way the Prototype framework does.
+ * The functions added by Prototype are described here:
+ * <a href="http://www.prototypejs.org/api/object">Prototype's API documentation</a>.
+ * @namespace
 */
 Object.extend(Object, /** @scope Object */ {
 	/**
-	 * Mit dieser statischen Methode lässt sich überprüfen, ob eine Variable den Wert <em>null</em> hat oder nicht.
-	 * Wenn die Variable nicht definiert ist, gibt diese Methode also <em>false</em> zurück.
-	 * @param object Die zu überprüfende Variable.
-	 * @returns {Boolean} Ob die Variable <em>null</em> ist oder nicht.
-	 * @static
+	 * Returns <em>true</em> if the passed variable is of type <em>null</em>, <em>false</em> otherwise.
+	 * @param {Object} object The variable to be checked.
+	 * @returns {Boolean} Whether the variable is <em>null</em> or not.
 	*/
 	isNull: function(object) {
 		return object === null;
 	},
 	
 	/**
-	 * Mit dieser statischen Methode lässt sich überprüfen, ob eine Variable definiert ist oder nicht.
-	 * @param object Die zu überprüfende Variable.
-	 * @returns {Boolean} Ob die Variable definiert ist oder nicht.
-	 * @static
+	 * Returns <em>true</em> if the passed variable is defined, <em>false</em> otherwise.
+	 * @param {Object} object The variable to be checked.
+	 * @returns {Boolean} Whether the variable is defined or not.
 	*/
 	isDefined: function(object) {
 		return typeof object !== "undefined";
 	},
 	
 	/**
-	 * Mit dieser statischen, rekursiven Methode lässt sich eine tiefe Kopie eines beliebigen Objekts erstellen. Im
-	 * Gegensatz zur Funktion Object.clone des Prototype-Frameworks werden mit cloneDeeply nicht nur die Eigenschaften,
-	 * sondern auch die Eigenschaften der Eigenschaften eines Objekts kopiert.
-	 * @param object Das zu kopierende Objekt.
-	 * @returns {Object} Die Kopie des Objekts.
-	 * @static
+	 * Clones the passed object using deep copy (copies off all the original's properties and even nested properties
+	 * to the result). Unlike Prototype's <a href="http://www.prototypejs.org/api/object/clone">Object.clone</a> this
+	 * recursive function produces a deep copy rather than a shallow copy.
+	 * @param {Object} object The object to clone.
+	 * @returns {Object} The object's deep copy.
 	*/
 	cloneDeeply: function(source) {
 		var result = {};
 		
 		for (property in source) {
-			if (typeof source[property] === "object") {
-				result[property] = Object.cloneDeeply(source[property]);
+			if (typeof source[property] === "object") { // Property is an object itself
+				result[property] = arguments.callee(source[property]);
 			} else {
 				result[property] = source[property];
 			}
