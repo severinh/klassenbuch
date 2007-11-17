@@ -139,7 +139,7 @@ class User {
 		$response = $database->query("SELECT * FROM " . $settings->db_tblprefix . "users WHERE id = " .
 			mySQLValue($this->id));
 		
-		if (!$response || mysql_num_rows($response) == 1) {
+		if (!$response || mysql_num_rows($response) != 1) {
 			return false;
 		}
 		
