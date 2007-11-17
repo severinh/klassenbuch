@@ -20,7 +20,7 @@ class Settings {
 	public $db_name = "{db_name}";
 	public $db_user = "{db_user}";
 	public $db_password = "{db_password}";
-	public $db_tblprefix= "{db_tblprefix}";
+	public $db_tblprefix = "{db_tblprefix}";
 	
 	public $upload_online = true;
 	public $upload_extblacklist = Array("exe", "scr", "dll", "msi", "vbs", "bat", "com", "pif", "cmd", "php");

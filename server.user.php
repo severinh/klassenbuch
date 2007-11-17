@@ -134,7 +134,10 @@ class User {
     private function loadFromDatabase() {
 		global $database;
 		
-		$response = $database->query("SELECT * FROM users WHERE id = " . mySQLValue($this->id));
+		$settings = Settings::getInstance();
+		
+		$response = $database->query("SELECT * FROM " . $settings->db_tblprefix . "users WHERE id = " .
+			mySQLValue($this->id));
 		
 		if (!$response || mysql_num_rows($response) == 1) {
 			return false;
@@ -239,8 +242,8 @@ class User {
         $settings = Settings::getInstance();
         
         if ($nickname && $password) {
-            $data = $database->query("SELECT * FROM users WHERE nickname = " . mySQLValue($nickname) .
-				" AND password = " . mySQLValue(md5($password)));
+            $data = $database->query("SELECT * FROM " . $settings->db_tblprefix . "users WHERE nickname = " .
+				mySQLValue($nickname) . " AND password = " . mySQLValue(md5($password)));
 			
             if ($data && mysql_num_rows($data) == 1) {
 				$this->insertData(mysql_fetch_array($data));
@@ -280,6 +283,8 @@ class User {
     
     public function update($information) {
         global $database;
+		
+		$settings = Settings::getInstance();
 		
         if (!$information || !$this->authenticated) {
             return false;
@@ -326,7 +331,8 @@ class User {
 			return false;
 		}
 	
-		if (!$database->query("UPDATE users SET " . $query . " WHERE id = " . mySQLValue($this->id))) {
+		if (!$database->query("UPDATE " . $settings->db_tblprefix . "users SET " . $query . " WHERE id = " .
+			mySQLValue($this->id))) {
 			return false;
 		}
 		
