@@ -430,12 +430,28 @@ User.SettingsWindow = Class.create(Controls.Window, {
 		}, this);
 		
 		if (!error) {
-			var request = new JSONRPC.Request("changeusersettings", [settings], {
-				onSuccess: (function(response) {
-					User.settings.update(settings);
-					this.close();
-				}).bind(this)
-			});
+			if (settings.values().length) {
+				var request = new JSONRPC.Request("changeusersettings", [settings], {
+					onSuccess: (function(response) {
+						User.settings.update(settings);
+					}).bind(this)
+				});
+			}
+			
+			var self = this;
+			
+			if (Ajax.activeRequestCount) {
+				Ajax.Responders.register({
+					onComplete: function() {
+						if (Ajax.activeRequestCount === 0) {
+							self.close();
+							Ajax.Responders.unregister(arguments.callee);
+						}
+					}
+				});
+			} else {
+				this.close();
+			}
 		}
 	}
 });
@@ -555,8 +571,6 @@ User.SettingsWindow.Profile = Class.create(Controls.TabControl.TabPageWithButton
 
 User.SettingsWindow.Theme = Class.create(Controls.TabControl.TabPageWithButtonControl, {
 	initialize: function($super) {
-		this._selectedTheme = User.settings.theme;
-		
 		$super("Design", new Sprite("fileTypesSmall", 4));
 		
 		this.addClassName("themeTab");
@@ -577,9 +591,7 @@ User.SettingsWindow.Theme = Class.create(Controls.TabControl.TabPageWithButtonCo
 	},
 	
 	_getSettings: function() {
-		return $H({
-			theme: this._selectedTheme
-		});
+		return (this._selectedTheme) ? $H({ theme: this._selectedTheme }) : new Hash();
 	},
 	
 	_selectTheme: function(theme) {
