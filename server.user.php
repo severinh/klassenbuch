@@ -134,7 +134,13 @@ class User {
     private function loadFromDatabase() {
 		global $database;
 		
-		return $this->insertData(mysql_fetch_array($database->query("SELECT * FROM users WHERE id = " . mySQLValue($this->id))));
+		$response = $database->query("SELECT * FROM users WHERE id = " . mySQLValue($this->id));
+		
+		if (!$response || mysql_num_rows($response) == 1) {
+			return false;
+		}
+		
+		return $this->insertData(mysql_fetch_array($response));
     }
     
     private function insertData($data) {
