@@ -229,6 +229,11 @@ function createcomment($taskid, $text) {
     if (!$text) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Kommentar angegeben.");
     }
+	
+	if (mysql_num_rows($database->query("SELECT * FROM tasks WHERE id = " . mySQLValue($taskid) . " AND date >= " . 
+		mySQLValue(mktime(0, 0, 0)))) != 1) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Aufgaben in der Vergangenheit können leider nicht mehr kommentiert werden.");
+	}
     
     if (!$database->query("INSERT INTO comments (taskid, userid, date, comment) VALUES(" . mySQLValue($taskid) . ", " . mySQLValue($user->id) . 
 		", " . mySQLValue(time()) . ", " . mySQLValue($text) . ")")) {
