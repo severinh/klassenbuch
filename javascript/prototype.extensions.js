@@ -21,8 +21,8 @@
 /**
  * @fileOverview Auxiliry file that provides a series of basic classes and functions used all over the Klassenbuch's
  * code. They consist of direct additions to Prototype's functionality such as methods that are applied to all DOM
- * nodes passed to <em>Element.extend</em>, of JSON-specific server communication classes and an
- * object that provides additional information about the user's browser etc.
+ * nodes passed to <em>Element.extend</em>, of JSON-specific server communication classes and an object that provides
+ * additional information about the user's browser etc.
  * @author <a href="mailto:severinheiniger@gmail.com">Severin Heiniger</a>
 */
 
@@ -153,6 +153,10 @@ var JSONRPC = {
 	*/
 	"SERVICE_FILE": "server.service.php",
 	
+	/**
+	 * A map of both client and server side JSONRPC error codes.
+	 * @type Object
+	*/
 	"ERROR_CODE": {
 		"UNKNOWN_METHOD": 1,
 		"INVALID_RETURN": 2,
@@ -178,12 +182,22 @@ var JSONRPC = {
 };
 
 /**
- * @class Initiates and processes JSONRPC requests.
+ * @class Initiates and processes JSONRPC requests.  and handles response parsing and validation.
  * @extends Ajax.Request
  * @param {String} method Name of the method to be called on the server. E. g. <em>gettasks</em> to get a list of upcoming tasks.
  * @param {Array} params Optional parameter that are passed to the service function. Default value is <em>[]</em>.
  * @param {Object} options May contain various callback function such as <em>onSuccess</em>, <em>onFailure</em>
  * and <em>onComplete</em>, which are called in case the request is successful respectively if it has failed.
+ * @example
+new JSONRPC.Request("foobar", [], {
+	onSuccess: function(response) {
+		alert("Webservice method "foobar" said: " + response.result);
+	},
+	
+	onFailure: function(response) {
+		alert("Bad luck. Something went wrong.\nError message:" + response.faultString);
+	}
+});
 */
 JSONRPC.Request = Class.create(Ajax.Request, /** @scope JSONRPC.Request.prototype */ {
 	initialize: function($super, method, params, options) {
@@ -198,7 +212,7 @@ JSONRPC.Request = Class.create(Ajax.Request, /** @scope JSONRPC.Request.prototyp
 				response.standardErrorAlert();
 			},
 			
-			// Generally, the <em>serviceFile</em> options shouldn't be overridden.
+			// Generally, this options shouldn't be overridden.
 			serviceFile: JSONRPC.SERVICE_FILE
 		}, options || {});
 		
@@ -250,59 +264,97 @@ JSONRPC.Request = Class.create(Ajax.Request, /** @scope JSONRPC.Request.prototyp
 });
 
 /**
- * Diese Klasse repräsentiert eine Antwort auf eine JSONRPC-Anfrage, die mit <a href="JSONRPC.Request.htm">
- * JSONRPC.Request</a> durchgeführt wurde.
- * @param {String} result Die Antwort des Servers.
- * @param {Integer} [faultCode] Der allfällige Fehlercode, falls die Anfrage aus irgendeinem Grund fehlgeschlagen ist.
- * @param {String} [faultString] Der allfällige Fehlermeldung, falls die Anfrage aus irgendeinem Grund fehlgeschlagen ist.
+ * Represents an answer to a JSONRPC request initiated with <a href="JSONRPC.Request.htm">
+ * JSONRPC.Request</a> or <a href="JSONRPC.Upload.htm">JSONRPC.Upload</a>.
+ * @param {Object} result The parsed server response.
+ * @param {Integer} [faultCode] Optional fault code, in case the request has failed for some reason.
+ * @param {String} [faultString] Optional fault string, in case the request has failed for some reason.
  * @class
 */
 JSONRPC.Response = Class.create( /** @scope JSONRPC.Response.prototype */ {
-	/** @ignore */
     initialize: function(result, faultCode, faultString) {
+		/**
+		 * The parsed server response. Can be of any conceivable type, even of a literal or an array.
+		 * @type Object
+		*/
         this.result = result;
+		
+		/**
+		 * The error code received by the server or added while processing the response. Must me 0 if the request was successful.
+		 * Defaults to 0.
+		 * @type Number
+		*/
         this.faultCode = faultCode || 0;
+		
+		/**
+		 * The error message received by the server or added while processing the response. Defaults to "".
+		 * @type String
+		*/
         this.faultString = faultString || "";
     },
     
 	/**
-	 * Gibt eine standardmässige Fehlermeldung aus, basierend auf der Fehler-ID und der Fehlermeldung, die in der Antwort
-	 * des Servers enthalten waren.
-	 * @static
+	 * Shows a default error message, based on the error code and error string, included in the service response, in case the JSONRPC
+	 * was failed.
 	*/
     standardErrorAlert: function() {
-		if (!this.success()) {
+		if (!this.success()) { // Message shouldn't show up if the request was successful.
 			alert("Es ist ein Problem bei der Kommunikation mit dem Server aufgetreten. Lade das Klassenbuch neu und " +
-				"versuche es erneut. Wende dich an Severin, falls das Problem bestehen bleibt.\n\nFehlermeldung: " +
-				this.faultString + "\nFehlercode: " + this.faultCode);
+				"versuche es erneut. Wende dich an die Klassenbuchverwaltung, falls das Problem bestehen bleibt.\n\n" +
+				"Fehlermeldung: " + this.faultString + "\nFehlercode: " + this.faultCode);
 		}
     },
 	
+	/**
+	 * Indicates whether the JSONRPC request was successful or not.
+	 * @returns Boolean 
+	*/
 	success: function() {
 		return !this.faultCode;
 	}
 });
 
+/**
+ * Transforms any response string, already parsed string or object of type Ajax.Response into a JSONRPC Response and handles correctly
+ * malformed JSONRPC responses.
+ * @param {String|Object|Ajax.Response} response The response received from the server.
+ * @returns JSONRPC.Response The resulting JSONRPC.Response object.
+ * @static
+*/
 JSONRPC.Response.fromAjaxResponse = function(response) {
+	var result = null, faultCode = 0, faultString = "";
+	
+	// Handle Ajax.Response object.
 	response = response.responseText || response;
 	
-	if (Object.isString(response)) {
+	// Mark response as invalid.
+	var invalidResponse = function() {
+		faultCode = 850;
+		faultString = "Einlesen der Server-Antwort fehlgeschlagen";
+	};
+	
+	if (Object.isString(response)) { // Need to parse response string first.
 		try {
 			response = response.evalJSON(true);
-		} catch(e) {
-			return new JSONRPC.Response(null, 850, "Einlesen der Server-Antwort fehlgeschlagen");
+		} catch(e) { // Malformed JSON string.
+			invalidResponse();
 		}
 	}
 	
-	if (response) {
-		if (Object.isNull(response.error) && response.result) {
-			return new JSONRPC.Response(response.result);
-		} else {
-			return new JSONRPC.Response(null, response.error.faultCode, response.error.faultString);
+	// Check if parsed JSON response follows the JSONRPC specifications.
+	if (response && Object.isDefined(response.result) && Object.isDefined(response.error)) { 
+		if (Object.isNull(response.error)) {
+			result = response.result;
+		} else { // There was an error processing the JSONRPC request.
+			faultCode = response.error.faultCode;
+			faultString = response.error.faultString;
 		}
 	} else {
-		return new JSONRPC.Response(null, 850, "Einlesen der Server-Antwort fehlgeschlagen");
+		invalidResponse();
 	}
+	
+	// Generate JSONRPC.Response object.
+	return new JSONRPC.Response(result, faultCode, faultString);
 };
 
 JSONRPC.Upload = Class.create(SWFUpload, {
