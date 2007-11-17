@@ -695,6 +695,8 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 	 * @memberof TaskManagement.View
 	*/
 	_onHighlightTask: function(task) {
+		task.getComments();
+		
 		var contact = Contacts.getContact.byId(task.userid);
 		
 		this._taskInfoBox.innerHTML = (contact) ? "Eingetragen am " + task.added.format("j. F") + "<br />von " +
@@ -1122,8 +1124,7 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
  * @class
  * @inherits EventPublisher
 */
-TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /** @scope TaskManagement.Task */ {
-	/** @ignore */
+TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /** @scope TaskManagement.Task.prototype */ {
     initialize: function($super, task) {
    		/**
 		 * Die einzigartige ID der Aufgabe.
@@ -1189,6 +1190,15 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 		 * @name comments
 		*/
         this.comments = task.comments || 0;
+        
+        /**
+		 * Enthält die Kommentare zu einer Aufgabe, nachdem die Methode <a href="#_getComments">_getComments</a>
+		 * aufgerufen wude.
+		 * @type Comments.Comment[]
+		 * @memberof TaskManagement.Task
+		 * @name commentsStore
+		*/
+        this.commentsStore = null;
         
 		/**
 		 * Gibt an, ob ungelesene Kommentare zu dieser Aufgabe vorhanden sind. Wenn der Benutzer nicht angemeldet ist,
@@ -1273,6 +1283,34 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 				this.fireEvent("change");
 			}).bind(this)
 		});
+	},
+	
+	getComments: function(callBack, forceUpdate) {
+		callBack = callBack || Prototype.K;
+		
+		if (!forceUpdate && !Object.isNull(this.commentsStore)) {
+			callBack(this.commentsStore);
+		} else {
+			this.on("_commentsUpdated", callBack);
+			
+			if (!this._gettingComments) {
+				this._gettingComments = true;
+				
+				var request = new JSONRPC.Request("getcomments", [this.id], {
+					onSuccess: (function(response) {
+						this.comments = response.result.length;
+						
+						this.commentsStore = response.result.collect(function(comment) {
+							return new Comments.Comment(comment);
+						}, this);
+						
+						this.fireEvent("_commentsUpdated", this.commentsStore);
+						this.removeListenersByEventName("_commentsUpdated");
+						this._gettingComments = false;
+					}).bind(this)
+				});
+			}
+		}
 	}
 });
 

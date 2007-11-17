@@ -3,7 +3,6 @@ var Comments = {};
 Comments.MainWindow = Class.create(Controls.Window, {
 	initialize: function($super, task, options) {
 		this.task = task;
-		this.comments = [];
 		this.setOptions({ commentsPerPage: 15 }, options);
 		
 		var title = "Kommentare zur Aufgabe \"" + this.task.text.truncate(50) + "\"";
@@ -34,16 +33,16 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		
 		this.registerDynamicSubNode(
 			function(nodeName, state) {
-				return self.comments.find(function(comment) {
+				return self.task.commentsStore.find(function(comment) {
 					return comment.id === parseInt(nodeName, 10);
 				});
 			},
 			
 			function(nodeName) {
-				return self.comments.pluck("id").include(parseInt(nodeName, 10));
+				return self.task.commentsStore.pluck("id").include(parseInt(nodeName, 10));
 			},
 			
-			{ needsServerCommunication: true }
+			{ needsServerCommunication: Object.isNull(this.task.commentsStore) }
 		);
 		
 		this._onExternalEvent(Comments.Comment.Control, "showprofile", function(comment) {
@@ -79,33 +78,24 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		
 		this.registerChildControl(this.newCommentButton, this.tabControl);
 		
-		this.periodicalUpdate = new PeriodicalExecuter(this.getComments.bind(this), 120);
+		this.periodicalUpdate = new PeriodicalExecuter(function() {
+			self.task.getComments(self._insertComments.bind(self), true);
+		}, 120);
 		
 		this.on("remove", function() {
 			self.periodicalUpdate.disable();
 		});
 		
-		this.getComments();
+		this.task.getComments(this._insertComments.bind(this), false);
 		this.show();
 	},
 	
-	getComments: function() {
-        var request = new JSONRPC.Request("getcomments", [this.task.id], { onSuccess: this._getCommentsSuccess.bind(this) });
-	},
-	
-	_getCommentsSuccess: function(response) {
+	_insertComments: function(comments) {
 		if (!App.Windows.hasWindowOfType("CommentWindowAbstract")) {
             this.tabControl.removeAllTabs();
-            
-            this.task.comments = response.result.length;
-            var initialCommunication = !(this.comments.length);
-            
+			
             if (this.task.comments > 0) {
-                this.comments = response.result.collect(function(comment) {
-					return new Comments.Comment(comment);
-				}, this);
-				
-                this.comments.eachSlice(this.options.commentsPerPage).each(function(groupOfComments) {
+                comments.eachSlice(this.options.commentsPerPage).each(function(groupOfComments) {
 					this._addTab().addComments(groupOfComments);
 				}, this);
             } else {
@@ -115,9 +105,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
             this.loadingComments.hide();
             this._updateNumberOfComments();
             
-            if (initialCommunication) {
-				this.fireEvent("dynamicsubnodeready");
-            }
+			this.fireEvent("dynamicsubnodeready");
         }
 	},
 	
@@ -148,7 +136,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
             this._addTab();
         }
         
-        this.comments.push(comment);
+        this.task.commentsStore.push(comment);
         this.tabControl.activateTab(this.tabControl.tabs.length - 1);
         this.tabControl.tabs.last().addComment(comment);
         this.task.comments++;
@@ -404,7 +392,7 @@ Comments.CommentInputField = function() {
 		
 		_formatText: function(e) {
 			var format = Event.element(e).name;
-
+		
 			if (format) {
 				this.insertTag("[" + format + "]", "[/" + format + "]");
 			}
