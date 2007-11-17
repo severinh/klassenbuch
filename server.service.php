@@ -251,7 +251,7 @@ function createcomment($taskid, $text) {
     }
     
     $id = mysql_insert_id();
-    $database->query("UPDATE tasks SET " . $settings->db_tblprefix . "commentsreadby = '," . mySQLValue($user->id) .
+    $database->query("UPDATE " . $settings->db_tblprefix . "tasks SET commentsreadby = '," . mySQLValue($user->id) .
 		"' WHERE id = " . mySQLValue($taskid));
 	
     $user->update(Array("posts" => ($user->posts + 1)));
