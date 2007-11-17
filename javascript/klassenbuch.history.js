@@ -535,6 +535,7 @@ App.History.Node = Class.create({
 			this._activeSubNode.removeListenersByEventName("leave");
 			this._activeSubNode.leave();
 			this._activeSubNode = null;
+			
 			this._activeSubNodeName = "";
 			
 			this.fireEvent("leaveSubNode");
