@@ -262,7 +262,7 @@ App.History = function() {
 		 * @memberof App.History
 		 * @name browserSupported
 		*/
-		browserSupported: !Browser.Opera,
+		browserSupported: !Prototype.Browser.Opera,
 		
 		/**
 		 * Gibt an, ob App.History bereit ist und die Navigation des Benutzers verfolgt. Standardwert ist <em>false</em>.
@@ -435,6 +435,12 @@ App.History.Node = Class.create({
 		this._activeSubNode = null;
 		this._activeSubNodeName = "";
 		this._currentState = "";
+		
+		this.on("subnodeready", function(node) {
+			if (node && this._subNodes[node]) {
+				this._subNodes[node].ready = true;
+			}
+		}, this);
 	},
 	
 	registerSubNode: function(nodeName, enterFunct, options) {
@@ -449,14 +455,6 @@ App.History.Node = Class.create({
 			needsServerCommunication: options.needsServerCommunication,
 			ready: !options.needsServerCommunication
 		};
-		
-		if (this._subNodes[nodeName].needsServerCommunication) {
-			this.on("subnodeready", function(node) {
-				if (node === nodeName) {
-					this._subNodes[nodeName].ready = true;
-				}
-			}, this);
-		}
 	},
 	
 	registerDynamicSubNode: function(enterFunct, checkValidityFunct, options) {
@@ -496,13 +494,11 @@ App.History.Node = Class.create({
 			}
 			
 			if (subNode) {
-				this._leaveActiveSubNode();
-				
 				if (subNode.restrictedAccess && !User.signedIn) {
 					return false;
 				}
 				
-				this._activeSubNodeName = nodeName;
+				this._leaveActiveSubNode();
 				
 				if (isDynamicSubNode) {
 					this._activeSubNode = subNode.enter(nodeName, state);
@@ -511,6 +507,8 @@ App.History.Node = Class.create({
 				}
 				
 				if (this._activeSubNode) {
+					this._activeSubNodeName = nodeName;
+					
 					this._activeSubNode._handleStateChange(state);
 					
 					this._activeSubNode.on("leave", function() {
@@ -525,7 +523,6 @@ App.History.Node = Class.create({
 					
 					return true;
 				} else {
-					this._activeSubNodeName = "";
 					this._activeSubNode = null;
 					return false;
 				}

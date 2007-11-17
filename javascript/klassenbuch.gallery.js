@@ -339,7 +339,7 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 			element = (element.hasClassName("thumbnailContainer")) ? element : element.up(".thumbnailContainer");
 			
 			if (element) {
-				this.reportNavigation("diashow/" + element.readAttribute("name"));;
+				this.reportNavigation("diashow/" + element.readAttribute("name"));
 			}
 		}).bindAsEventListener(this));
 		
@@ -652,7 +652,6 @@ Gallery.Picture = Class.create(EventPublisher, /** @scope Gallery.Picture */ {
 
 Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.Node.prototype, {
 	initialize: function($super, pictures, indexToDisplay, autoStartSlideShow) {
-		this.initializeHistoryNode();
 		this.pictures = pictures;
 		this.currentIndex = 0;
 		
@@ -662,6 +661,7 @@ Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.N
 		this.slideShowEnabled = false;
 		
 		$super($$("body")[0].createChild({ className: "pictureViewer" }), { height: 0, width: 0 });
+		this.initializeHistoryNode();
 		
 		this._overlay = new Controls.AutoResizingControl($$("body")[0].createChild({ className: "pictureViewerOverlay" }), { height: 0, width: 0 });	
 		
@@ -758,20 +758,20 @@ Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.N
 		var preloader = new Image();
 		
 		preloader.onload = (function() {
-			if (Browser.Firefox) {
+			if (Prototype.Browser.Gecko) {
 				var previousSource = this._pictureElement.readAttribute("src");
 			}
 			
 			this._pictureElement.writeAttribute("src", path);
 			this._pictureContainer.show();
 			
-			if (Browser.Firefox && !previousSource) {
+			if (Prototype.Browser.Gecko && !previousSource) {
 				this._pictureContainer.setStyle({ opacity: 0.01 });
 			}
 			
 			this._pictureContainer.centerOnScreen();
 			
-			if (Browser.Firefox && !previousSource) {
+			if (Prototype.Browser.Gecko && !previousSource) {
 				this._pictureContainer.setStyle({ opacity: 1.0 });
 			}
 			

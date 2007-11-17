@@ -6,11 +6,9 @@
  * </a> von Ryan Dahl.
  * @class
  * @example
-MyClass = ClassObsolete.create();
-MyClass.inherits(EventPublisher, "EventPublisher");
-MyClass.extend({
-	initialize: function() {
-		this.initializeEventPublisher();
+var MyClass = ClassObsolete.create(EventPublisher, {
+	initialize: function($super) {
+		$super();
 	},
 	
 	saySomeThing: function() {
@@ -88,10 +86,10 @@ var EventPublisher = Class.create( /** @scope EventPublisher.prototype */ {
     * @params {Object} args [optional] Any object, will be passed into the handler function as the only argument
     */
     fireEvent: function(eventName) {
-		var args = $A(arguments);
-		args.shift();
-		
         if (this._events[eventName]) {
+			var args = $A(arguments);
+			args.shift();
+			
 			return !this._events[eventName].any(function(handler) {
 				try {
 					if (handler.apply(this, args) === false) {

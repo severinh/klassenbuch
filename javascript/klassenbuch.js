@@ -121,11 +121,11 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
 	 * @returns {Boolean} Ob der Browser kompatibel ist oder nicht.
 	*/
 	checkBrowserCompatibility: function() {
-		if (Browser.supported) {
+		if (Prototype.Browser.supported) {
 			var body = $$("body")[0];
 			
 			$w("Gecko Opera IE IE6 WebKit").each(function(a) {
-				if (Browser[a]) {
+				if (Prototype.Browser[a]) {
 					body.addClassName(a.toLowerCase());
 				}
 			});
@@ -253,4 +253,6 @@ Ajax.Responders.register({
 // Wenn der ganze HTML-Text und der JavaScript-Code vom Browser eingelesen wurde und das DOM bereit ist, wird das
 // Klassenbuch initialisiert. Dadurch wird erreicht, dass nicht gewartet werden muss, bis alle Bilddateien usw. geladen
 // worden sind.
-document.observe("dom:loaded", App.initialize);
+if (!window.PREVENT_APP_FROM_STARTING) {
+	document.observe("dom:loaded", App.initialize);
+}
