@@ -74,7 +74,7 @@ Object.extend(Object, /** @scope Object */ {
 });
 
 /**
- * Some extensions to Prototype's browser detection functionality (<em>Prototype.Browser</em>). It checks whether the browser supportes
+ * Some extensions to Prototype's browser detection functionality (<em>Prototype.Browser</em>). It checks whether the browser supports
  * cookies or is supported in general.
  * @namespace
 */
@@ -140,8 +140,6 @@ Object.extend(Prototype.Browser, (function() {
 		supported: !((isFirefox && version < 1.5) || (B.IE && version < 6))
 	};
 })());
-
-var Browser = Prototype.Browser;
 
 var JSONRPC = {
 	SERVICE_FILE: "server.service.php",

@@ -2,7 +2,6 @@
  * Klassenbuch
  * Copyright (C) 2006 - 2007 Severin Heiniger
  * 
- * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -755,7 +754,7 @@ Controls.View = Class.create(Controls.TabControl.TabPageWithButtonControl, {
         
 		this.title = this.content.createChild({ tag: "h2", content: title });
 		
-		var resizingControl = new Controls.AutoResizingControl(this.content, { height: (Browser.IE) ? 165 : 155 });
+		var resizingControl = new Controls.AutoResizingControl(this.content, { height: (Prototype.Browser.IE) ? 165 : 155 });
 	},
 	
 	deactivate: function($super) {
@@ -1210,7 +1209,7 @@ Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype,
 		this.options.containerElement.insertControl(this);
 		
 		if (this.options.centerOnScreen) {
-			if (Browser.Opera || Browser.WebKit) {
+			if (Prototype.Browser.Opera || Prototype.Browser.WebKit) {
 				this.on("show", this.centerOnScreen, this);
 			} else {
 				this.centerOnScreen();
