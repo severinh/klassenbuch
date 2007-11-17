@@ -513,7 +513,7 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 String.prototype.addressify._STORE = {};
 
 String.Builder = function() {
-	var addOne = Browser.IE ? 
+	var addOne = Prototype.Browser.IE ? 
 		function(str) {
 			this._strings.push(str);
 		} :
@@ -522,7 +522,7 @@ String.Builder = function() {
 			this._strings += str;
 		};
 		
-	var get = Browser.IE ?
+	var get = Prototype.Browser.IE ?
 		function() {
 			return this._strings.join("");
 		} :
@@ -533,7 +533,7 @@ String.Builder = function() {
 	
 	return Class.create({
 		initialize: function() {
-			this._strings = (Browser.IE) ? [] : "";
+			this._strings = (Prototype.Browser.IE) ? [] : "";
 			this.add.apply(this, arguments);
 		},
 		
