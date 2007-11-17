@@ -95,8 +95,10 @@ class User {
     private function authenticateByCookie() {
 		$settings = Settings::getInstance();
 		
-		return $this->authenticateByToken($_COOKIE[$settings->cookieprefix . "userid"],
-			$_COOKIE[$settings->cookieprefix . "token"]);
+		return $this->authenticateByToken(
+			$_COOKIE[$settings->cookieprefix . "userid"],
+			$_COOKIE[$settings->cookieprefix . "token"]
+		);
     }
     
     private function authenticateByJSONRPCRequest() {

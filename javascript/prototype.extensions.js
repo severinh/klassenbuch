@@ -178,7 +178,7 @@ var JSONRPC = {
 };
 
 /**
- * @class Initiates and processes JSONRPC requests.  and handles response parsing and validation.
+ * @class Initiates and processes JSONRPC requests.
  * @extends Ajax.Request
  * @param {String} method Name of the method to be called on the server. E. g. <em>gettasks</em> to get a list of upcoming tasks.
  * @param {Array} params Optional parameter that are passed to the service function. Default value is <em>[]</em>.
@@ -448,24 +448,31 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 JSONRPC.Upload.UPLOAD_ERROR = SWFUpload.UPLOAD_ERROR;
 JSONRPC.Upload.QUEUE_ERROR = SWFUpload.QUEUE_ERROR;
 
-Object.extend(Number.prototype, {
-	limitTo: function(a, b) {
-		return (this < a) ? a : ((this > b) ? b : this);
-	},
+Object.extend(Number.prototype, function() {
+	var scales = $w("Byte KB MB GB TB");
 	
-	getFormatedDataSize: function() {
-		var scales = ["Byte", "KB", "MB", "GB", "TB"];
-		var temp = this;
-		var currentScale = 0;
+	return {
+		limitTo: function(a, b) {
+			return (this < a) ? a : ((this > b) ? b : this);
+		},
 		
-		while (temp >= 1024) {
-			temp = temp / 1024;
-			++currentScale;
+		getFormatedDataSize: function() {
+			var temp = this;
+			var currentScale = 0;
+			
+			while (temp >= 1024) {
+				temp = temp / 1024;
+				++currentScale;
+			}
+			
+			return temp.roundTo(2) + " " + scales[currentScale] + ((currentScale === 0 && (temp == 0 || temp > 1)) ? "s" : "");
+		},
+		
+		roundTo: function(a) {
+			return (this * Math.pow(10, a)).round() / Math.pow(10, a);
 		}
-		
-		return ((temp * 100).round() / 100) + " " + scales[currentScale] + ((currentScale === 0 && temp >= 1) ? "s" : "");
-	}
-});
+	};
+}());
 
 /**
  * Einige ergänzende Methoden zur nativen String-Klasse. Diese hinzugefügten Methoden können wie die nativen Methoden
@@ -483,6 +490,10 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 	 * @returns {Integer} Die Anzahl der Fundstellen.
 	*/
 	count: function(a) {
+		if (a === "") {
+			return 0;
+		}
+		
 		return this.split(a).length - 1;
 	},
 	
@@ -494,7 +505,7 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 	*/
 	capitalize: function(value) {
 		return this.split(value || " ").collect(function(a) {
-			return a.charAt(0).toUpperCase() + a.substring(1); 
+			return a.charAt(0).toUpperCase() + a.substring(1);
 		}).join(value || " ");
 	},
 	
