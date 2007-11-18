@@ -9,7 +9,7 @@ error_reporting(0);
 require_once("wizard.php");
 
 // Wenn das Klassenbuch bereits konfiguriert wurde, wird die Installation abgebrochen
-if (file_exists("../server.settings.php")) {
+if (file_exists("../settings.php")) {
 	header("Location: ../");
 	exit();
 }
@@ -201,7 +201,7 @@ class InstWiz_Finish extends Wizard {
 	}
 	
 	function setPage() {
-		$settings = $this->readFile("../server.settings.default.php");
+		$settings = $this->readFile("../settings.default.php");
 		$keys = Array("domain", "mail", "adminmail", "adminname", "title", "subtitle", "db_host", "db_name",
 			"db_user", "db_password", "db_tblprefix");
 		
@@ -209,7 +209,7 @@ class InstWiz_Finish extends Wizard {
 			$settings = str_replace("{" . $value . "}", $this->getVar("wiz_" . $value), $settings);
 		}
 		
-		$this->writeFile("../server.settings.php", $settings);
+		$this->writeFile("../settings.php", $settings);
 		$this->page = "<p>Das Klassenbuch wurde erfolgreich eingerichtet. Du kannst das Klassenbuch nun zum ersten Mal " .
 			"öffnen.</p><ul><li><a href=\"../index.php\">Zum Klassenbuch</a></li></ul>";
 	}

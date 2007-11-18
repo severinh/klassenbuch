@@ -13,7 +13,8 @@ You should have received a copy of the GNU General Public License along with thi
 Questions? We can be reached at http://forums.sf.net
 */
 
-require_once("../server.template.php");
+require_once("../core.php");
+Core::import("includes.template");
 
 class Wizard {
 	var	$wizard;

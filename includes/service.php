@@ -56,8 +56,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 // OF THE POSSIBILITY OF SUCH DAMAGE.
 
-require_once("server.jsonrpc.response.php");
-require_once("server.jsonservice.php");
+Core::import("includes.jsonrpc.response");
+Core::import("includes.json");
 
 class JSONRPCService {
 	// Array defining PHP functions exposed as JSONRPC methods by this server
@@ -482,7 +482,7 @@ class JSONRPCService {
 	
 	private function parseRequest($data, $content_encoding = "") {
 		$json = new Services_JSON(SERVICES_JSON_LOOSE_TYPE);
-		$data = $json->decode(utf8_decode($data));
+		$data = $json->decode($data);
 		
 		if (!$data || !$data["method"]) {
 			return new JSONRPCErrorResponse("INVALID_REQUEST", "JSON parsing did not return correct jsonrpc request object");

@@ -257,7 +257,7 @@ class Services_JSON
 					Array('\\', '"', '/', "\t", "\n", "\r", chr(8), chr(11), chr(12)),
 					Array('\\\\', '\"', '\/', '\t', '\n', '\r', '\b', '\v', '\f'), $var);
 					
-				return "\"" . utf8_encode($escaped_data) . "\"";
+				return "\"" . $escaped_data . "\"";
 			
             case 'array':
                /*

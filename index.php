@@ -15,22 +15,22 @@ header("Expires: Sun, 1 Jan 1995 00:00:00 GMT");    // Datum in der Vergangenhei
 // Es handelt sich hier um eine serverinterne Abfrage
 define("INTERNAL_REQUEST", true);
 
-require_once("server.service.php");
-require_once("server.template.php");
+require_once("service.php");
+Core::import("includes.template");
 
-$settings = Settings::getInstance();
+$settings = Core::getSettings();
 
 $tmpl = new Template;
 $tmpl->read_file("index.tmpl");
 
 $designList = Array("default", "nonzero");
 
-$tmpl->set_var("TITLE", $settings->title);
-$tmpl->set_var("SUBTITLE", $settings->subtitle);
-$tmpl->set_var("ADMINMAIL", $settings->adminmail);
-$tmpl->set_var("ADMINNAME", $settings->adminname);
+$tmpl->set_var("TITLE", $settings->get("title"));
+$tmpl->set_var("SUBTITLE", $settings->get("subtitle"));
+$tmpl->set_var("ADMINMAIL", $settings->get("adminmail"));
+$tmpl->set_var("ADMINNAME", $settings->get("adminname"));
 
-if (!$settings->online) {
+if (!$settings->get("online")) {
 	$tmpl->set_var("SIMPLEMESSAGE", true);
 	$tmpl->set_var("PAGETITLE", "Offline");
 	$tmpl->set_var("SIMPLEMESSAGETITLE", "Das Klassenbuch ist offline");
@@ -47,7 +47,7 @@ if (!$settings->online) {
 			$tmpl->set_var("SIMPLEMESSAGETITLE", "Dein Passwort wurde erfolgreich geändert");
 			$tmpl->set_var("SIMPLEMESSAGEBODY", "<p>Du hast die Passwortänderung nun bestätigt. Du kannst nun das " .
 				"Klassenbuch aufrufen und dich mit deinem neuen Passwort anmelden.</p>" .
-				"<ul><li><a href=\"" . $settings->domain . "\">Klassenbuch öffnen</a></li></ul>");
+				"<ul><li><a href=\"" . $settings->get("domain") . "\">Klassenbuch öffnen</a></li></ul>");
 		} else {
 			$tmpl->set_var("PAGETITLE", "Fehler");
 			$tmpl->set_var("SIMPLEMESSAGETITLE", "Es ist ein Fehler aufgetreten");

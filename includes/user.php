@@ -1,13 +1,12 @@
 <?php
 
 // Auf diese Datei ist kein direkter Zugriff erlaubt.
-defined("_KBSECURE") or die("Zugriff verweigert.");
+defined("_KBSECURE") or die("Access denied.");
 
-require_once("server.securesession.php");
+Core::import("includes.securesession");
+Core::import("includes.json");
 
 class User {
-	static private $instance = null;
-	
     public $_secureSession = null;
     public $authenticated = false;
     
@@ -33,11 +32,13 @@ class User {
 	public $settings = null;
 	
 	static public function &getInstance() {
-		if (!self::$instance) {
-			self::$instance = new User();
+		static $instance;
+		
+		if (!$instance) {
+			$instance = new User();
 		}
 		
-		return self::$instance;
+		return $instance;
 	}
     
     private function __construct() {
@@ -51,9 +52,9 @@ class User {
     }
     
     private function setupSession() {
-		$settings = Settings::getInstance();
+		$settings = Core::getSettings();
 		
-		session_name($settings->cookieprefix . "sessionid");
+		session_name($settings->get("cookieprefix") . "sessionid");
 		
 		if ("files" != ini_get("session.save_handler")) {
 			ini_set("session.save_handler", "files");
@@ -93,11 +94,11 @@ class User {
     }
     
     private function authenticateByCookie() {
-		$settings = Settings::getInstance();
+		$settings = Core::getSettings();
 		
 		return $this->authenticateByToken(
-			$_COOKIE[$settings->cookieprefix . "userid"],
-			$_COOKIE[$settings->cookieprefix . "token"]
+			$_COOKIE[$settings->get("cookieprefix") . "userid"],
+			$_COOKIE[$settings->get("cookieprefix") . "token"]
 		);
     }
     
@@ -132,12 +133,13 @@ class User {
     }
     
     private function loadFromDatabase() {
-		global $database;
+		$database = Core::getDatabase();
+		$settings = Core::getSettings();
 		
-		$settings = Settings::getInstance();
+		$database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "users WHERE id = " .
+			$database->quote($this->id));
 		
-		$response = $database->query("SELECT * FROM " . $settings->db_tblprefix . "users WHERE id = " .
-			mySQLValue($this->id));
+		$response = $database->query();
 		
 		if (!$response || mysql_num_rows($response) != 1) {
 			return false;
@@ -237,25 +239,26 @@ class User {
     }
     
     public function signIn($nickname, $password) {
-        global $database;
-        
-        $settings = Settings::getInstance();
+        $database = Core::getDatabase();
+        $settings = Core::getSettings();
         
         if ($nickname && $password) {
-            $data = $database->query("SELECT * FROM " . $settings->db_tblprefix . "users WHERE nickname = " .
-				mySQLValue($nickname) . " AND password = " . mySQLValue(md5($password)));
+            $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "users WHERE nickname = " .
+				$database->quote($nickname) . " AND password = " . $database->quote(md5($password)));
+			
+			$data = $database->query();
 			
             if ($data && mysql_num_rows($data) == 1) {
 				$this->insertData(mysql_fetch_array($data));
 				
-				session_name($settings->cookieprefix . "sessionid");
+				session_name($settings->get("cookieprefix") . "sessionid");
                 session_start();
                 
                 $_SESSION["userid"] = $this->id;
                 $_SESSION["token"] = $this->token;
                 
-				setcookie($settings->cookieprefix . "userid", $this->id, time() + 60 * 60 * 24 * 30);
-				setcookie($settings->cookieprefix . "token", $this->token, time() + 60 * 60 * 24 * 30);
+				setcookie($settings->get("cookieprefix") . "userid", $this->id, time() + 60 * 60 * 24 * 30);
+				setcookie($settings->get("cookieprefix") . "token", $this->token, time() + 60 * 60 * 24 * 30);
 				
                 $this->authenticated = true;
                 
@@ -267,24 +270,22 @@ class User {
     }
     
     public function signOut() {
-		global $database;
-		
-		$settings = Settings::getInstance();
+		$database = Core::getDatabase();
+		$settings = Core::getSettings();
 		
 		$this->clear();
 		session_destroy();
 		
-		setcookie($settings->cookieprefix . "sessionid",  "", time() - 3600);
-		setcookie($settings->cookieprefix . "userid", "", time() - 3600);
-		setcookie($settings->cookieprefix . "token", "", time() - 3600);
+		setcookie($settings->get("cookieprefix") . "sessionid",  "", time() - 3600);
+		setcookie($settings->get("cookieprefix") . "userid", "", time() - 3600);
+		setcookie($settings->get("cookieprefix") . "token", "", time() - 3600);
 		
 		return true;
     }
     
     public function update($information) {
-        global $database;
-		
-		$settings = Settings::getInstance();
+        $database = Core::getDatabase();
+		$settings = Core::getSettings();
 		
         if (!$information || !$this->authenticated) {
             return false;
@@ -317,7 +318,7 @@ class User {
             }
             
             if (!$error) {
-				$query .= ", $key = " . mySQLValue($value);
+				$query .= ", $key = " . $database->quote($value);
 			}
         }
         
@@ -330,9 +331,11 @@ class User {
         if ($error) {
 			return false;
 		}
-	
-		if (!$database->query("UPDATE " . $settings->db_tblprefix . "users SET " . $query . " WHERE id = " .
-			mySQLValue($this->id))) {
+		
+		$database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "users SET " . $query . " WHERE id = " .
+			$database->quote($this->id));
+		
+		if (!$database->query()) {
 			return false;
 		}
 		
@@ -344,7 +347,7 @@ class User {
     }
     
     public function saveSettings() {
-		global $database;
+		$database = Core::getDatabase();
 		
         if (!$this->authenticated) {
             return false;
@@ -353,8 +356,10 @@ class User {
         $json = new Services_JSON();
         $settings = $json->encode($this->settings);
         
-        if ($database->query("UPDATE users SET settings = " . mySQLValue($settings) . " WHERE id = " .
-			mySQLValue($this->id))) {
+		$database->setQuery("UPDATE users SET settings = " . $database->quote($settings) . " WHERE id = " .
+			$database->quote($this->id));
+		
+        if ($database->query()) {
 			return true;
 		} else {
 			return false;

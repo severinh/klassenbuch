@@ -151,7 +151,7 @@ var JSONRPC = {
 	 * The relative path to the JSONRPC service.
 	 * @type String
 	*/
-	"SERVICE_FILE": "server.service.php",
+	"SERVICE_FILE": "service.php",
 	
 	/**
 	 * A map of both client and server side JSONRPC error codes.
