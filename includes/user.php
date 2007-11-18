@@ -134,10 +134,8 @@ class User {
     
     private function loadFromDatabase() {
 		$database = Core::getDatabase();
-		$settings = Core::getSettings();
 		
-		$database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "users WHERE id = " .
-			$database->quote($this->id));
+		$database->setQuery("SELECT * FROM #__users WHERE id = " . $database->quote($this->id));
 		
 		$response = $database->query();
 		
@@ -243,8 +241,8 @@ class User {
         $settings = Core::getSettings();
         
         if ($nickname && $password) {
-            $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "users WHERE nickname = " .
-				$database->quote($nickname) . " AND password = " . $database->quote(md5($password)));
+            $database->setQuery("SELECT * FROM #__users WHERE nickname = " . $database->quote($nickname) .
+				" AND password = " . $database->quote(md5($password)));
 			
 			$data = $database->query();
 			
@@ -285,7 +283,6 @@ class User {
     
     public function update($information) {
         $database = Core::getDatabase();
-		$settings = Core::getSettings();
 		
         if (!$information || !$this->authenticated) {
             return false;
@@ -332,8 +329,7 @@ class User {
 			return false;
 		}
 		
-		$database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "users SET " . $query . " WHERE id = " .
-			$database->quote($this->id));
+		$database->setQuery("UPDATE #__users SET " . $query . " WHERE id = " . $database->quote($this->id));
 		
 		if (!$database->query()) {
 			return false;
@@ -356,7 +352,7 @@ class User {
         $json = new Services_JSON();
         $settings = $json->encode($this->settings);
         
-		$database->setQuery("UPDATE users SET settings = " . $database->quote($settings) . " WHERE id = " .
+		$database->setQuery("UPDATE #__users SET settings = " . $database->quote($settings) . " WHERE id = " .
 			$database->quote($this->id));
 		
         if ($database->query()) {

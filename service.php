@@ -13,9 +13,6 @@ JSONRPCErrorCodes::add("INVALID_DATABASE_QUERY", 801, "Ungültige Datenbankabfra
 
 function gettasks($start = 0, $end = 0) {
 	$database = Core::getDatabase();
-	
-	// $db = Core::getDatabase();
-	$settings = Core::getSettings();
 	$user = Core::getUser();
     
     // Wurde kein Beginn des Zeitrahmens angegeben, wird der aktuelle Tag eingesetzt
@@ -28,8 +25,7 @@ function gettasks($start = 0, $end = 0) {
         $cond = " AND date < " . $database->quote($end);
 	}
 	
-	$database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "tasks WHERE date >= " . 
-		$database->quote($start) . "$cond ORDER BY date");
+	$database->setQuery("SELECT * FROM #__tasks WHERE date >= " . $database->quote($start) . "$cond ORDER BY date");
 	
 	$tasksResponse = $database->query();
 	
@@ -60,8 +56,8 @@ function gettasks($start = 0, $end = 0) {
 		$readBy[(int) $row["id"]] = (string) $row["commentsreadby"];
     }
     
-    $database->setQuery("SELECT taskid, COUNT(*) AS numberofcomments FROM " .
-		$settings->get("db_tblprefix") . "comments WHERE date >= " . $database->quote($oldestSumbission) . " GROUP BY taskid");
+    $database->setQuery("SELECT taskid, COUNT(*) AS numberofcomments FROM #__comments WHERE date >= " .
+		$database->quote($oldestSumbission) . " GROUP BY taskid");
     
 	$commentsResponse = $database->query();
 	
@@ -95,7 +91,6 @@ function gettasks($start = 0, $end = 0) {
 function removetask($taskid) {
     $database = Core::getDatabase();
     $user = Core::getUser();
-	$settings = Core::getSettings();
     
     if (!$user->authenticated) {
         return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
@@ -105,8 +100,7 @@ function removetask($taskid) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keine Aufgabe angegeben.");
     }
     
-	$database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "tasks SET removed = 1 WHERE id = " .
-		$database->quote($taskid));
+	$database->setQuery("UPDATE #__tasks SET removed = 1 WHERE id = " . $database->quote($taskid));
 	
     if (!$database->query()) {
         return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "\nMySQL-Fehlermeldung: " . mysql_error());
@@ -122,7 +116,6 @@ function removetask($taskid) {
 function createtask($subject, $date, $text, $important = false) {
     $database = Core::getDatabase();
     $user = Core::getUser();
-	$settings = Core::getSettings();
     
     // Prüft, ob der Benuzter angemeldet ist
     if (!$user->authenticated) {
@@ -146,8 +139,8 @@ function createtask($subject, $date, $text, $important = false) {
     $time = time();
     
     // Trägt die Aufgabe in die Datenbank ein
-	$database->setQuery("INSERT INTO " . $settings->get("db_tblprefix") . "tasks (date, subject, text, important, userid, " .
-		"added) VALUES(" . $database->quote($date) . ", " .  $database->quote($subject) . ", " . $database->quote($text) . ", " . 
+	$database->setQuery("INSERT INTO #__tasks (date, subject, text, important, userid, added) VALUES(" .
+		$database->quote($date) . ", " .  $database->quote($subject) . ", " . $database->quote($text) . ", " . 
 		$database->quote($important) . ", " . $user->id . ", $time)");
 	
     if (!$database->query()) {
@@ -160,7 +153,6 @@ function createtask($subject, $date, $text, $important = false) {
 function edittask($id, $date, $text, $important = false) {
     $database = Core::getDatabase();
     $user = Core::getUser();
-	$settings = Core::getSettings();
     
     // Prüft, ob der Benuzter angemeldet ist
     if (!$user->authenticated) {
@@ -180,8 +172,8 @@ function edittask($id, $date, $text, $important = false) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keine Aufgabe angegeben.");
     }
     
-	$database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "tasks SET date = " . $database->quote($date) . ", text = " .
-		$database->quote($text) . ", important = " . $database->quote($important) . " WHERE id = " . $database->quote($id));
+	$database->setQuery("UPDATE #__tasks SET date = " . $database->quote($date) . ", text = " . $database->quote($text) .
+		", important = " . $database->quote($important) . " WHERE id = " . $database->quote($id));
 	
     if (!$database->query()) {
         return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . mysql_error());
@@ -193,10 +185,8 @@ function edittask($id, $date, $text, $important = false) {
 function getcomments($taskid) {
     $database = Core::getDatabase();
     $user = Core::getUser();
-	$settings = Core::getSettings();
     
-    $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "comments WHERE taskid = " .
-		$database->quote($taskid) . " ORDER BY date");
+    $database->setQuery("SELECT * FROM #__comments WHERE taskid = " . $database->quote($taskid) . " ORDER BY date");
     
 	$databaseResponse = $database->query();
 	
@@ -217,8 +207,7 @@ function getcomments($taskid) {
     
     // Needs rewrite
     if ($user->authenticated) {
-        $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "tasks WHERE id = " .
-			$database->quote($taskid));
+        $database->setQuery("SELECT * FROM #__tasks WHERE id = " . $database->quote($taskid));
         
 		$databaseResponse = $database->query();
 		
@@ -229,7 +218,7 @@ function getcomments($taskid) {
             if (!in_array($user->id, $commentsReadBy)) {
                 array_push($commentsReadBy, $user->id);
 				
-                $database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "tasks SET commentsreadby = " .
+                $database->setQuery("UPDATE #__tasks SET commentsreadby = " .
 					$database->quote(implode(",", $commentsReadBy)) . " WHERE id = " . $database->quote($taskid));
 				
 				$database->query();
@@ -243,7 +232,6 @@ function getcomments($taskid) {
 function createcomment($taskid, $text) {
 	$database = Core::getDatabase();
     $user = Core::getUser();
-	$settings = Core::getSettings();
     
     if (!$user->authenticated) {
         return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
@@ -253,15 +241,15 @@ function createcomment($taskid, $text) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Kommentar angegeben.");
     }
     
-	$database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "tasks WHERE id = " .
-		$database->quote($taskid) . " AND date >= " . $database->quote(mktime(0, 0, 0)));
+	$database->setQuery("SELECT * FROM #__tasks WHERE id = " . $database->quote($taskid) . " AND date >= " .
+		$database->quote(mktime(0, 0, 0)));
 	
 	if (mysql_num_rows($database->query()) != 1) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Aufgaben in der Vergangenheit können leider nicht mehr kommentiert werden.");
 	}
     
-	$database->setQuery("INSERT INTO " . $settings->get("db_tblprefix") . "comments (taskid, userid, date, comment) VALUES(" .
-		$database->quote($taskid) . ", " . $database->quote($user->id) . ", " . $database->quote(time()) . ", " . $database->quote($text) . ")");
+	$database->setQuery("INSERT INTO #__comments (taskid, userid, date, comment) VALUES(" . $database->quote($taskid) .
+		", " . $database->quote($user->id) . ", " . $database->quote(time()) . ", " . $database->quote($text) . ")");
 	
     if (!$database->query()) {
         return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . mysql_error());
@@ -269,8 +257,8 @@ function createcomment($taskid, $text) {
     
     $id = mysql_insert_id();
 	
-    $database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "tasks SET commentsreadby = '," . $database->quote($user->id) .
-		"' WHERE id = " . $database->quote($taskid));
+    $database->setQuery("UPDATE #__tasks SET commentsreadby = '," . $database->quote($user->id) . "' WHERE id = " .
+		$database->quote($taskid));
 		
 	$database->query();
 	
@@ -282,7 +270,6 @@ function createcomment($taskid, $text) {
 function editcomment($id, $text) {
 	$database = Core::getDatabase();    
     $user = Core::getUser();
-	$settings = Core::getSettings();
     
     if (!$user->authenticated) {
         return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
@@ -292,8 +279,8 @@ function editcomment($id, $text) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Kommentar angegeben.");
 	}
 	
-    $database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "comments SET comment = " .
-		$database->quote($text) . " WHERE id = " . $database->quote($id) . " AND userid = " . $database->quote($user->id));
+    $database->setQuery("UPDATE #__comments SET comment = " . $database->quote($text) . " WHERE id = " .
+		$database->quote($id) . " AND userid = " . $database->quote($user->id));
 	
 	$databaseResponse = $database->query();
 	
@@ -312,9 +299,8 @@ function editcomment($id, $text) {
 function getcontacts() {
     $database = Core::getDatabase();
     $user = Core::getUser();
-	$settings = Core::getSettings();
     
-    $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "users ORDER BY firstname");
+    $database->setQuery("SELECT * FROM #__users ORDER BY firstname");
     $databaseResponse = $database->query();
 	
     if (!$databaseResponse) {
@@ -346,9 +332,8 @@ function getcontacts() {
 
 function getfiles() {
     $database = Core::getDatabase();
-	$settings = Core::getSettings();
 	
-    $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "files ORDER BY uploaded");
+    $database->setQuery("SELECT * FROM #__files ORDER BY uploaded");
     $databaseResponse = $database->query();
 	
     if (!$databaseResponse) {
@@ -380,13 +365,12 @@ function getfiles() {
 function archivefile($id) {
 	$database = Core::getDatabase();
 	$user = Core::getUser();
-	$settings = Core::getSettings();
 	
     if (!$user->authenticated) {
         return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
     }
 	
-    $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "files WHERE id = " . $database->quote($id));
+    $database->setQuery("SELECT * FROM #__files WHERE id = " . $database->quote($id));
     $response = $database->query();
 	
     if (!$response) {
@@ -404,8 +388,7 @@ function archivefile($id) {
 			"Dies ist dem Benutzer vorbehalten, der die Datei hochgeladen hat.");
     }
     
-    $database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "files SET forcedarchiving = 1 WHERE id = " .
-		$database->quote($id));
+    $database->setQuery("UPDATE #__files SET forcedarchiving = 1 WHERE id = " . $database->quote($id));
     
 	$response = $database->query();
 	
@@ -451,9 +434,8 @@ function uploadfile($description) {
 		$fileSize = $_FILES["Filedata"]["size"];
 		
 		if (move_uploaded_file($_FILES["Filedata"]["tmp_name"], "files/$newFileName")) {
-			$database->setQuery("INSERT INTO " . $settings->get("db_tblprefix") . "files (name, description, size, userid, " .
-				"uploaded) VALUES(" . $database->quote($newFileName) . ", " . $database->quote($description) . ", $fileSize, " .
-				$user->id . ", $date)");
+			$database->setQuery("INSERT INTO #__files (name, description, size, userid, uploaded) VALUES(" .
+				$database->quote($newFileName) . ", " . $database->quote($description) . ", $fileSize, " . $user->id . ", $date)");
 			
 			if ($database->query()) {
 				return Array("id" => mysql_insert_id(), "filename" => $newFileName);
@@ -490,8 +472,7 @@ function requestpassword($username, $password) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Passwort angegeben.");    
     }
     
-    $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "users WHERE nickname = " .
-		$database->quote($username));
+    $database->setQuery("SELECT * FROM #__users WHERE nickname = " . $database->quote($username));
 	
 	$databaseResponse = $database->query();
     
@@ -506,8 +487,8 @@ function requestpassword($username, $password) {
     $user = mysql_fetch_array($databaseResponse);
     $requestKey = generateRandomString();
     
-	$database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "users SET newpassword = " . $database->quote(md5($password)) .
-		", newpasswordkey = " . $database->quote($requestKey) . " WHERE nickname = " . $database->quote($username));
+	$database->setQuery("UPDATE #__users SET newpassword = " . $database->quote(md5($password)) . ", newpasswordkey = " .
+		$database->quote($requestKey) . " WHERE nickname = " . $database->quote($username));
 	
     if (!$database->query()) {
         return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . mysql_error());
@@ -528,14 +509,12 @@ function requestpassword($username, $password) {
 
 function verifynewpassword($key) {
     $database = Core::getDatabase();
-	$settings = Core::getSettings();
 	
     if (!$key) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Bestätigungsschlussel angegeben");
     }
     
-    $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "users WHERE newpasswordkey = " .
-		$database->quote($key));
+    $database->setQuery("SELECT * FROM #__users WHERE newpasswordkey = " . $database->quote($key));
 	
 	$databaseResponse = $database->query();
     
@@ -549,7 +528,7 @@ function verifynewpassword($key) {
     
     $user = mysql_fetch_array($databaseResponse);    
     
-	$database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "users SET password = " . $database->quote($user["newpassword"]) .
+	$database->setQuery("UPDATE #__users SET password = " . $database->quote($user["newpassword"]) .
 		", newpasswordkey = '', newpassword = '' " . "WHERE id = " . $database->quote($user["id"]));
 	
     if (!$database->query()) {
@@ -562,7 +541,6 @@ function verifynewpassword($key) {
 function changepassword($newpassword, $currentpassword) {
 	$database = Core::getDatabase();
 	$user = Core::getUser();
-	$settings = Core::getSettings();
 	
     if (!$user->authenticated) {
         return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
@@ -572,9 +550,8 @@ function changepassword($newpassword, $currentpassword) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS");
 	}
 	
-    $database->setQuery("UPDATE " . $settings->get("db_tblprefix") . "users SET password = " .
-		$database->quote(md5($newpassword)) . " WHERE password = " . $database->quote(md5($currentpassword)) . " AND id = " .
-		$database->quote($user->id));
+    $database->setQuery("UPDATE #__users SET password = " . $database->quote(md5($newpassword)) . " WHERE password = " .
+		$database->quote(md5($currentpassword)) . " AND id = " . $database->quote($user->id));
 	
 	$response = $database->query();
 	
@@ -667,8 +644,8 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keine Passwort angegeben.");
     }
     
-    /* $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "users WHERE nickname = " . $database->quote($nickname) .
-		" OR mail = " . $database->quote($mail));
+    /* $database->setQuery("SELECT * FROM #__users WHERE nickname = " . $database->quote($nickname) . " OR mail = " .
+		$database->quote($mail));
 	$response = $database->query();
 	
 	if (mysql_num_rows($response) != 0) {
@@ -676,7 +653,7 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 			"bereits.");
 	} */
 	
-    /* $database->setQuery("INSERT INTO " . $settings->get("db_tblprefix") . "users (nickname, firstname, surname, mail, password) VALUES(" .
+    /* $database->setQuery("INSERT INTO #__users (nickname, firstname, surname, mail, password) VALUES(" .
 		$database->quote($nickname) . ", " . $database->quote($firstname) . ", " .  $database->quote($surname) . ", " .
 		$database->quote(md5($password)) . ", " .  $database->quote($mail) . ")");
 	
@@ -698,9 +675,8 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 
 function gallery_getalbums() {
     $database = Core::getDatabase();
-	$settings = Core::getSettings();
 	
-	$database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "gallery_albums");
+	$database->setQuery("SELECT * FROM #__gallery_albums");
 	$databaseResponse = $database->query();
 	
     if (!$databaseResponse) {
@@ -710,8 +686,7 @@ function gallery_getalbums() {
     $albums = Array();
     
     while ($row = mysql_fetch_array($databaseResponse)) {
-		$database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "gallery_pictures WHERE " .
-			"albumid = " . $row["id"]);
+		$database->setQuery("SELECT * FROM #__gallery_pictures WHERE albumid = " . $row["id"]);
 		
 		$pictures = mysql_num_rows($database->query());
 		
@@ -728,7 +703,6 @@ function gallery_getalbums() {
 function gallery_createalbum($name, $description = "") {
     $database = Core::getDatabase();
     $user = Core::getUser();
-	$settings = Core::getSettings();
 	
 	$name = trim(smartStripSlashes($name));
 	$description = trim(smartStripSlashes($description));
@@ -741,8 +715,8 @@ function gallery_createalbum($name, $description = "") {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keinen Albumnamen angegeben");
     }
     
-	$database->setQuery("INSERT INTO " . $settings->get("db_tblprefix") . "gallery_albums (name, description, date) VALUES(" .
-		$database->quote($name) . ", " . $database->quote($description) . ", " . time() . ")");
+	$database->setQuery("INSERT INTO #__gallery_albums (name, description, date) VALUES(" . $database->quote($name) .
+		", " . $database->quote($description) . ", " . time() . ")");
 	
     if (!$database->query()) {
 		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . mysql_error());
@@ -754,7 +728,6 @@ function gallery_createalbum($name, $description = "") {
 function gallery_removealbum($id) {
 	$database = Core::getDatabase();
 	$user = Core::getUser();
-	$settings = Core::getSettings();
 	
 	$id = intval($id);
 	
@@ -766,7 +739,7 @@ function gallery_removealbum($id) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiges Album angegeben");
     }
     
-    $database->setQuery("DELETE FROM " . $settings->get("db_tblprefix") . "gallery_albums WHERE id = " . $database->quote($id));
+    $database->setQuery("DELETE FROM #__gallery_albums WHERE id = " . $database->quote($id));
 	$database->query();
 	
     return true;
@@ -775,7 +748,6 @@ function gallery_removealbum($id) {
 function gallery_downloadalbum($albumid) {
 	$database = Core::getDatabase();
 	$user = Core::getUser();
-	$settings = Core::getSettings();
 	
 	$albumid = intval($albumid);
     
@@ -783,7 +755,7 @@ function gallery_downloadalbum($albumid) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiges Album angegeben");
     }
     
-    $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "gallery_albums WHERE id = " . $database->quote($albumid));
+    $database->setQuery("SELECT * FROM #__gallery_albums WHERE id = " . $database->quote($albumid));
     $response = $database->query();
 	
     if (!$response) {
@@ -797,8 +769,8 @@ function gallery_downloadalbum($albumid) {
     $album = mysql_fetch_array($response);
     $fileName = "files/" . sanitizeFilename(strtolower($album["name"])) . ".zip";
     
-	$database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "gallery_pictures WHERE albumid = " .
-		$database->quote($albumid) . " AND submitted > " . $database->quote(filemtime($fileName)));
+	$database->setQuery("SELECT * FROM #__gallery_pictures WHERE albumid = " . $database->quote($albumid) .
+		" AND submitted > " . $database->quote(filemtime($fileName)));
 	
     if (!file_exists($fileName) || (file_exists($fileName) && mysql_num_rows($database->query()) > 0)) {
 		if (file_exists($fileName)) {
@@ -810,8 +782,7 @@ function gallery_downloadalbum($albumid) {
 		$zippedFile = new zip_file($fileName);
 		$zippedFile->set_options(array("inmemory" => 0, "recurse" => 0, "storepaths" => 0, "overwrite" => 0, "level" => 0)); 
 		
-		$database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "gallery_pictures WHERE albumid = " .
-			$database->quote($albumid));
+		$database->setQuery("SELECT * FROM #__gallery_pictures WHERE albumid = " . $database->quote($albumid));
 		
 		$response = $database->query();
 		
@@ -833,7 +804,6 @@ function gallery_downloadalbum($albumid) {
 
 function gallery_getpictures($albumid) {
 	$database = Core::getDatabase();
-	$settings = Core::getSettings();
 	
 	$albumid = intval($albumid);
     
@@ -841,8 +811,8 @@ function gallery_getpictures($albumid) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiges Album");    
     }
     
-    $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "gallery_pictures WHERE albumid = " .
-		$database->quote($albumid) . " ORDER BY taken ASC");
+    $database->setQuery("SELECT * FROM #__gallery_pictures WHERE albumid = " . $database->quote($albumid) .
+		" ORDER BY taken ASC");
 	
 	$databaseResponse = $database->query();
     
@@ -868,7 +838,6 @@ function gallery_getpictures($albumid) {
 function gallery_uploadpicture($albumid) {
 	$database = Core::getDatabase();
 	$user = Core::getUser();
-	$settings = Core::getSettings();
 	
     if (!$user->authenticated) {
         return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
@@ -888,8 +857,7 @@ function gallery_uploadpicture($albumid) {
         $size = $_FILES["Filedata"]["size"];
 		
         if ($size != 0 && in_array($fnParts["ext"], $allowedExtensions)) {
-			$database->setQuery("SELECT id FROM " . $settings->get("db_tblprefix") . "gallery_albums WHERE id = " .
-				$database->quote($albumid));
+			$database->setQuery("SELECT id FROM #__gallery_albums WHERE id = " . $database->quote($albumid));
 		
 			if (mysql_num_rows($database->query()) == 1) {
 				$i = 1;
@@ -921,9 +889,9 @@ function gallery_uploadpicture($albumid) {
 					
 					chmod("gallery/originals/$newFileName",  0644);
 					
-					$database->setQuery("INSERT INTO " . $settings->get("db_tblprefix") . "gallery_pictures (filename, " .
-						"albumid, userid, submitted, taken) VALUES(" . $database->quote($newFileName) . ", " .
-						$database->quote($albumid) . ", " . $user->id . ", " . time() . ", " . $database->quote($taken) . ")");
+					$database->setQuery("INSERT INTO #__gallery_pictures (filename, albumid, userid, submitted, taken) VALUES(" .
+						$database->quote($newFileName) . ", " . $database->quote($albumid) . ", " . $user->id . ", " .
+						time() . ", " . $database->quote($taken) . ")");
 					
 					if ($database->query()) {
 						return mysql_insert_id();
@@ -947,7 +915,6 @@ function gallery_uploadpicture($albumid) {
 function gallery_rotatepicture($pictureid, $degree) {
 	$database = Core::getDatabase();
 	$user = Core::getUser();
-	$settings = Core::getSettings();
 	
     $pictureid = intval($pictureid);
     $degree = intval($degree);
@@ -960,8 +927,7 @@ function gallery_rotatepicture($pictureid, $degree) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiger Winkel angegeben.");
     }
     
-    $database->setQuery("SELECT * FROM " . $settings->get("db_tblprefix") . "gallery_pictures WHERE id = " .
-		$database->quote($pictureid));
+    $database->setQuery("SELECT * FROM #__gallery_pictures WHERE id = " . $database->quote($pictureid));
 	
 	$response = $database->query();
     
