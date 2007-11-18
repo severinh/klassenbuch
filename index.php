@@ -3,7 +3,7 @@
 define("_KBSECURE", true);
 
 // Wenn das Klassenbuch noch nicht konfiguriert wurde, wird die Installation eingeleitet
-if (!file_exists("server.settings.php") || filesize("server.settings.php") < 10) {
+if (!file_exists("settings.php") || filesize("settings.php") < 10) {
 	header("Location: installation/index.php");
 	exit();
 }
