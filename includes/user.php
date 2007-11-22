@@ -103,14 +103,19 @@ class User {
     }
     
     private function authenticateByJSONRPCRequest() {
-		if (isset($GLOBALS["_xh"]) && isset($GLOBALS["_xh"]["value"])) {
-			$data = $GLOBALS["_xh"]["value"];
+		$data = $GLOBALS["HTTP_RAW_POST_DATA"];
+		
+		if ($data) {
+			$json = new Services_JSON(SERVICES_JSON_LOOSE_TYPE);
+			$request = $json->decode($data);
 			
-			return $this->authenticateByToken($data["userid"], $data["token"]);
-		} else {
-			$this->clear();
-			return false;
+			if ($request && $request["userid"] && $request["token"]) {
+				return $this->authenticateByToken($request["userid"], $request["token"]);
+			}
 		}
+		
+		$this->clear();
+		return false;
     }
     
     private function authenticateByPOSTParams() {
@@ -137,42 +142,42 @@ class User {
 		
 		$database->setQuery("SELECT * FROM #__users WHERE id = " . $database->quote($this->id));
 		
-		$response = $database->query();
+		$user = $database->loadAssoc();
 		
-		if (!$response || mysql_num_rows($response) != 1) {
-			return false;
+		if ($database->success() && $user) {
+			return $this->insertData($user);
 		}
 		
-		return $this->insertData(mysql_fetch_array($response));
+		return false;
     }
     
     private function insertData($data) {
 		$json = new Services_JSON(SERVICES_JSON_LOOSE_TYPE);
 		
 		if ($data !== false) {
-			$this->id 		   	= (int)    $data["id"];
-			$this->nickname    	= (string) $data["nickname"];
-			$this->firstname   	= (string) $data["firstname"];
-			$this->surname 	   	= (string) $data["surname"];
-			$this->address 	   	= (string) $data["address"];
-			$this->plz 		   	= (int)    $data["plz"];
-			$this->location 	= (string) $data["location"];
-			$this->mail 		= (string) $data["mail"];
-			$this->phone 		= (string) $data["phone"];
-			$this->mobile		= (string) $data["mobile"];
-			$this->classmember 	= (bool)   $data["classmember"];
-			$this->mainsubject 	= (string) $data["mainsubject"];
-			$this->posts 		= (int)    $data["posts"];
+			$this->id 		   		= (int)    $data["id"];
+			$this->nickname    		= (string) $data["nickname"];
+			$this->firstname   		= (string) $data["firstname"];
+			$this->surname 	   		= (string) $data["surname"];
+			$this->address 	   		= (string) $data["address"];
+			$this->plz 		   		= (int)    $data["plz"];
+			$this->location 		= (string) $data["location"];
+			$this->mail 			= (string) $data["mail"];
+			$this->phone 			= (string) $data["phone"];
+			$this->mobile			= (string) $data["mobile"];
+			$this->classmember 		= (bool)   $data["classmember"];
+			$this->mainsubject 		= (string) $data["mainsubject"];
+			$this->posts 			= (int)    $data["posts"];
 			
-			$this->password 	= (string) $data["password"];
-			$this->token 		= (string) $data["token"];
+			$this->password 		= (string) $data["password"];
+			$this->token 			= (string) $data["token"];
 			
-			$this->newpassword 	= (string) $data["newpassword"];
-			$this->newpasswordkey = (string) $data["newpasswordkey"];
+			$this->newpassword 		= (string) $data["newpassword"];
+			$this->newpasswordkey 	= (string) $data["newpasswordkey"];
 			
-			$this->settings		= $json->decode($data["settings"]);
+			$this->settings			= $json->decode($data["settings"]);
 			
-			$this->isadmin 		= (bool)   $data["isadmin"];
+			$this->isadmin 			= (bool)   $data["isadmin"];
 			
 			return true;
 		} else {
@@ -244,10 +249,10 @@ class User {
             $database->setQuery("SELECT * FROM #__users WHERE nickname = " . $database->quote($nickname) .
 				" AND password = " . $database->quote(md5($password)));
 			
-			$data = $database->query();
+			$user = $database->loadAssoc();
 			
-            if ($data && mysql_num_rows($data) == 1) {
-				$this->insertData(mysql_fetch_array($data));
+            if ($database->success() && $user) {
+				$this->insertData($user);
 				
 				session_name($settings->get("cookieprefix") . "sessionid");
                 session_start();
@@ -255,8 +260,8 @@ class User {
                 $_SESSION["userid"] = $this->id;
                 $_SESSION["token"] = $this->token;
                 
-				setcookie($settings->get("cookieprefix") . "userid", $this->id, time() + 60 * 60 * 24 * 30);
-				setcookie($settings->get("cookieprefix") . "token", $this->token, time() + 60 * 60 * 24 * 30);
+				setcookie($settings->get("cookieprefix") . "userid", $this->id,    time() + 60 * 60 * 24 * 30);
+				setcookie($settings->get("cookieprefix") . "token",  $this->token, time() + 60 * 60 * 24 * 30);
 				
                 $this->authenticated = true;
                 
@@ -275,8 +280,8 @@ class User {
 		session_destroy();
 		
 		setcookie($settings->get("cookieprefix") . "sessionid",  "", time() - 3600);
-		setcookie($settings->get("cookieprefix") . "userid", "", time() - 3600);
-		setcookie($settings->get("cookieprefix") . "token", "", time() - 3600);
+		setcookie($settings->get("cookieprefix") . "userid", 	 "", time() - 3600);
+		setcookie($settings->get("cookieprefix") . "token", 	 "", time() - 3600);
 		
 		return true;
     }
@@ -298,36 +303,23 @@ class User {
  		$query = "";
  		
         foreach ($information as $key => $value) {
-			if (empty($value)) {
-				$error = true;
-            }
-            
-            if (!in_array($key, $allowedFields)) {
-				$error = true;
-            }
-            
-            if ($key === "plz" && !preg_match($regExpPLZ, $value)) {
-				$error = true;
-            }
-            
-            if (($key === "phone" || $key === "mobile") && !preg_match($regExpPhone, $value)) {
-				$error = true;
+			if (empty($value) ||
+				!in_array($key, $allowedFields) ||
+				($key === "plz" && !preg_match($regExpPLZ, $value)) ||
+				(($key === "phone" || $key === "mobile") && !preg_match($regExpPhone, $value))) {
+				return false;
             }
             
             if (!$error) {
-				$query .= ", $key = " . $database->quote($value);
+				$query .= ", " . $key . " = " . $database->quote($value);
 			}
         }
         
-		if (empty($query)) {
+		if (!$query) {
 			return false;
 		}
 		
 		$query = substr($query, 2);
-		
-        if ($error) {
-			return false;
-		}
 		
 		$database->setQuery("UPDATE #__users SET " . $query . " WHERE id = " . $database->quote($this->id));
 		
@@ -352,14 +344,12 @@ class User {
         $json = new Services_JSON();
         $settings = $json->encode($this->settings);
         
-		$database->setQuery("UPDATE #__users SET settings = " . $database->quote($settings) . " WHERE id = " .
-			$database->quote($this->id));
+		$database->setQuery("UPDATE #__users SET " .
+			"settings = " . $database->quote($settings) . " WHERE " .
+			"id = " . $database->quote($this->id)
+		);
 		
-        if ($database->query()) {
-			return true;
-		} else {
-			return false;
-		}
+        return !!$database->query();
     }
 }
 
