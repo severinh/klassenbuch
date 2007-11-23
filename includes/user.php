@@ -145,7 +145,10 @@ class User {
 		$user = $database->loadAssoc();
 		
 		if ($database->success() && $user) {
-			return $this->insertData($user);
+			$this->insertData($user);
+			$this->touch();
+			
+			return true;
 		}
 		
 		return false;
@@ -154,36 +157,30 @@ class User {
     private function insertData($data) {
 		$json = new Services_JSON(SERVICES_JSON_LOOSE_TYPE);
 		
-		if ($data !== false) {
-			$this->id 		   		= (int)    $data["id"];
-			$this->nickname    		= (string) $data["nickname"];
-			$this->firstname   		= (string) $data["firstname"];
-			$this->surname 	   		= (string) $data["surname"];
-			$this->address 	   		= (string) $data["address"];
-			$this->plz 		   		= (int)    $data["plz"];
-			$this->location 		= (string) $data["location"];
-			$this->mail 			= (string) $data["mail"];
-			$this->phone 			= (string) $data["phone"];
-			$this->mobile			= (string) $data["mobile"];
-			$this->classmember 		= (bool)   $data["classmember"];
-			$this->mainsubject 		= (string) $data["mainsubject"];
-			$this->posts 			= (int)    $data["posts"];
-			
-			$this->password 		= (string) $data["password"];
-			$this->token 			= (string) $data["token"];
-			
-			$this->newpassword 		= (string) $data["newpassword"];
-			$this->newpasswordkey 	= (string) $data["newpasswordkey"];
-			
-			$this->settings			= $json->decode($data["settings"]);
-			
-			$this->isadmin 			= (bool)   $data["isadmin"];
-			
-			return true;
-		} else {
-			$this->clear();
-			return false;
-		}
+		$this->id 		   		= (int)    $data["id"];
+		$this->nickname    		= (string) $data["nickname"];
+		$this->firstname   		= (string) $data["firstname"];
+		$this->surname 	   		= (string) $data["surname"];
+		$this->address 	   		= (string) $data["address"];
+		$this->plz 		   		= (int)    $data["plz"];
+		$this->location 		= (string) $data["location"];
+		$this->mail 			= (string) $data["mail"];
+		$this->phone 			= (string) $data["phone"];
+		$this->mobile			= (string) $data["mobile"];
+		$this->classmember 		= (bool)   $data["classmember"];
+		$this->mainsubject 		= (string) $data["mainsubject"];
+		$this->posts 			= (int)    $data["posts"];
+		
+		$this->password 		= (string) $data["password"];
+		$this->token 			= (string) $data["token"];
+		
+		$this->newpassword 		= (string) $data["newpassword"];
+		$this->newpasswordkey 	= (string) $data["newpasswordkey"];
+		
+		$this->settings			= $json->decode($data["settings"]);
+		$this->isadmin 			= (bool)   $data["isadmin"];
+		
+		return true;
     }
     
     private function clear() {
@@ -211,6 +208,17 @@ class User {
 		$this->settings = Array();
 		
 		$this->isadmin = false;
+	}
+	
+	public function touch() {
+		$database = Core::getDatabase();
+		
+		$database->setQuery("UPDATE #__users SET " .
+			"lastcontact = " . $database->quote(time()) . " WHERE " .
+			"id = " 		 . $database->quote($this->id)
+		);
+		
+		return !!$database->query();
 	}
     
 	public function getSessionID() {
@@ -253,6 +261,7 @@ class User {
 			
             if ($database->success() && $user) {
 				$this->insertData($user);
+				$this->touch();
 				
 				session_name($settings->get("cookieprefix") . "sessionid");
                 session_start();

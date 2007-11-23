@@ -21,14 +21,14 @@ CREATE TABLE `kb_comments` (
 
 CREATE TABLE `kb_files` (
   `id` smallint(6) NOT NULL auto_increment,
-  `name` text character set utf8 collate utf8_unicode_ci NOT NULL,
-  `description` text character set utf8 collate utf8_unicode_ci,
+  `name` text collate utf8_unicode_ci NOT NULL,
+  `description` text collate utf8_unicode_ci,
   `size` int(12) NOT NULL default '0',
   `userid` smallint(6) NOT NULL default '0',
   `uploaded` double NOT NULL default '0',
   `forcedarchiving` tinyint(1) NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -105,5 +105,6 @@ CREATE TABLE `kb_users` (
   `token` text collate utf8_unicode_ci NOT NULL,
   `settings` text collate utf8_unicode_ci NOT NULL,
   `isadmin` tinyint(1) NOT NULL,
+  `lastcontact` double NOT NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
