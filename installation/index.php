@@ -62,12 +62,12 @@ class InstWiz_DbConfig extends Wizard {
 			"</tr><tr>" .
 			"	<td>Datenbankname:<br />" .
 			"	<input type=\"text\" name=\"wiz_db_name\" value=\"[*wiz_db_name*]\"></td>" .
-			"	<td class=\"configHelp\"> Einige Hoster erlauben nur eine Datenbank pro Webseite. Wenn das der Fall " .
-			"	ist, benutzen Sie bitte die Tabellen-Präfix-Option unter den \"Erweiterten Einstellungen\".</td>" .
+			"	<td class=\"configHelp\">Einige Hoster erlauben nur eine Datenbank pro Webseite. Wenn das der Fall " .
+			"	ist, benutzen Sie bitte die Tabellen-Präfix-Option in den \"Erweiterten Einstellungen\".</td>" .
 			"</tr><tr>" .
 			"	<td>Benutzername:<br />" .
 			"	<input type=\"text\" name=\"wiz_db_user\" value=\"[*wiz_db_user*]\"></td>" .
-			"	<td class=\"configHelp\">Dieses kann der Standard-MySQL-Benutzername <strong>root</strong> sein, " .
+			"	<td class=\"configHelp\">Dies kann der Standard-MySQL-Benutzername <strong>root</strong> sein, " .
 			"	ein Benutzername, der vom Hoster erstellt wurde oder ein Name, den Sie selber gewählt haben.</td>" .
 			"</tr><tr>" .
 			"	<td>Passwort:<br />" .
