@@ -74,9 +74,283 @@ Object.extend(Object, /** @scope Object */ {
 });
 
 /**
+ * @class Some extensions to native JavaScript numbers.
+ * @name Number
+*/
+Object.extend(Number.prototype, function() {
+	var scales = $w("Byte KB MB GB TB");
+	
+	return /** @scope Number.prototype */ {
+		/**
+		 * Checks if the number is between a lower and a upper limit. If the number is outside of the specified range,
+		 * the method returns the nearest number that is within the allowed range.
+		 * @param {Number} a The lower limit
+		 * @param {Number} b The upper limit
+		 * @returns {Number} The number that is within the specified range.
+		*/
+		limitTo: function(a, b) {
+			return (this < a) ? a : ((this > b) ? b : this);
+		},
+		
+		/**
+		 * Adds the appropriate file size unit to number representing a data size.
+		 * @param {Number} [roundTo] The number of decimal places to be returned.
+		 * @returns {String} The resulting data size string.
+		*/
+		getFormatedDataSize: function(roundTo) {
+			var temp = this;
+			var currentScale = 0;
+			
+			while (temp >= 1024) {
+				temp = temp / 1024;
+				++currentScale;
+			}
+			
+			return temp.roundTo(roundTo || 2) + " " + scales[currentScale] +
+				((currentScale === 0 && (temp == 0 || temp > 1)) ? "s" : "");
+		},
+		
+		/**
+		 * Rounds the number to a certain decimal places.
+		 * @param {Number} a The number of decimal places.
+		 * @returns {Number} The rounded number.
+		*/
+		roundTo: function(a) {
+			return (this * Math.pow(10, a)).round() / Math.pow(10, a);
+		}
+	};
+}());
+
+/**
+ * @class Some extensions to native JavaScript strings. The methods added to String.prototype by the Prototype JavaScript
+ * Framework are described in the <a href="http://www.prototypejs.org/api/object">Prototype API Documentation</a>.
+ * @name String
+*/
+Object.extend(String.prototype, /** @scope String.prototype */ {
+	/**
+	 * Returns the number of times a certain string occurs in the string.
+	 * @param {String} a The string to be searched for.
+	 * @returns {Integer} The number of occurrences.
+	 * @example
+"hello world!".count("l");
+// -> 3
+	*/
+	count: function(a) {
+		if (a === "") { // Behave well if the needle is a blank string.
+			return 0;
+		}
+		
+		return this.split(a).length - 1;
+	},
+	
+	/**
+	 * Capitalizes every word in a string separated by a space character.
+	 * @param {String} [value] The character that represents a gap between two words. Defaults to " ".
+	 * @returns {String} The capitalized string.
+	 * @example
+"hello world!".capitalize();
+// -> "Hello World!"
+	*/
+	capitalize: function(value) {
+		return this.split(value || " ").collect(function(a) {
+			return a.charAt(0).toUpperCase() + a.substring(1);
+		}).join(value || " ");
+	},
+	
+	/**
+	 * 
+	 * @param
+	 * @param
+	 * @returns
+	*/
+	replaceAll: function(a, b) {
+		if (a === "") {
+			return this;
+		}
+		
+        return this.split(a).join(b);
+	},
+	
+	/**
+	 * Lowercases the first character in the string.
+	 * @returns {String} The resulting string.
+	 * @example
+"FooBar".capitalize();
+// -> "fooBar"
+	*/
+	lowerFirstLetter: function() {
+		return this.charAt(0).toLowerCase() + this.substring(1);
+	},
+	
+	/**
+	 * Checks if the string is a valid mail address.
+	 * @returns {Boolean} Valid or not.
+	* @example
+"somebody@example.com".isValidMailAddress();
+// -> true
+
+"_somebody@example.c".isValidMailAddress();
+// -> false
+	*/
+	isValidMailAddress: function() {
+		var regExp = /^[a-zA-Z0-9]+[_a-zA-Z0-9-]*(\.[_a-z0-9-]+)*@[a-z??????0-9]+(-[a-z??????0-9]+)*(\.[a-z??????0-9-]+)*(\.[a-z]{2,4})$/;
+		return regExp.test(this);
+	},
+	
+	/**
+	 * Turns the string into a more URL-friendly version that has no whitespaces and German umlauts. This method uses an
+	 * internal cache that causes a significant performance improvment when addressifying a string two or more times.
+	 * @returns {String} The addressified string.
+	 * @example
+"A string with a German umlaut: ö".addressify();
+// -> "a-string-with-a-german-umlaut-oe"
+	*/
+	addressify: function() {
+		var store = arguments.callee._STORE[this];
+		
+		if (Object.isDefined(store)) {
+			return store;
+		}
+		
+		return arguments.callee._STORE[this] = this.toLowerCase()
+			.replace(/([\s])/g, "-")
+			.replaceAll("ü", "ue")
+			.replaceAll("ä", "ae")
+			.replaceAll("ö", "oe")
+			.replace(/[^A-Z^a-z^0-9-]/g, "");
+	},
+	
+	/**
+	 * 
+	 * @returns
+	*/
+	toDate: function() {
+		return $D(this);
+	},
+	
+	/**
+	 * Strips all leading and trailing whitespace from the string. This method overwrites the one shipped with Prototype,
+	 * because it's considered faster.
+	 * @returns
+	 * @example
+"    hello world!    ".strip();
+// -> "hello world!"
+	*/
+	strip: function() {
+		// Strip all leading whitespaces.
+		str = this.replace(/^\s+/, "");
+		
+		// Now the more complicated part.
+		for (var i = str.length - 1; i > 0; i--) {
+			if (/\S/.test(str.charAt(i))) {
+				str = str.substring(0, i + 1); break;
+			}
+		}
+		
+		return str;
+	}
+});
+
+/** @ignore This is an internal cache used by String#addressify */
+String.prototype.addressify._STORE = {};
+
+/**
+ * Ermöglicht es, auf einfache Art und Weise Cookies zu erstellen bzw. zu löschen, und den Wert von bestehenden Cookies
+ * zu erfahren.
+ * @class
+ * @static
+*/
+var Cookie = {
+	/**
+	 * Gibt den Wert eines bestimmten Cookies zurück.
+	 * @param {String} name Der Name des betreffenden Cookies.
+	 * @returns {String} Der Wert des Cookies.
+	*/
+	get: function(name) {
+		var start = document.cookie.indexOf(name + "=");
+		var len = start + name.length + 1;
+		
+		if ((!start && name !== document.cookie.substring(0, name.length)) || start === -1) {
+			return null;
+		}
+		
+		var end = document.cookie.indexOf(";", len);
+		end = (end === -1) ? document.cookie.length : end;
+		
+		return document.cookie.substring(len, end).unescapeHTML();
+	},
+	
+	/**
+	 * Legt den Wert für ein bestimmtes Cookie fest.
+	 * @param {String} name Der Name des betreffenden Cookies.
+	 * @param {String} value Der Wert, der dem betreffenden Cookie gegeben werden soll.
+	*/
+	set: function(name, value) {
+		var expires = new Date(Date.getCurrentTimestamp() + 31536000000);
+		document.cookie = name + "=" + value.escapeHTML() + ";expires=" + expires.toGMTString();
+	},
+	
+	/**
+	 * Löscht ein bestimmtes Cookie.
+	 * @param {String} name Der Name des betreffenden Cookies.
+	*/
+	remove: function(name) {
+		if (Cookie.get(name)) {
+			document.cookie = name + "=;expires=Thu, 01-Jan-1970 00:00:01 GMT";
+		}
+	}
+};
+
+/**
+ * Enthält verschiedene Hilffunktionen, die sich sonst nirgendwo unterbringen lassen.
+ * @namespace
+*/
+var Tools = {
+	/**
+	 * Erzeugt eine zufällige alphanummerische Zeichenfolge einer bestimmten Länge. Diese Funktion wird zum Generieren
+	 * von IDs für Elemente, Objekte vom Typ <em>Collection</em> usw. verwendet.
+	 * @param {Integer} [a] Die Länge der zu erzeugenden Zeichenfolge. Standardwert ist 32.
+	 * @returns {String} Die erzeugte Zeichenfolge.
+	*/
+	generateRandomString: function(a) {
+		return $R(1, a || 32).collect(function(i) {
+			return "abcdefghiklmnopqrstuvwxyz01234567890123456789".charAt(Math.random() * ((i === 1) ? 25 : 45));
+		}).join("");
+	},
+	
+    getWindowSize: function() {
+		var getSize = function(a) {
+			return window["inner" + a] || document.documentElement["client" + a] || document.body["client" + a] - 5 || 0;
+		};
+		
+		return {
+			width: getSize("Width"),
+			height: getSize("Height")
+		};
+	}
+};
+
+Object.extend(Event, (function() {
+	var navEvents = $w("TAB ESC LEFT UP RIGHT DOWN HOME END PAGEUP PAGEDOWN INSERT");
+	
+	return {
+		isNavigationKey: function(e) {
+			var k = e.keyCode;
+			
+			navEvents.any(function(navEvent) {
+				return k === Event["KEY_" + navEvent];
+			});
+		},
+		
+		KEY_SPACE: 32
+	};
+})());
+
+/**
  * Some extensions to Prototype's browser detection functionality (<em>Prototype.Browser</em>). It checks whether the browser supports
  * cookies or is supported in general.
  * @namespace
+ * @name Prototype.Browser
 */
 Object.extend(Prototype.Browser, (function() {
 	var version;
@@ -177,7 +451,7 @@ var JSONRPC = {
 		"AUTHENTICATION_FAILED": 800,
 		"INVALID_DATABASE_QUERY": 801,
 		"INVALID_RESPONSE": 850,
-		"UNKNOWN_ERROR": 999
+		"CLIENT_EXCEPTION": 999
 	}
 };
 
@@ -264,8 +538,7 @@ JSONRPC.Request = Class.create(Ajax.Request, /** @scope JSONRPC.Request.prototyp
 });
 
 /**
- * Represents an answer to a JSONRPC request initiated with <a href="JSONRPC.Request.htm">
- * JSONRPC.Request</a> or <a href="JSONRPC.Upload.htm">JSONRPC.Upload</a>.
+ * Represents an answer to a JSONRPC request initiated with JSONRPC.Request or JSONRPC.Upload.
  * @param {Object} result The parsed server response.
  * @param {Integer} [faultCode] Optional fault code, in case the request has failed for some reason.
  * @param {String} [faultString] Optional fault string, in case the request has failed for some reason.
@@ -328,6 +601,7 @@ JSONRPC.Response.fromAjaxResponse = function(response) {
 	response = response.responseText || response;
 	
 	// Mark response as invalid.
+	/** @ignore */
 	var invalidResponse = function() {
 		faultCode = 850;
 		faultString = "Einlesen der Server-Antwort fehlgeschlagen";
@@ -357,8 +631,32 @@ JSONRPC.Response.fromAjaxResponse = function(response) {
 	return new JSONRPC.Response(result, faultCode, faultString);
 };
 
+/**
+ * Makes it possible to upload multiple files to a JSONRPC web service using Adobe Flash and JavaScript. This class is based on a
+ * <a href="http://swfupload.praxion.co.za/">fork of SWFUpload</a>. This subclass provides a solid error handling mechanism and integrates
+ * the EventPublisher functionality.
+ * @param {String} method Name of the method to be called on the server.
+ * @param {Array} params Optional parameter to be passed to the service function. Default value is <em>[]</em>.
+ * @param {Object} options May contain various callback function such as <em>onSuccess</em>, <em>onFailure</em>
+ * and <em>onComplete</em>, which are called in case the request is successful respectively if it has failed. Additionaly, you can specify
+ * a file size limit, accepted file types, wheter a file upload should start immediately after the file selection.
+ * @example
+new JSONRPC.Upload("foobar", [], {
+	onSuccess: function(file, response) {
+		alert("File " + file.name + " was uploaded successfully.);
+	},
+	
+	onFailure: function(file, response) {
+		alert("Bad luck. Something went wrong.\nError message:" + response.faultString);
+	}
+});
+*/
 JSONRPC.Upload = Class.create(SWFUpload, {
 	initialize: function($super, method, params, options) {
+		/**
+		 * Name of the method to be called on the server.
+		 * @type String
+		*/
 		this.method = method;
 		
 		options = Object.extend({
@@ -370,6 +668,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 			file_types_description: 		"Alle Dateien"
 		}, options || {});
 		
+		/** @ignore */
 		var uploadComplete = function(file, data) {
 			this.fireEvent("uploadComplete", file, data);
 			
@@ -382,6 +681,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 			}
 		};
 		
+		/** @ignore */
 		var fileQueueError = function(errorCode, file, message) {
 			switch(errorCode) {
 				case JSONRPC.Upload.QUEUE_ERROR.FILE_EXCEEDS_SIZE_LIMIT:
@@ -404,6 +704,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 			this.fireEvent("fileQueueError", file, new JSONRPC.Response(null, errorCode, message));
 		};
 		
+		/** @ignore */
 		var uploadError = function(errorCode, file, message) {
 			switch(errorCode) {
 				case JSONRPC.Upload.UPLOAD_ERROR.SPECIFIED_FILE_ID_NOT_FOUND:
@@ -500,152 +801,6 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 JSONRPC.Upload.UPLOAD_ERROR = SWFUpload.UPLOAD_ERROR;
 JSONRPC.Upload.QUEUE_ERROR = SWFUpload.QUEUE_ERROR;
 
-Object.extend(Number.prototype, function() {
-	var scales = $w("Byte KB MB GB TB");
-	
-	return {
-		limitTo: function(a, b) {
-			return (this < a) ? a : ((this > b) ? b : this);
-		},
-		
-		getFormatedDataSize: function() {
-			var temp = this;
-			var currentScale = 0;
-			
-			while (temp >= 1024) {
-				temp = temp / 1024;
-				++currentScale;
-			}
-			
-			return temp.roundTo(2) + " " + scales[currentScale] + ((currentScale === 0 && (temp == 0 || temp > 1)) ? "s" : "");
-		},
-		
-		roundTo: function(a) {
-			return (this * Math.pow(10, a)).round() / Math.pow(10, a);
-		}
-	};
-}());
-
-/**
- * Einige ergänzende Methoden zur nativen String-Klasse. Diese hinzugefügten Methoden können wie die nativen Methoden
- * aufgerufen werden.
- * @example <pre class="code">
-var abc = "hallo welt";
-alert(abc.capitalize()); // -> Gibt "Hallo Welt" aus
-</pre>
- * Auch Prototype fügt <em>String</em> verschiedene neue Methoden hinzu. Diese Methoden werden in der
- * <a href="http://www.prototypejs.org/api/object">API-Dokumentation von Prototype</a> ausführlich beschrieben.
-*/
-Object.extend(String.prototype, /** @scope String.prototype */ {
-	/**
-	 * Gibt zurück, wie oft eine bestimmte Zeichenfolge vorkommt.
-	 * @returns {Integer} Die Anzahl der Fundstellen.
-	*/
-	count: function(a) {
-		if (a === "") {
-			return 0;
-		}
-		
-		return this.split(a).length - 1;
-	},
-	
-	/**
-	 * Lässt alle Wörter in der Zeichenfolge mit einem Grossbuchstaben beginnen.
-	 * @param {String} [value] Das Zeichen, das als Zwischenraum zwischen zwei Wörtern dient. Standardwert ist
-	 * <em>" "</em>.
-	 * @returns {String} Die resultierende Zeichenfolge.
-	*/
-	capitalize: function(value) {
-		return this.split(value || " ").collect(function(a) {
-			return a.charAt(0).toUpperCase() + a.substring(1);
-		}).join(value || " ");
-	},
-	
-	replaceAll: function(a, b) {
-        return this.split(a).join(b);
-	},
-	
-	lowerFirstLetter: function() {
-		return (this.length >= 2) ? this.charAt(0).toLowerCase() + this.substring(1) : this.toLowerCase();
-	},
-	
-	/**
-	 * Prüft, ob es sich bei der Zeichenfolge um eine gültige E-Mail-Adresse handelt.
-	 * @returns Ob es eine gültige E-Mail-Adresse ist.
-	*/
-	isValidMailAddress: function() {
-		var regExp = /^[a-zA-Z0-9]+[_a-zA-Z0-9-]*(\.[_a-z0-9-]+)*@[a-z??????0-9]+(-[a-z??????0-9]+)*(\.[a-z??????0-9-]+)*(\.[a-z]{2,4})$/;
-		return regExp.test(this);
-	},
-	
-	addressify: function() {
-		var store = arguments.callee._STORE[this];
-		
-		if (Object.isDefined(store)) {
-			return store;
-		}
-		
-		return arguments.callee._STORE[this] = this.toLowerCase()
-			.replace(/([\s])/g, "-")
-			.replaceAll("ü", "ue")
-			.replaceAll("ä", "ae")
-			.replaceAll("ö", "oe")
-			.replace(/[^A-Z^a-z^0-9-]/g, "");
-	},
-	
-	toDate: function() {
-		return $D(this);
-	},
-	
-	strip: function() {
-		str = this.replace(/^\s+/, "");
-		
-		for (var i = str.length - 1; i > 0; i--) {
-			if (/\S/.test(str.charAt(i))) {
-				str = str.substring(0, i + 1); break;
-			}
-		}
-		
-		return str;
-	}
-});
-
-String.prototype.addressify._STORE = {};
-
-String.Builder = function() {
-	var addOne = Prototype.Browser.IE ? 
-		function(str) {
-			this._strings.push(str);
-		} :
-		
-		function(str) {
-			this._strings += str;
-		};
-		
-	var get = Prototype.Browser.IE ?
-		function() {
-			return this._strings.join("");
-		} :
-		
-		function() {
-			return this._strings;
-		};
-	
-	return Class.create({
-		initialize: function() {
-			this._strings = (Prototype.Browser.IE) ? [] : "";
-			this.add.apply(this, arguments);
-		},
-		
-		add: function() {
-			$A(arguments).each(this.addOne, this);
-		},
-		
-		addOne: addOne,
-		get: get
-	});
-}();
-
 // Stammt in Teilen aus der Entwicklermailingliste von Prototype.
 (function() {
 	var multipliers = $H({
@@ -667,6 +822,7 @@ String.Builder = function() {
 	
 	multipliers.update(plurals);
 	
+	/** @ignore */
 	var compare = function(add) {
 		return this.removeTime(true).getTime() === new Date().removeTime().add(add).getTime();
 	};
@@ -710,21 +866,21 @@ String.Builder = function() {
 			
 			return f.replace(/(a|A|d|D|F|g|G|h|H|i|j|m|n|M|s|Y)/gi, function($1) {
 				switch ($1) {
-					case "a": return a; break;
-					case "A": return a.toUpperCase(); break;
-					case "d": return j.toPaddedString(2); break;
-					case "D": return Date.weekdaysAbbr[self.getDay()]; break;
-					case "F": return Date.months[self.getMonth()]; break;
-					case "g": return g; break;
-					case "G": return G; break;
-					case "h": return g.toPaddedString(2); break;
-					case "H": return G.toPaddedString(2); break;
-					case "i": return self.getMinutes().toPaddedString(2); break;
-					case "j": return j; break;
-					case "m": return n.toPaddedString(2); break;
-					case "n": return n; break;
-					case "M": return Date.months[self.getMonth()].substr(0, 3); break;
-					case "s": return self.getSeconds().toPaddedString(2); break;
+					case "a": return a;
+					case "A": return a.toUpperCase();
+					case "d": return j.toPaddedString(2);
+					case "D": return Date.weekdaysAbbr[self.getDay()];
+					case "F": return Date.months[self.getMonth()];
+					case "g": return g;
+					case "G": return G;
+					case "h": return g.toPaddedString(2);
+					case "H": return G.toPaddedString(2);
+					case "i": return self.getMinutes().toPaddedString(2);
+					case "j": return j;
+					case "m": return n.toPaddedString(2);
+					case "n": return n;
+					case "M": return Date.months[self.getMonth()].substr(0, 3);
+					case "s": return self.getSeconds().toPaddedString(2);
 					case "Y": return self.getFullYear();
 				}
 			});
@@ -815,7 +971,6 @@ String.Builder = function() {
 		months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 	});
 })();
-
 
 $D = Date.create;
 
@@ -948,99 +1103,6 @@ Hash.addMethods({
 		});
 	}
 });
-
-/**
- * Ermöglicht es, auf einfache Art und Weise Cookies zu erstellen bzw. zu löschen, und den Wert von bestehenden Cookies
- * zu erfahren.
- * @class
- * @static
-*/
-var Cookie = {
-	/**
-	 * Gibt den Wert eines bestimmten Cookies zurück.
-	 * @param {String} name Der Name des betreffenden Cookies.
-	 * @returns {String} Der Wert des Cookies.
-	*/
-	get: function(name) {
-		var start = document.cookie.indexOf(name + "=");
-		var len = start + name.length + 1;
-		
-		if ((!start && name !== document.cookie.substring(0, name.length)) || start === -1) {
-			return null;
-		}
-		
-		var end = document.cookie.indexOf(";", len);
-		end = (end === -1) ? document.cookie.length : end;
-		
-		return document.cookie.substring(len, end).unescapeHTML();
-	},
-	
-	/**
-	 * Legt den Wert für ein bestimmtes Cookie fest.
-	 * @param {String} name Der Name des betreffenden Cookies.
-	 * @param {String} value Der Wert, der dem betreffenden Cookie gegeben werden soll.
-	*/
-	set: function(name, value) {
-		var expires = new Date(Date.getCurrentTimestamp() + 31536000000);
-		document.cookie = name + "=" + value.escapeHTML() + ";expires=" + expires.toGMTString();
-	},
-	
-	/**
-	 * Löscht ein bestimmtes Cookie.
-	 * @param {String} name Der Name des betreffenden Cookies.
-	*/
-	remove: function(name) {
-		if (Cookie.get(name)) {
-			document.cookie = name + "=;expires=Thu, 01-Jan-1970 00:00:01 GMT";
-		}
-	}
-};
-
-/**
- * Enthält verschiedene Hilffunktionen, die sich sonst nirgendwo unterbringen lassen.
- * @class
- * @static
-*/
-var Tools = {
-	/**
-	 * Erzeugt eine zufällige alphanummerische Zeichenfolge einer bestimmten Länge. Diese Funktion wird zum Generieren
-	 * von IDs für Elemente, Objekte vom Typ <em>Collection</em> usw. verwendet.
-	 * @param {Integer} [a] Die Länge der zu erzeugenden Zeichenfolge. Standardwert ist 32.
-	 * @returns {String} Die erzeugte Zeichenfolge.
-	*/
-	generateRandomString: function(a) {
-		return $R(1, a || 32).collect(function(i) {
-			return "abcdefghiklmnopqrstuvwxyz01234567890123456789".charAt(Math.random() * ((i === 1) ? 25 : 45));
-		}).join("");
-	},
-	
-    getWindowSize: function() {
-		var getSize = function(a) {
-			return window["inner" + a] || document.documentElement["client" + a] || document.body["client" + a] - 5 || 0;
-		};
-		
-		return {
-			width: getSize("Width"),
-			height: getSize("Height")
-		};
-	}
-};
-
-Object.extend(Event, (function() {
-		var navEvents = $w("TAB ESC LEFT UP RIGHT DOWN HOME END PAGEUP PAGEDOWN INSERT");
-		
-		return {
-			isNavigationKey: function(e) {
-				var k = e.keyCode;
-				
-				navEvents.any(function(navEvent) {
-					return k === Event["KEY_" + navEvent];
-				});
-			},
-			
-			KEY_SPACE: 32
-		};
-})());
 
 var Collection = Class.create(Hash, EventPublisher.prototype, {
 	initialize: function($super, object) {
