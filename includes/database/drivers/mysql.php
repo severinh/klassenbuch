@@ -227,7 +227,6 @@ class DatabaseMysql extends Database {
 
 	/**
 	 * @return int The number of affected rows in the previous operation
-	 * @since 1.0.5
 	*/
 	public function getAffectedRows() {
 		return mysql_affected_rows($this->_resource);
@@ -235,6 +234,7 @@ class DatabaseMysql extends Database {
 
 	/**
 	 * Execute a batch query
+	 * 
 	 * @return mixed A database resource if successful, FALSE if not.
 	*/
 	public function queryBatch($abort_on_error = true, $p_transaction_safe = false) {
@@ -361,7 +361,7 @@ class DatabaseMysql extends Database {
 			return null;
 		}
 		
-		$array = array();
+		$array = Array();
 		
 		while ($row = $this->fetchRow($cur)) {
 			$array[] = $row[$numinarray];
@@ -395,6 +395,7 @@ class DatabaseMysql extends Database {
 
 	/**
 	 * Load a assoc list of database rows
+	 *
 	 * @param string The field name of a primary key
 	 * @return array If <var>key</var> is empty as sequential list of returned records.
 	*/

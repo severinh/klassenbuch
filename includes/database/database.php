@@ -287,6 +287,16 @@ class Database {
 			return $this->_errorMsg;
 		}
 	}
+	
+	/**
+	 * Determines if the last query was successful.
+	 *
+	 * @access public
+	 * @return boolean Success or failure
+	*/
+	public function success() {
+		return !$this->getErrorNum();
+	}
 
 	/**
 	 * Get a database escaped string
@@ -647,7 +657,7 @@ class Database {
 	 * @access public
 	 * @return mixed
 	*/
-	public function insertid() {
+	public function insertId() {
 		return;
 	}
 
