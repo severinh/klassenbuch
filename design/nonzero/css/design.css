@@ -1182,7 +1182,7 @@ ul {
 .taskCommentsWindow .comment .content {
 	border-left: 2px #AACD67 dotted;
 	margin-left: 120px;
-	min-height: 65px;
+	min-height: 80px;
 	display: block;
 	padding: 0 5px;
 	vertical-align: top;

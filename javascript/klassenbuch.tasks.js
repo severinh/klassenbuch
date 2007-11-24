@@ -697,7 +697,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 	_onHighlightTask: function(task) {
 		task.getComments();
 		
-		var contact = Contacts.getContact.byId(task.userid);
+		var contact = Contacts.getContactById(task.userid);
 		
 		this._taskInfoBox.innerHTML = (contact) ? "Eingetragen am " + task.added.format("j. F") + "<br />von " +
 			contact.getFullName() : "";

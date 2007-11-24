@@ -56,6 +56,10 @@ if (!$settings->get("online")) {
 				"Link in der Adresszeile des Browsers steht. Wende dich bei Fragen an Severin.</p>");
 		}
 	} else {
+		$user = Core::getUser();
+		
+		$user->setState(User::ONLINE);
+		
 		$tmpl->set_var("SIMPLEMESSAGE", false);
 		
 		$directData = Array();

@@ -920,6 +920,35 @@ Element.addMethods({
     }
 });
 
+Hash.addMethods({
+	nonDestructiveUpdateFromArray: function(newElements, identifier, addFunction) {
+		identifier = identifier || "id";
+		
+		var self = this;
+		
+		newElements.each(function(newElement) {
+			var oldElement = self.get(newElement[identifier]);
+			
+			if (oldElement) {
+				oldElement.__updated__ = true;
+				oldElement.update(newElement);
+			} else {
+				var newEntry = Object.isFunction(addFunction) ? addFunction(newElement) : newElement;
+				newEntry.__updated__ = true;
+				self.set(newElement.id, newEntry);
+			}
+		});
+		
+		this.each(function(pair) {
+			if (pair.value.__updated__) {
+				delete pair.value.__updated__;
+			} else {
+				self.unset(pair.key);
+			}
+		});
+	}
+});
+
 /**
  * Ermöglicht es, auf einfache Art und Weise Cookies zu erstellen bzw. zu löschen, und den Wert von bestehenden Cookies
  * zu erfahren.

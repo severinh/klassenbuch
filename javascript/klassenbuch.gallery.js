@@ -932,7 +932,7 @@ Gallery.PictureInfoWindow = Class.create(Controls.Window, {
 	_setPicture: function(picture) {
 		this._title.innerHTML = picture.fileName.truncate(30);
 		
-		var contact = Contacts.getContact.byId(picture.userid);
+		var contact = Contacts.getContactById(picture.userid);
 		var tmpl = new Template("<tr><td class=\"caption\">#{key}:</td><td>#{value}</td></tr>");
 		var data = [
 			{ key: "Hochgeladen von", value: contact.getFullName() },

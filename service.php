@@ -336,6 +336,13 @@ function getcontacts() {
     $contacts = Array();
     
 	foreach ($contactsResponse as $contact) {
+		$lastcontact = (double) $contact["lastcontact"];
+		$state 		 = (int) 	$contact["state"];
+		
+		if ($lastcontact < time() - 150) {
+			$state = 0;
+		}
+		
         $contacts[] = Array(
             "id"          => (int)    $contact["id"],
             "firstname"   => (string) $contact["firstname"],
@@ -350,7 +357,8 @@ function getcontacts() {
             "mainsubject" => (string) $contact["mainsubject"],
             "posts"       => (int)    $contact["posts"],
             "classmember" => (bool)   $contact["classmember"],
-            "lastcontact" => (double) $contact["lastcontact"]
+            "lastcontact" => $lastcontact,
+			"state"		  => $state
 		);
 	}
     
@@ -651,6 +659,20 @@ function changeusersettings($settings) {
 	$user->settings = array_merge($userSettings, $settings);
     
 	return $user->saveSettings();
+}
+
+function setuserstate($state) {
+	$user = Core::getUser();
+	
+    if (!$user->authenticated) {
+        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+    }
+	
+	if ($state == User::OFFLINE || $state == User::AWAY || $state == User::ONLINE) {
+		return $user->setState($state);
+	} {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiger Status angegeben.");
+	}
 }
 
 function signout() {
@@ -1183,6 +1205,14 @@ $dispatchMap = Array(
         "function"  => "signout",
         "signature" => Array(Array("boolean")),
         "docstring" => "Meldet einen Benutzer vom Klassenbuch ab, indem es die Session und alles was dazu gehört löscht."
+    ),
+	
+    "setuserstate" => Array(
+        "function"  => "setuserstate",
+        "signature" => Array(Array("boolean", "int")),
+        "docstring" => "Aktualisiert den Status des angemeldeten Benutzers. Der Status '1' bedeutet, dass der Benutzer " .
+					   "abwesend ist, während '2' darauf schliessen lässt, dass der Benutzer online ist und gerade im " .
+					   "Klassenbuch aktiv ist."
     ),
     
     "registeruser" => Array(

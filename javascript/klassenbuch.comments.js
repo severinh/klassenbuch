@@ -418,7 +418,7 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 		this.text = comment.text;
 		this.date = new Date(comment.date * 1000);
 		
-		this.contact = Contacts.getContact.byId(this.userid);
+		this.contact = Contacts.getContactById(this.userid);
 		
 		this.initializeHistoryNode();
 		
@@ -469,7 +469,7 @@ Comments.Comment.Control = function() {
 			$super(new Element("div", { className: "comment" }));
 			
 			this.element.innerHTML = "<div class=\"profile\"><div><a class=\"profileLink\" href=\"javascript:void(null);\">" +
-				this.comment.contact.nickname + "</a></div><div class=\"numberOfComments\"></div></div>" +
+				this.comment.contact.nickname + "</a></div><div class=\"profileExtract\"></div></div>" +
 				"<div class=\"commands\">" + editButtonHTML + "</div><div class=\"content\"></div><div class=\"date\">" + 
 				((this.comment.date.isToday()) ? "Heute," : ((this.comment.date.wasYesterday()) ? "Gestern," : 
 				this.comment.date.format("d.m.Y"))) + " " + this.comment.date.format("H:i") + "</div>";
@@ -493,16 +493,17 @@ Comments.Comment.Control = function() {
 			
 			this.refreshControl();
 
-			var _refreshPosts = (function() {
-				if (!this._posts) {
-					this._posts = this.select(".numberOfComments")[0];
+			var _refreshProfileInformation = (function() {
+				if (!this._profileExtract) {
+					this._profileExtract = this.select(".profileExtract")[0];
 				}
 				
-				this._posts.innerHTML = "Beiträge: " + this.comment.contact.posts;
+				this._profileExtract.innerHTML = "Beiträge: " + this.comment.contact.posts + "<br />" +
+					"Status: " + this.comment.contact.getState();
 			}).bind(this);
 
-			this._onExternalEvent(Contacts, "updated", _refreshPosts);
-			_refreshPosts();
+			this._onExternalEvent(Contacts, "updated", _refreshProfileInformation);
+			_refreshProfileInformation();
 		},
 
 		refreshControl: function() {

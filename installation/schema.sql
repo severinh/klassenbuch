@@ -106,5 +106,6 @@ CREATE TABLE `kb_users` (
   `settings` text collate utf8_unicode_ci NOT NULL,
   `isadmin` tinyint(1) NOT NULL,
   `lastcontact` double NOT NULL,
+  `state` int(11) NOT NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

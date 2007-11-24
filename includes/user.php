@@ -7,6 +7,10 @@ Core::import("includes.securesession");
 Core::import("includes.json");
 
 class User {
+	const OFFLINE = 0;
+	const AWAY = 1;
+	const ONLINE = 2;
+	
     public $_secureSession = null;
     public $authenticated = false;
     
@@ -220,6 +224,21 @@ class User {
 		
 		return !!$database->query();
 	}
+	
+	public function setState($state) {
+        if (!$this->authenticated) {
+            return false;
+        }
+		
+		$database = Core::getDatabase();
+		
+		$database->setQuery("UPDATE #__users SET " .
+			"state = " . $database->quote($state) . " WHERE " .
+			"id = "    . $database->quote($this->id)
+		);
+		
+		return !!$database->query();
+	}
     
 	public function getSessionID() {
         if ($this->authenticated) {
@@ -262,6 +281,7 @@ class User {
             if ($database->success() && $user) {
 				$this->insertData($user);
 				$this->touch();
+				$this->setState(self::ONLINE);
 				
 				session_name($settings->get("cookieprefix") . "sessionid");
                 session_start();
@@ -285,6 +305,7 @@ class User {
 		$database = Core::getDatabase();
 		$settings = Core::getSettings();
 		
+		$this->setState(self::OFFLINE);
 		$this->clear();
 		session_destroy();
 		
@@ -307,15 +328,16 @@ class User {
 		$regExpMail = "/^[a-zA-Z0-9]+[_a-zA-Z0-9-]*(\.[_a-z0-9-]+)*@[a-z??????0-9]+(-[a-z??????0-9]+)*(\.[a-z??????0-9-]+)*(\.[a-z]{2,4})$/";
 		
         $allowedFields = Array("firstname", "surname", "address", "plz", "location", "phone", "mobile", "mail", "posts");
-        
+        $requiredFields = Array("firstname", "surname");
+		
         $error = false;
  		$query = "";
  		
         foreach ($information as $key => $value) {
-			if (empty($value) ||
+			if ((in_array($key, $requiredFields) && empty($value)) ||
 				!in_array($key, $allowedFields) ||
-				($key === "plz" && !preg_match($regExpPLZ, $value)) ||
-				(($key === "phone" || $key === "mobile") && !preg_match($regExpPhone, $value))) {
+				($key === "plz" && !preg_match($regExpPLZ, $value) && !empty($value)) ||
+				(($key === "phone" || $key === "mobile") && !empty($value) && !preg_match($regExpPhone, $value))) {
 				return false;
             }
             

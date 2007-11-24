@@ -9,14 +9,14 @@
 */
 var Contacts = new (Class.create(EventPublisher, {
     initialize: function($super) {
-		this.contacts = [];
+		this.contacts = new Hash();
 		
 		$super();
 		
 		var self = this;
 		var init = function() {
 			if (!self.initialized) {
-				self.periodicalUpdate = new PeriodicalExecuter(self.update.bind(self), 3200);
+				self.periodicalUpdate = new PeriodicalExecuter(self.update.bind(self), 120);
 				
 				var data = DirectData.get("contacts");
 				
@@ -27,23 +27,7 @@ var Contacts = new (Class.create(EventPublisher, {
 				User.on("signIn", self.update, self);
 				User.on("signOut", self.hidePersonalInformation, self);
 				
-				this.initialized = true;
-			}
-		};
-		
-		this.getContact = {
-			byId: function(id) {
-				return self._getContact("id", id);
-			},
-			
-			byNickname: function(nickname) {
-				return self._getContact("nickname", nickname);
-			},
-			
-			byFullName: function(fullName) {
-				return self._getContact(function(contact) {
-					return contact.getFullName() === fullName;
-				});
+				self.initialized = true;
 			}
 		};
 		
@@ -55,34 +39,40 @@ var Contacts = new (Class.create(EventPublisher, {
     },
     
     update: function() {
-		var request = new JSONRPC.Request("getcontacts", [], { onSuccess: this._updateSuccess.bind(this) });
-    },
-    
-    _updateSuccess: function(response) {
-		this.contacts.clear();
-		
-		response.result.each(function(contact) {
-			this.contacts.push(new Contacts.Contact(contact));
-		}, this);
-		
-		this.fireEvent("updated");
-    },
-    
-    _getContact: function(a, b) {
-        return this.contacts.find((Object.isFunction(a)) ? a : function(contact) {
-			return contact[a] === b;
+		var request = new JSONRPC.Request("getcontacts", [], {
+			onSuccess: this._updateSuccess.bind(this)
 		});
     },
     
+    _updateSuccess: function(response) {
+		this.contacts.nonDestructiveUpdateFromArray(response.result, "id", function(contact) {
+			return new Contacts.Contact(contact);
+		});
+		
+		this.fireEvent("updated");
+    },
+	
+	getContactById: function(id) {
+		return this.contacts.get(id);
+	},
+    
+    getContact: function(a, b) {
+		var pair = this.contacts.find((Object.isFunction(a)) ? a : function(pair) {
+			return pair.value[a] === b;
+		});
+		
+		return (pair) ? pair.value : false;
+    },
+    
     hidePersonalInformation: function() {
-        this.contacts.invoke("hidePersonalInformation");
+        this.contacts.values().invoke("hidePersonalInformation");
         this.fireEvent("updated");
     },
     
     getClassMembers: function() {
-        return this.contacts.findAll(function(contact) {
-			return contact.classmember;
-		});
+        return this.contacts.findAll(function(pair) {
+			return pair.value.classmember;
+		}).pluck("value");
     },
     
     initialized: false
@@ -93,8 +83,8 @@ Contacts.View = Class.create(Controls.View, {
 		$super("Kontaktliste", new Sprite("smallIcons", 14), "Kontaktliste", { className: "contactView" });
 		
 		this.registerSubNode("profil", (function(state) {
-				var contact = Contacts._getContact(function(contact) {
-					return contact.getFlattenedFullName() === state.first();
+				var contact = Contacts.getContact(function(pair) {
+					return pair.value.getFlattenedFullName() === state.first();
 				});
 				
 				if (contact) {
@@ -154,6 +144,15 @@ Contacts.View = Class.create(Controls.View, {
 					
 					processGroupCaption: function(content) {
 						return content.replace("PAM", "Physik und Anwendungen der Mathematik");
+					}
+				});
+				
+				this.contactTable.addColumn("Status", function(contact) {
+					return contact.getState();
+				}, {
+					width: "75px",
+					processCellContent: function(content) {
+						return (content == "Offline") ? "" : content;
 					}
 				});
 				
@@ -254,11 +253,7 @@ Contacts.View = Class.create(Controls.View, {
 
 Contacts.Contact = Class.create({
 	initialize: function(contact) {
-        Object.extend(this, contact);
-        
-        if (this.lastContact) {
-			this.lastContact = new Date(this.lastContact * 1000);
-        }
+        this.update(contact);
 	},
 	
 	getFullName: function() {
@@ -271,6 +266,10 @@ Contacts.Contact = Class.create({
 	
 	showProfile: function() {
 		return new Contacts.Contact.Window(this);
+	},
+	
+	update: function(contact) {
+        Object.extend(this, contact);
 	},
 	
 	hidePersonalInformation: function() {
@@ -293,14 +292,20 @@ Contacts.Contact = Class.create({
 	
 	getFlattenedFullName: function() {
 		return this.getFullName().addressify();
+	},
+	
+	getState: function() {
+		switch (this.state) {
+			case User.StateDetection.AWAY: return "Abwesend";
+			case User.StateDetection.ONLINE: return "Online";
+			default: return "Offline";
+		}
 	}
 });
 
 Contacts.Contact.Window = Class.create(Controls.Window, {
 	initialize: function($super, contact) {
-		this.contact = contact;
-		
-		var title = "Profil von " + (this.contact.nickname || this.contact.getFullName());
+		var title = "Profil von " + (contact.nickname || contact.getFullName());
 		
 		if (!$super("ContactWindow", { onlyAllowOne: true, title: title })) {
 			return;
@@ -308,17 +313,54 @@ Contacts.Contact.Window = Class.create(Controls.Window, {
 		
 		var row = new Template("<tr><td class=\"caption\">#{caption}:</td><td>#{content}</td></tr>");
 		
+		var totalComments = Contacts.contacts.values().pluck("posts").inject(0, function(acc, n) { return acc + n; });
+		
 		this.update("<h2>" + title + "</h2><h3>Kontaktinformationen</h3><table class=\"simpleList\">" +
-			row.evaluate({ caption: "Name", content: "<strong>" + this.contact.getFullName() + "</strong>" }) + ((User.signedIn) ?
-			row.evaluate({ caption: "Adresse", content: this.contact.getFullAddress() || "" }) +
-			row.evaluate({ caption: "Telefon", content: this.contact.phone || "" }) +
-			row.evaluate({ caption: "Natel", content: this.contact.mobile || "" }) +
-			row.evaluate({ caption: "E-Mail", content: "<a href=\"mailto:" + this.contact.mail + "\">" + this.contact.mail + "</a>" }) : "") +
+			row.evaluate({
+				caption: "Name",
+				content: "<strong>" + contact.getFullName() + "</strong>"
+			}) + ((User.signedIn) ?
+			
+			row.evaluate({
+				caption: "Adresse",
+				content: contact.getFullAddress() || ""
+			}) +
+			
+			row.evaluate({
+				caption: "Telefon",
+				content: contact.phone || ""
+			}) +
+			
+			row.evaluate({
+				caption: "Natel",
+				content: contact.mobile || ""
+			}) +
+			
+			row.evaluate({
+				caption: "E-Mail",
+				content: "<a href=\"mailto:" + contact.mail + "\">" + contact.mail + "</a>"
+			}) : "") +
+			
 			"</table><h3>Sonstiges</h3><table class=\"simpleList\">" +
-			row.evaluate({ caption: "Schwerpunktfach", content: this.contact.mainsubject }) +
-			row.evaluate({ caption: "Anzahl Kommentare", content: this.contact.posts + " <small>(" + (Math.round(this.contact.posts * 10000 /
-				Contacts.contacts.pluck("posts").inject(0, function(acc, n) { return acc + n; })) / 100) + "% aller Kommentare)</small>" }) +
-			"</table>");
+			
+			row.evaluate({
+				caption: "Schwerpunktfach",
+				content: contact.mainsubject
+			}) +
+			
+			row.evaluate({
+				caption: "Anzahl Kommentare",
+				content: contact.posts + " <small>(" + (contact.posts / totalComments * 100).roundTo(2) +
+					"% aller Kommentare)</small>"
+			}) +
+			
+			row.evaluate({
+				caption: "Status",
+				content: contact.getState()
+			}) +
+			
+			"</table>"
+		);
 		
 		this.show();
 	}

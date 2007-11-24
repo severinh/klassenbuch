@@ -355,7 +355,7 @@ Storage.View = Class.create(Controls.View, {
 				});
 				
 				this.filesTable.addColumn("Hochgeladen von", function(a) {
-						return Contacts.getContact.byId(a.userid).nickname;
+						return Contacts.getContactById(a.userid).nickname;
 					}, {
 						width: "100px",
 						sortable: true,

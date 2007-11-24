@@ -85,6 +85,8 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
 		$super()
 		
 		App.on("initialize", function() {
+			
+			User.StateDetection.initialize();
 			var userData = DirectData.get("userdata");
 			
 			if (userData) {
@@ -210,7 +212,7 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
 	 */
 	updateLocalProfile: function(profileInformation) {
         Object.extend(this.profile, profileInformation);
-		Object.extend(Contacts.getContact.byId(this.id), this.profile);
+		Object.extend(Contacts.getContactById(this.id), this.profile);
 		Contacts.fireEvent("updated");
 	},
 	
@@ -237,6 +239,84 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
 		var window = new User.RegisterWindow();
 	}
 }))();
+
+User.StateDetection = function() {
+	var getTimestamp = Date.getCurrentTimestamp;
+	
+	var lastActivity = 0,
+		currentState = 0,
+		alreadyChecked = false,
+		inactivityCheck = null,
+		decreaseCheckFrequency = null;
+	
+	var handleActivity = function() {
+		if (!alreadyChecked) {
+			alreadyChecked = true;
+			lastActivity = getTimestamp();
+		}
+	};
+	
+	var update = function(state) {
+		if (currentState !== state) {
+			Contacts.getContactById(User.id).state = state;
+			Contacts.fireEvent("updated");
+			
+			new JSONRPC.Request("setuserstate", [state], {
+				onFailure: Prototype.K,
+				
+				onComplete: function() {
+					currentState = state;
+				}
+			});
+		}
+	};
+	
+	return {
+		initialize: function() {
+			User.on("signIn", function() {
+				document.observe("mousemove", handleActivity);
+				
+				if (!inactivityCheck) {
+					inactivityCheck = new PeriodicalExecuter(function() {
+						if (lastActivity < getTimestamp() - 30) {
+							update(User.StateDetection.AWAY);
+						} else {
+							update(User.StateDetection.ONLINE);
+						}
+					}, 5);
+				} else {
+					inactivityCheck.enable();
+				}
+				
+				if (!decreaseCheckFrequency) {
+					decreaseCheckFrequency = new PeriodicalExecuter(function() {
+						alreadyChecked = false;
+					}, 1);
+				} else {
+					decreaseCheckFrequency.enable();
+				}
+				
+				currentState = User.StateDetection.ONLINE;
+				handleActivity();
+			});
+			
+			User.on("signOut", function() {
+				document.stopObserving("mousemove", handleActivity);
+				
+				inactivityCheck.disable();
+				decreaseCheckFrequency.disable();
+			});
+		},
+		
+		getState: function() {
+			return currentState;
+		},
+		
+		OFFLINE: 0,
+		AWAY: 1,
+		ONLINE: 2
+	};
+}();
 
 User.SignInWindow = Class.create(Controls.Window, {
 	initialize: function($super) {
