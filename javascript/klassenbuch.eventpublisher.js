@@ -96,8 +96,12 @@ var EventPublisher = Class.create( /** @scope EventPublisher.prototype */ {
 						return true;
 					}
 				} catch (e) {
-					alert("Fehler in " + (this.id || "[unbekanntes Objekt]") + ".fireEvent():\n\nEreignis: " +
-						eventName + "\nFehlermeldung: " + e.message);
+					alert("Fehler in " + (this.id || "[unbekanntes Objekt]") + ".fireEvent():\n\n" +
+						"Ereignis: " + eventName + "\n" +
+						"Fehlertyp: " + e.name + "\n" +
+						"Fehlermeldung: " + e.message + "\n" +
+						"Datei: " + e.fileName + "\n" +
+						"Zeile: " + e.lineNumber);
 				}
 			}, this);
         }
