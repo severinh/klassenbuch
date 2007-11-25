@@ -52,7 +52,7 @@ var Gallery = new (Class.create(JSONRPC.Store, {
 		album.on("updated", this.fireEvent.bind(this, "updated"));
 		
 		$super(album);
-	},
+	}
 }))();
 
 /**
