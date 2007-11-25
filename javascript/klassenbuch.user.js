@@ -195,6 +195,8 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
             this.isAdmin = false;
             
             this.updateSignInElements();
+			
+			JSONRPC.CachedRequest.clearCache();
             
             this.fireEvent("signOut");
 		}
@@ -212,7 +214,7 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
 	 */
 	updateLocalProfile: function(profileInformation) {
         Object.extend(this.profile, profileInformation);
-		Object.extend(Contacts.getContactById(this.id), this.profile);
+		Object.extend(Contacts.getById(this.id), this.profile);
 		Contacts.fireEvent("updated");
 	},
 	
@@ -258,7 +260,7 @@ User.StateDetection = function() {
 	
 	var update = function(state) {
 		if (currentState !== state) {
-			Contacts.getContactById(User.id).state = state;
+			Contacts.getById(User.id).state = state;
 			Contacts.fireEvent("updated");
 			
 			new JSONRPC.Request("setuserstate", [state], {

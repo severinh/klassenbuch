@@ -25,70 +25,19 @@
  * <a href="Storage.View.htm">Storage.View</a>.
 */
 
-/**
- * Dient als eine Art Namensraum für alles, was mit der Dateiablage in Verbindung steht. Enthalten ist eine Auflistung
- * aller Dateien in der Dateiablage sowie die dazugehörigen Aktualisierungs-Mechanismen. Ausserdem bietet diese statische
- * Klasse Funktionen, die den Zugriff auf die Auflistungen verschiedener Dateitypen und -kategorien bieten.
- * @class
- * @static
- * @inherits EventPublisher
-*/
-var Storage = Object.extend(new EventPublisher(), /** @scope Storage */ {
-	/**
-	 * Initialisiert die Dateiablage beim Start des Klassenbuchs. Um sich einen weiteren Aufruf des Servers zu
-	 * ersparen, wird die Dateiliste bereits mit der Datei index.php mitübertragen. Diese Daten werden mit dieser
-	 * Funktion in die Dateiablage eingefügt. Zudem wird noch die automatische Aktualisierung eingerichtet.
-	 * @memberof Storage
-	*/	
-	initialize: function() {
-		// Verhindert, dass die Dateiablage mehrmals initialisiert werden kann
-		if (!Storage.initialized) {
-            var data = DirectData.get("files");
-            
-            if (data) {
-				Storage._updateSuccess(new JSONRPC.Response(data.result));
-			}
-			
-			/**
-			 * Bewirkt, dass ungefähr jede Viertelstunde eine Anfrage an den Server gesendet wird, um die Aufgabenliste zu
-			 * aktualisieren.
-			 * @type PeriodicalExecuter
-			 * @memberof Storage
-			 * @name periodicalUpdate
-			*/
-			Storage.periodicalUpdate = new PeriodicalExecuter(Storage.update, 3200);
-			Storage.initialized = true;
-		}
-	},
-	
-	/**
-	 * Ruft die Liste der Dateien in der Dateiablage vom Server ab. Diese Funktion wird durch
-	 * <a href="#periodicalUpdate">periodicalUpdate</a> in regelmässigen Abständen aufgerufen. Gibt der Server eine
-	 * gültige Antwort zurück, wird diese an die private Funktion <a href="#_updateSuccess">_updateSuccess</a>
-	 * übergeben.
-	 * @memberof Storage
-	*/
-    update: function() {
-		var request = new JSONRPC.Request("getfiles", [], { onSuccess: Storage._updateSuccess });
-    },
-	
-	/**
-	 * Verarbeitet die Antwort des Servers, die die Dateiliste enthält. Am Schluss löst die Funktion noch das Ereignis
-	 * <em>updated</em> aus.
-	 * @param {JSONRPC.Response} response Die Antwort des Servers. Die eigentliche Dateiliste befindet sich in der
-	 * Eigenschaft <em>result</em>.
-	 * @memberof Storage
-	*/
-    _updateSuccess: function(response) {
-		Storage.files.clear();
-		
-		response.result.each(function(fileInformation) {
-			Storage._addFile(new Storage.File(fileInformation))
+var Storage = new (Class.create(JSONRPC.Store, {
+	initialize: function($super) {
+		$super({
+			method: "getfiles",
+			periodicalUpdate: 3200
 		});
 		
-		Storage.fireEvent("updated");
-    },
-
+		App.on("initialize", function() {
+			this.options.itemClass = Storage.File;
+			this.loadData(DirectData.get("files").result);
+		}, this);
+	},
+	
 	/**
 	 * Öffnet ein Fenster (<a href="Storage.UploadWindow.htm">Storage.UploadWindow.htm</a>, mit dem eine neue Datei in
 	 * die Dateiablage hochgeladen werden kann. Wenn die Datei erfolgreich hochgeladen wurde, wird sie automatisch der
@@ -99,61 +48,36 @@ var Storage = Object.extend(new EventPublisher(), /** @scope Storage */ {
 	uploadFile: function() {
 		var uploadWindow = new Storage.UploadWindow();
 		
-		uploadWindow.on("success", function(file) {
-			Storage._addFile(file);
-			Storage.fireEvent("updated");
-		});
+		uploadWindow.on("success", this.load, this);
 		
 		return uploadWindow;
 	},
-
-    /**
-     * Interne Funktion, mit der eine Datei zur lokalen Kopie der Dateiliste
-     * (<a href="Storage.htm#files">Storage.htm#files</a>) hinzugefügt wird. Dieser Umweg ist nötig, damit korrekt erkannt
-     * wird, wenn die Eigenschaften der Datei vom Benutzer verändert werden (als "archiviert gekennzeichnet z. B.) und
-     * dadurch Ereignis <em>updated</em> von <em>Storage</em> ausgelöst werden kann.
-     * @param {Storage.File} file Die hinzuzufügende Datei
-     * @memberof Storage
-    */
-	_addFile: function(file) {
-		file.on("change", function() {
-			Storage.fireEvent("updated");
-		});
+	
+	add: function($super, file) {
+		file.on("change", this.fireEvent.bind(this, "updated"));
 		
-		Storage.files.push(file);
+		$super(file);
 	},
 	
-    getFiles: {
-        byType: function(type) {
-            return Storage._getFiles("type", type);
-        },
-        
-        byMediaGroup: function(group) {
-			if (Storage.mediaGroups[group]) {
-				return Storage.mediaGroups[group].collect(Storage.getFiles.byType).flatten();
-			}
-        },
-        
-		notArchived: function() {
-			return Storage._getFiles("archived", false);
-        },
-        
-        archived: function() {
-			return Storage._getFiles("archived", true);
-        }
-    },
+	getFilesOfType: function(type) {
+		return this.getItems("type", type);
+	},
 	
-    _getFiles: function(a, b) {
-        return Storage.files.findAll((Object.isFunction(a)) ? a : function(file) {
-			return file[a] == b;
-        });
-    },
-
-    files: [],
-    
-	initialized: false,
-    
-    mediaGroups: {
+	getFilesOfMediaGroup: function(group) {
+		if (this.mediaGroups[group]) {
+			return this.mediaGroups[group].collect(this.getFilesOfType, this).flatten();
+		}
+	},
+	
+	getNotArchivedFiles: function() {
+		return this.getItems("archived", false);
+	},
+	
+	getArchivedFiles: function() {
+		return this.getItems("archived", true);
+	},
+	
+	mediaGroups: {
 		pictures: ["jpg", "gif", "bmp", "png"],
 		documents: ["doc", "docx", "xls", "xlsx", "pdf", "txt"],
 		archives: ["rar", "zip"]
@@ -169,24 +93,22 @@ var Storage = Object.extend(new EventPublisher(), /** @scope Storage */ {
 	],
 	
 	fileTypes: {
-		doc:  { description: "Microsoft Office Word 97 - 2003-Dokument", icon: 1 },
-		docx: { description: "Microsoft Office Word-Dokument", icon: 2 },
-		jpg:  { description: "JPEG-Bild", icon: 3 },
-		png:  { description: "PNG-Bild", icon: 4 },
-		gif:  { description: "GIF-Bild", icon: 5 },
-		bmp:  { description: "BMP-Datei", icon: 6 },
-		pdf:  { description: "PDF-Dokument", icon: 7 },
-		rar:  { description: "WinRAR-Archiv", icon: 8 },
-		zip:  { description: "ZIP-Archiv", icon: 8 },
-		txt:  { description: "TXT-Datei", icon: 9 },
-		mp3:  { description: "MP3-Audiodatei", icon: 10 },
-		xlsx: { description: "Microsoft Office Excel-Arbeitsblatt", icon: 11 },
-		xls:  { description: "Microsoft Office Excel 97 - 2003-Arbeitsblatt", icon: 12 },
-		exe:  { description: "Anwendung", icon: 0 }
+		doc:  { icon: 1,  description: "Microsoft Office Word 97 - 2003-Dokument" },
+		docx: { icon: 2,  description: "Microsoft Office Word-Dokument" },
+		jpg:  { icon: 3,  description: "JPEG-Bild" },
+		png:  { icon: 4,  description: "PNG-Bild" },
+		gif:  { icon: 5,  description: "GIF-Bild" },
+		bmp:  { icon: 6,  description: "BMP-Datei" },
+		pdf:  { icon: 7,  description: "PDF-Dokument" },
+		rar:  { icon: 8,  description: "WinRAR-Archiv" },
+		zip:  { icon: 8,  description: "ZIP-Archiv" },
+		txt:  { icon: 9,  description: "TXT-Datei" },
+		mp3:  { icon: 10, description: "MP3-Audiodatei" },
+		xlsx: { icon: 11, description: "Microsoft Office Excel-Arbeitsblatt" },
+		xls:  { icon: 12, description: "Microsoft Office Excel 97 - 2003-Arbeitsblatt" },
+		exe:  { icon: 0,  description: "Anwendung" }
 	}
-});
-
-App.on("initialize", Storage.initialize);
+}))();
 
 /**
  * Enthält Informationen über eine einzelne Datei und stellt verschiedene Methoden bereit, um beispielsweise die
@@ -198,7 +120,11 @@ Storage.File = Class.create(EventPublisher, /** @scope Storage.File */ {
     initialize: function($super, file) {
 		$super();
 		
-   		/**
+		this.update(file);
+    },
+	
+	update: function(file) {
+		/**
 		 * Die einzigartige ID der Datei.
 		 * @type Integer
 		 * @memberof Storage.File
@@ -263,7 +189,7 @@ Storage.File = Class.create(EventPublisher, /** @scope Storage.File */ {
 		*/
         this.type = this.name.split(".").last().toLowerCase();
     },
-    
+	
     /**
      * Gibt die Beschreibung des Dateityps dieser Datei zurück. Die Funktion bezieht sich dabei auf den Wert der
      * Eigenschaft <a href="#type">type</a> und überprüft, ob in der Liste der Dateitypbeschreibungen in
@@ -294,11 +220,21 @@ Storage.File = Class.create(EventPublisher, /** @scope Storage.File */ {
      * @memberof Storage.File
     */
     archive: function() {
+		var self = this;
+		
+		var setArchiveState = function(archived) {
+			self.archived = archived;
+			self.fireEvent("change");
+		};
+		
+		setArchiveState(true);
+		
 		var request = new JSONRPC.Request("archivefile", [this.id], {
-			onSuccess: (function() {
-				this.archived = true;
-				this.fireEvent("change");
-			}).bind(this)
+			onFailure: function(response) {
+				setArchiveState(false);
+				
+				response.standardErrorAlert();
+			}
 		});
     }
 });
@@ -307,7 +243,9 @@ Storage.View = Class.create(Controls.View, {
 	initialize: function($super) {
 		$super("Dateiablage", new Sprite("smallIcons", 11), "Dateiablage", { className: "storageView" });
 		
-		this.registerSubNode("hochladen", Storage.uploadFile, { restrictedAccess: true });
+		this.registerSubNode("hochladen", function() {
+			Storage.uploadFile();
+		}, { restrictedAccess: true });
 		
 		this.on("activate", (function() {
 			if (!this.initialized) {
@@ -355,7 +293,7 @@ Storage.View = Class.create(Controls.View, {
 				});
 				
 				this.filesTable.addColumn("Hochgeladen von", function(a) {
-						return Contacts.getContactById(a.userid).nickname;
+						return Contacts.getById(a.userid).nickname;
 					}, {
 						width: "100px",
 						sortable: true,
@@ -397,13 +335,7 @@ Storage.View = Class.create(Controls.View, {
 						var element = event.element();
 						
 						if (element.hasClassName("archiveLink")) {
-							var fileId = parseInt(element.readAttribute("fileid"));
-							
-							var file = Storage.files.find(function(file) {
-								if (file.id === fileId) {
-									return file;
-								}
-							});
+							var file = Storage.getById(parseInt(element.readAttribute("fileid")));
 							
 							if (confirm("Möchtest du die Datei " + file.name + " wirklich archivieren? Die Datei wird " +
 								"nicht gelöscht, sondern erscheint weiderhin in der Ansicht \"Alte Dateien\".")) {
@@ -479,9 +411,9 @@ Storage.View = Class.create(Controls.View, {
         this.filesTable.clear();
         
         this.filesTable.addRows((this.currentMediaGroup) ? ((this.currentMediaGroup === "archived") ?
-				Storage.getFiles.archived() :
-				Storage.getFiles.byMediaGroup(this.currentMediaGroup)) :
-			Storage.getFiles.notArchived());
+				Storage.getArchivedFiles() :
+				Storage.getFilesOfMediaGroup(this.currentMediaGroup)) :
+			Storage.getNotArchivedFiles());
 		
         this.filesTable.resort();
 	}
@@ -650,14 +582,7 @@ Storage.UploadWindow = Class.create(Controls.Window, /** @scope Storage.UploadWi
 			this.uploadInProgress = false;
 			this._selectUploadView(2);
 			
-			this.fireEvent("success", new Storage.File({
-				id: response.result.id,
-				uploaded: Date.getCurrentTimestamp(),
-				size: file.size,
-				name: response.result.filename,
-				userid: User.id,
-				description: this.getDescription()
-			}));
+			this.fireEvent("success");
 		}
 	},
 	

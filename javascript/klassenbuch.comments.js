@@ -418,7 +418,7 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 		this.text = comment.text;
 		this.date = new Date(comment.date * 1000);
 		
-		this.contact = Contacts.getContactById(this.userid);
+		this.contact = Contacts.getById(this.userid);
 		
 		this.initializeHistoryNode();
 		

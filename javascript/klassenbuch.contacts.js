@@ -1,81 +1,47 @@
-/**
- * @class Bietet Zugriff auf die Kontaktinformationen der Klassenmitglieder. Sensible Informationen werden erst vom Server
- * geladen, wenn der Benutzer sich anmeldet. Zudem werden diese lokalen Informationen wieder gelöscht, wenn der Benutzer
- * sich abmeldet. Die Kontaktliste liegt in Form eines Array vor, das Objekte vom Typ <em>Contacts.Contact</em> enthält. Diese
- * Klasse bietet zusätzlich bequeme Zugriffsfunktionen auf diese Daten. Die Klasse führt von Zeit zu Zeit automatisch eine
- * Aktualisierung der Daten durch, wobei die Serverantworten zusätzlich gecached werden.
- * @singleton
- * @event updated - Wird ausgelöst, wenn sich die Kontaktinformationen aktualisiert wurden.
+/*
+ * Klassenbuch
+ * Copyright (C) 2006 - 2007 Severin Heiniger
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * To view the GNU General Public License visit
+ * http://www.gnu.org/copyleft/gpl.html
+ * or write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
-var Contacts = new (Class.create(EventPublisher, {
-    initialize: function($super) {
-		this.contacts = new Hash();
-		
-		$super();
-		
-		var self = this;
-		var init = function() {
-			if (!self.initialized) {
-				self.periodicalUpdate = new PeriodicalExecuter(self.update.bind(self), 120);
-				
-				var data = DirectData.get("contacts");
-				
-				if (data) {
-					self._updateSuccess(new JSONRPC.Response(data.result));
-				}
-				
-				User.on("signIn", self.update, self);
-				User.on("signOut", self.hidePersonalInformation, self);
-				
-				self.initialized = true;
-			}
-		};
-		
-		if (App.initialized) {
-			init();
-		} else {
-			App.on("initialize", init);
-		}
-    },
-    
-    update: function() {
-		var request = new JSONRPC.Request("getcontacts", [], {
-			onSuccess: this._updateSuccess.bind(this)
-		});
-    },
-    
-    _updateSuccess: function(response) {
-		this.contacts.nonDestructiveUpdateFromArray(response.result, "id", function(contact) {
-			return new Contacts.Contact(contact);
+
+var Contacts = new (Class.create(JSONRPC.Store, {
+	initialize: function($super) {
+		$super({
+			method: "getcontacts",
+			periodicalUpdate: 120
 		});
 		
-		this.fireEvent("updated");
-    },
-	
-	getContactById: function(id) {
-		return this.contacts.get(id);
+		App.on("initialize", function() {
+			this.options.itemClass = Contacts.Contact;
+			this.loadData(DirectData.get("contacts").result);
+			
+			User.on("signIn", this.load, this);
+			User.on("signOut", this.hidePersonalInformation, this);
+		}, this);
 	},
-    
-    getContact: function(a, b) {
-		var pair = this.contacts.find((Object.isFunction(a)) ? a : function(pair) {
-			return pair.value[a] === b;
-		});
-		
-		return (pair) ? pair.value : false;
-    },
-    
+	
     hidePersonalInformation: function() {
-        this.contacts.values().invoke("hidePersonalInformation");
+        this.invoke("hidePersonalInformation");
         this.fireEvent("updated");
     },
     
     getClassMembers: function() {
-        return this.contacts.findAll(function(pair) {
-			return pair.value.classmember;
-		}).pluck("value");
-    },
-    
-    initialized: false
+		return this.getItems("classmember", true);
+    }
 }))();
 
 Contacts.View = Class.create(Controls.View, {
@@ -83,8 +49,8 @@ Contacts.View = Class.create(Controls.View, {
 		$super("Kontaktliste", new Sprite("smallIcons", 14), "Kontaktliste", { className: "contactView" });
 		
 		this.registerSubNode("profil", (function(state) {
-				var contact = Contacts.getContact(function(pair) {
-					return pair.value.getFlattenedFullName() === state.first();
+				var contact = Contacts.getItem(function(contact) {
+					return contact.getFlattenedFullName() === state.first();
 				});
 				
 				if (contact) {
@@ -220,7 +186,7 @@ Contacts.View = Class.create(Controls.View, {
 	},
 	
 	sendMailToAll: function() {
-		this.sendMailTo(Contacts.contacts.findAll(function(contact) {
+		this.sendMailTo(Contacts.getItems(function(contact) {
 			return (contact.classmember && contact.mail !== "hidden");
 		}).pluck("mail"));
 	},
@@ -313,7 +279,7 @@ Contacts.Contact.Window = Class.create(Controls.Window, {
 		
 		var row = new Template("<tr><td class=\"caption\">#{caption}:</td><td>#{content}</td></tr>");
 		
-		var totalComments = Contacts.contacts.values().pluck("posts").inject(0, function(acc, n) { return acc + n; });
+		var totalComments = Contacts.pluck("posts").inject(0, function(acc, n) { return acc + n; });
 		
 		this.update("<h2>" + title + "</h2><h3>Kontaktinformationen</h3><table class=\"simpleList\">" +
 			row.evaluate({

@@ -22,67 +22,28 @@
  * @fileOverview Enthält alles, was mit der Aufgabenverwaltung in Verbindung steht (ausser die Kommentarfunktion).
 */
 
-/**
- * Hauptklasse dieser Datei, die Zugriff auf eine Aufgabenliste (enthält alle anstehenden Aufgaben und Aufgaben in den
- * letzten 30 Tagen) bietet und zudem die Möglichkeit, neue Aufgaben hinzuzufügen. Sie dient zudem als eine Art
- * Namensraum für alles, was mit der Aufgabenverwaltung im Klassenbuch in Verbindung steht. Des Weiteren enthält sie
- * eine Auflistung aller Schulfächer zusammen mit ihren Abkürzungen und eine Funktion, um bequem alle anstehenden Aufgaben
- * zu erhalten.
- * @class
- * @static
- * @inherits EventPublisher
-*/
-var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement.prototype */ {
-	/**
-	 * Initialisiert die Aufgabenverwaltung beim Start des Klassenbuchs. Um sich einen weiteren Aufruf des Servers zu
-	 * ersparen, wird die Aufgabenliste bereits mit der Datei index.php mitübertragen. Diese Daten werden mit dieser
-	 * Funktion in die Aufgabenverwaltung eingefügt. Zudem wird noch die automatische Aktualisierung eingerichtet und
-	 * definiert, was beim An- oder Abmelden des Benutzers passieren soll.
-	 * @memberof TaskManagement
-	*/
+var TaskManagement = new (Class.create(JSONRPC.Store, {
 	initialize: function($super) {
-		$super();
+		$super({
+			method: "gettasks",
+			params: function() { return [Date.getTodaysTimestamp() - 2592000] },
+			periodicalUpdate: 1000
+		});
 		
-		var init = (function() {
-			if (!this.initialized) {
-				var data = DirectData.get("tasks");
+		App.on("initialize", function() {
+			this.options.itemClass = TaskManagement.Task;
+			this.loadData(DirectData.get("tasks").result);
+			
+			User.on("signIn", this.load, this);
+			
+			User.on("signOut", function() {
+				this.each(function(task) {
+					task.newComments = false;
+				});
 				
-				if (data) {
-					this._updateSuccess(new JSONRPC.Response(data.result));
-				}
-				
-				/**
-				 * Bewirkt, dass ungefähr jede Viertelstunde eine Anfrage an den Server gesendet wird, um die Aufgabenliste zu
-				 * aktualisieren.
-				 * @type PeriodicalExecuter
-				 * @memberof TaskManagement
-				 * @name periodicalUpdate
-				*/
-				this.periodicalUpdate = new PeriodicalExecuter(this.update.bind(this), 1000);
-				
-				// Meldet sich der Benutzer an, wird die Aufgabenliste erneut vom Server abgerufen, da sie nun nauch Informationen
-				// darüber enthält, ob es bei bestimmten Aufgaben ungelesene Kommentare gibt.
-				User.on("signIn", this.update, this);
-				
-				// Meldet sich der Benutzer ab, wird bei jeder Aufgabe die Eigenschaft newComments auf <em>false</em>
-				// gesetzt, und das Ereignis <em>updated</em> ausgelöst. Dies erspart eine weitere Anfrage an den Server.
-				User.on("signOut", function() {
-					this.Tasks.each(function(task) {
-						task.newComments = false;
-					});
-					
-					this.fireEvent("updated");
-				}, this);
-				
-				this.initialized = true;
-			}
-		}).bind(this);
-		
-		if (App.initialized) {
-			init();
-		} else {
-			App.on("initialize", init);
-		}
+				this.fireEvent("updated");
+			}, this);
+		}, this);
 	},
 	
 	/**
@@ -97,40 +58,38 @@ var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement
 		var createWindow = new TaskManagement.TaskCreationWindow();
 		
 		createWindow.on("created", function(task) {
-			this._addTask(task);
+			this.add(task);
 			this.fireEvent("updated");
 		}, this);
 		
 		return createWindow;
 	},
-
-	/**
-	 * Fordert die Aufgabenliste vom Server an. Gibt der Server eine gültige Antwort zurück, wird die Funktion
-	 * <a href="TaskManagement.htm#_updateSuccess">TaskManagement._updateSuccess</a> aufgerufen, mit der die
-	 * Aufgabenliste
-	 * @memberof TaskManagement
-	*/
-	update: function() {
-		var request = new JSONRPC.Request("gettasks", [Date.getTodaysTimestamp() - 2592000], {
-			onSuccess: this._updateSuccess.bind(this)
-		});
+	
+	add: function($super, task) {
+		task.on("change", this.fireEvent.bind(this, "updated"));
+		
+		$super(task);
 	},
-
+	
 	/**
 	 * Gibt alle Aufgaben in einem bestimmten Zeitrahmen zurück.
 	 * @param {Number} startTimestamp Der Linuxzeitstempel für die untere Datumsgrenze.
 	 * @param {Number} endTimestamp (optional) Der Linuxzeitstempel für die obere Datumsgrenze.
 	 * @return {Task[]} Die Aufgaben.
 	 * @memberof TaskManagement
-	*/	
+	*/
 	getTasksWithinTimeRange: function(startTimestamp, endTimestamp) {
-		return this.Tasks.findAll(function(task) {
-			if (endTimestamp) {
-				return $R(startTimestamp, endTimestamp).include(task.date.getTimestamp());
-			} else {
+		if (endTimestamp) {
+			var range = $R(startTimestamp, endTimestamp);
+			
+			return this.findAll(function(task) {
+				return range.include(task.date.getTimestamp());
+			});
+		} else {
+			return this.findAll(function(task) {
 				return task.date.getTimestamp() >= startTimestamp;
-			}
-		});
+			});
+		}
 	},
 
 	/**
@@ -140,55 +99,6 @@ var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement
 	*/
 	getUpcomingTasks: function() {
 		return this.getTasksWithinTimeRange(Date.getTodaysTimestamp());
-	},
-
-	/**
-	 * Verarbeitet die vom Server erhaltene Aufgabenliste. Diese Methode entfernt alle bestehenden Aufgaben aus der
-	 * Aufgabenliste und fügt die vom Server erhaltenen Daten ein.<br /><br />Beispiel für eine Server-Antwort:
-	 * <pre class="code">
-{
-	result: [{
-		id: 62,
-		date: 1181512800,
-		subject: "Wirtschaft und Recht",
-		important: true,
-		text: "Probe Buchhaltung",
-		userid: 1,
-		added: 1181470470,
-		removed: false,
-		comments: 4,
-		newcomments: false
-	}],
-	error: null
-}
-	 * </pre>
-	 * @param {JSONRPC.Response} response Die Antwort des Servers.
-	 * @memberof TaskManagement
-	*/	
-	_updateSuccess: function(response) {
-        if (!(App.Windows.hasWindowOfType("CreateEditTaskWindow") || App.Windows.hasWindowOfType("TaskCommentsWindow"))) {
-			this.Tasks.clear();
-			
-			response.result.each(function(taskInformation) {
-				this._addTask(new TaskManagement.Task(taskInformation));
-			}, this);
-			
-			this.fireEvent("updated");
-        }
-	},
-
-    /**
-     * Interne Funktion, mit der eine Aufgabe zur lokalen Kopie der Aufgabenliste
-     * (<a href="TaskManagement.htm#Tasks">TaskManagement.Tasks</a>) hinzugefügt wird. Dieser Umweg ist nötig, damit korrekt erkannt
-     * wird, wenn die Aufgabe vom Benutzer bearbeitet wird und dadurch Ereignis <em>updated</em> von
-     * <em>TaskManagement</em> ausgelöst werden kann.
-     * @param {TaskManagement.Task} task Die hinzuzufügende Aufgabe
-     * @private
-     * @memberof TaskManagement
-    */
-	_addTask: function(task) {
-		task.on("change", this.fireEvent.bind(this, "updated"));
-		this.Tasks.push(task);		
 	},
 	
 	/**
@@ -247,27 +157,7 @@ var TaskManagement = new (Class.create(EventPublisher, /** @scope TaskManagement
 		"Sonstiges",
 		"Sport",
 		"WR (EF)"
-	],
-
-	/**
-	 * Enthält eine Auflistung aller anstehenden Aufgaben und aller Aufgaben der letzten 30 Tage. Die Methoden
-	 * <a href="#getTasksWithinTimeRange">getTasksWithinTimeRange</a> und 
-	 * <a href="#getUpcomingTasks">getUpcomingTasks</a> bieten einen bequemen Zugriff auf die Aufgaben.
-	 * @type TaskManagement.Task[]
-	 * @name Tasks
-	 * @memberof TaskManagement
-	*/
-	Tasks: [],
-	
-	/**
-	 * Gibt an, ob die Aufgabenverwaltung bereits intialisiert wurde. Der Initialisierungsvorgang finden während des
-	 * Ladens statt. Erst danach kann auf die Aufgabenliste in der Eigenschaft <a href="#Tasks">Tasks</a> zugegriffen
-	 * werden. Standardwert ist <em>false</em>.
-	 * @type Boolean
-	 * @name initialized
-	 * @memberof TaskManagement
-	*/
-	initialized: false
+	]
 }))();
 
 /**
@@ -309,14 +199,12 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		this.registerDynamicSubNode(
 			// Gibt an Hand der Aufgaben-ID die Referenz auf die gewünschte Aufgabe zurück
 			function(nodeName, state) {
-				return TaskManagement.Tasks.find(function(task) {
-					return task.id === parseInt(nodeName);
-				});
+				return TaskManagement.getById(parseInt(nodeName));
 			},
 			
 			// Prüft, ob es sich um eine gültige Aufgaben-ID handelt
 			function(nodeName) {
-				return TaskManagement.Tasks.pluck("id").include(parseInt(nodeName));
+				return !!TaskManagement.getById(parseInt(nodeName));
 			}
 		);
 		
@@ -540,9 +428,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 						} else if (element.hasClassName("iconEditTask")) {
 							this.reportNavigation(taskId + "/bearbeiten")
 						} else if (element.hasClassName("iconDeleteTask")) {
-							this.removeTask(TaskManagement.Tasks.find(function(task) {
-								return task.id == taskId;
-							}));
+							this.removeTask(TaskManagement.Tasks.getById(taskId));
 						}
 					}
 				}
@@ -697,7 +583,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 	_onHighlightTask: function(task) {
 		task.getComments();
 		
-		var contact = Contacts.getContactById(task.userid);
+		var contact = Contacts.getById(task.userid);
 		
 		this._taskInfoBox.innerHTML = (contact) ? "Eingetragen am " + task.added.format("j. F") + "<br />von " +
 			contact.getFullName() : "";
@@ -988,30 +874,22 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
 	*/
 	submit: function(input) {
 		var request = new JSONRPC.Request("createtask", [input.subject, input.date, input.text, input.important], {
-			onSuccess: this._success.bind(this),
+			onSuccess: (function(response) {
+				this.fireEvent("created", new TaskManagement.Task(Object.extend(input, {
+					text: input.text.stripTags(),
+					id: response.result,
+					userid: User.id,
+					added: Date.getCurrentTimestamp()
+				})));
+				
+				this.close();
+			}).bind(this),
+			
 			
 			onComplete: (function() {
 				this.submitButton.enable();
 			}).bind(this)
 		});
-	},
-	
-	/**
-	 * Wird aufgerufen, wenn die Aufgabe erfolgreich eingetragen werden konnte. In diesem Fall gibt der Server die ID
-	 * der neu eingetragenen Aufgabe zurück. Die Methode löst das Ereignis <em>created</em> aus und übergibt dabei die
-	 * neu eingetragene Aufgabe und schliesst zum Schluss das Fenster.
-	 * @param {JSONRPC.Response} response Die Antwort des Servers.
-	 * @private
-	 * @memberof TaskManagement.TaskCreationWindow
-	*/
-	_success: function(response) {
-		this.fireEvent("created", new TaskManagement.Task(Object.extend(this.getInput(), {
-			id: response.result,
-			userid: User.id,
-			added: Date.getCurrentTimestamp()
-		})));
-		
-		this.close();
 	},
 
 	/**
@@ -1088,33 +966,36 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
 	 * @memberof TaskManagement.TaskEditingWindow
 	*/
 	submit: function(input) {
-		var request = new JSONRPC.Request("edittask", [this.task.id, input.date, input.text, input.important], {
-			onComplete: (function() {
-				this.submitButton.enable();
-			}).bind(this),
-			
-			onSuccess: this._success.bind(this)
-		});		
-	},
-
-	/**
-	 * Wird aufgerufen, wenn die Aufgabe erfolgreich geändert werden konnte. Da die Eigenschaft
-	 * <a href="TaskManagement.TaskEditingWindow.htm#task">TaskManagement.TaskEditingWindow.task</a> eigentlich nichts
-	 * als eine Referenz zu der Aufgabe ist, werden die Änderungen gleich auf die Aufgabe übertragen. Die Methode löst
-	 * das Ereignis <em>edited</em> aus und schliesst zum Schluss das Fenster.
-	 * @private
-	 * @param {JSONRPC.Response} response Die Antwort des Servers.
-	 * @memberof TaskManagement.TaskEditingWindow
-	*/	
-	_success: function(response) {
-		var input = this.getInput();
+		var oldDate = this.task.date,
+			oldText = this.task.text,
+			oldImportant = this.task.important,
+			self = this;
 		
 		this.task.date = Date.fromTimestamp(input.date);
 		this.task.text = input.text;
 		this.task.important = input.important;
+		this.task.fireEvent("change");
 		
-		this.fireEvent("edited");
-		this.close();
+		this.hide();
+		
+		var request = new JSONRPC.Request("edittask", [this.task.id, input.date, input.text, input.important], {
+			onComplete: function() {
+				self.submitButton.enable();
+			},
+			
+			onFailure: function(response) {
+				self.task.date = oldDate;
+				self.task.text = oldText;
+				self.task.important = oldImportant;
+				self.task.fireEvent("change");
+				
+				self.show();
+				
+				response.standardErrorAlert();
+			},
+			
+			onSuccess: this.close.bind(this)
+		});		
 	}
 });
 
@@ -1126,6 +1007,19 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
 */
 TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /** @scope TaskManagement.Task.prototype */ {
     initialize: function($super, task) {
+		$super();
+		this.initializeHistoryNode();
+		
+		this.update(task);
+		
+		this.registerSubNode("bearbeiten", this.edit.bind(this), {
+			restrictedAccess: true
+		});
+		
+		this.registerSubNode("kommentare", this.showComments.bind(this));
+	},
+	
+	update: function(task) {
    		/**
 		 * Die einzigartige ID der Aufgabe.
 		 * @type Integer
@@ -1191,15 +1085,16 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 		*/
         this.comments = task.comments || 0;
         
-        /**
-		 * Enthält die Kommentare zu einer Aufgabe, nachdem die Methode <a href="#_getComments">_getComments</a>
-		 * aufgerufen wude.
-		 * @type Comments.Comment[]
-		 * @memberof TaskManagement.Task
-		 * @name commentsStore
-		*/
-        this.commentsStore = null;
-        
+		if (Object.isUndefined(this.commentsStore) || !this._activeSubNode) {
+	        /**
+			 * Enthält die Kommentare zu einer Aufgabe, nachdem die Methode <a href="#_getComments">_getComments</a>
+			 * aufgerufen wude.
+			 * @type Comments.Comment[]
+			 * @memberof TaskManagement.Task
+			 * @name commentsStore
+			*/
+	        this.commentsStore = null;
+        }
 		/**
 		 * Gibt an, ob ungelesene Kommentare zu dieser Aufgabe vorhanden sind. Wenn der Benutzer nicht angemeldet ist,
 		 * ist dieses Feld in jedem Fall <em>false</em>.
@@ -1225,15 +1120,6 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 		 * @name subjectShorted
 		*/
 		this.subjectShorted = TaskManagement.subjectsShort[TaskManagement.subjects.indexOf(this.subject)];
-		
-		$super();
-		this.initializeHistoryNode();
-		
-		this.registerSubNode("bearbeiten", this.edit.bind(this), {
-			restrictedAccess: true
-		});
-		
-		this.registerSubNode("kommentare", this.showComments.bind(this));
 	},
 
 	/**
@@ -1266,7 +1152,6 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 	edit: function() {
 		var editWindow = new TaskManagement.TaskEditingWindow(this);
 		
-		editWindow.on("edited", this.fireEvent.bind(this, "change"));
 		editWindow.on("leave", this.fireEvent.bind(this, "leave"));
 		
 		return editWindow;
@@ -1277,9 +1162,12 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 	 * @memberof TaskManagement.Task
 	*/	
 	remove: function() {
+		this.removed = true;
+		this.fireEvent("change");
+	
         var request = new JSONRPC.Request("removetask", [this.id], {
-			onSuccess: (function(response) {
-				this.removed = true;
+			onFailure: (function(response) {
+				this.removed = false;
 				this.fireEvent("change");
 			}).bind(this)
 		});

@@ -28,29 +28,15 @@
  * @author <a href="mailto:severinheiniger@gmail.com">Severin Heiniger</a>
 */
 
-/**
- * Hauptklasse dieser Datei, die Zugriff auf eine Liste aller Alben bietet und zudem die Möglichkeit, neue
- * Alben hinzuzufügen. Sie dient zudem als eine Art Namensraum für alles, was mit der Fotogalerie im Klassenbuch
- * in Verbindung steht.
- * @class
- * @isstatic
- * @inherits EventPublisher
-*/
-var Gallery = Object.extend(new EventPublisher(), /** @scope Gallery */ {
-	/**
-	 * Füllt <a href="Gallery.htm#Albums">Gallery.Albums</a> mit einer Liste aller Alben. Diese Funktion wird beim Start
-	 * des Klassenbuchs aufgerufen.
-	 * @memberof Gallery
-	*/
-    initialize: function() {
-		var data = DirectData.get("albums");
+var Gallery = new (Class.create(JSONRPC.Store, {
+	initialize: function($super) {
+		$super();
 		
-		if (data) {
-			data.result.each(function(albumInfo) {
-				Gallery._addAlbum(new Gallery.Album(albumInfo.id, albumInfo.name, albumInfo.pictures, albumInfo.description));
-			});
-		}
-    },
+		App.on("initialize", function() {
+			this.options.itemClass = Gallery.Album;
+			this.loadData(DirectData.get("albums").result);
+		}, this);
+	},
 	
  	/**
 	 * Ermöglicht es, ein neues Album zur Fotogalerie hinzuzufügen. Dazu wird ein entsprechendes Fenster 
@@ -61,34 +47,13 @@ var Gallery = Object.extend(new EventPublisher(), /** @scope Gallery */ {
     createAlbum: function() {
 		return new Gallery.Album.CreationWindow();
     },
-    
- 	/**
-	 * Eine Liste aller Alben in der Fotogalerie.
-	 * @name Albums
-	 * @type Gallery.Album[]
-	 * @memberof Gallery
-	*/
-    Albums: [],
-    
-    /**
-     * Interne Funktion, mit der ein Album zur lokalen Kopie der Albenliste
-     * (<a href="Gallery.htm#Albums">Gallery.Albums</a>) hinzugefügt wird. Dieser Umweg ist nötig, damit korrekt erkannt
-     * wird, wenn Informationen über das Album vom Benutzer geändert werden (z. B. Fotos hinzugefügt werden) und dadurch
-     * Ereignis <em>updated</em> von <em>Gallery</em> ausgelöst werden kann.
-     * @param {Gallery.Album} album Das hinzuzufügende Album
-     * @memberof Gallery
-    */
-    _addAlbum: function(album) {
-		album.on("updated", function() {
-			Gallery.fireEvent("updated");
-		});
+	
+	add: function($super, album) {
+		album.on("updated", this.fireEvent.bind(this, "updated"));
 		
-		Gallery.Albums.push(album);
-	}
-});
-
-// Bewirkt, dass die Fotogalerie beim Initialisieren des Klassenbuchs ebenfalls initialisiert wird.
-App.on("initialize", Gallery.initialize);
+		$super(album);
+	},
+}))();
 
 /**
  * Stellt ein einzelnes Fotoalbum dar, enthält einerseits Informationen über das Album und bietet die Möglichkeit,
@@ -105,22 +70,26 @@ App.on("initialize", Gallery.initialize);
  * @inherits EventPublisher
 */
 Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
-	initialize: function($super, id, name, numberOfPictures, description) {
+	initialize: function($super, album) {
 		$super();
 		
+		this.update(album);
+	},
+
+	update: function(album) {
 		/**
 		 * Die einzigartige ID des Albums.
 		 * @type Integer
 		 * @property
 		*/
-		this.id = id;
+		this.id = album.id;
 		
 		/**
 		 * Der Titel des Albums.
 		 * @type String
 		 * @property
 		*/
-		this.name = name;
+		this.name = album.name;
 		
 		/**
 		 * Die Beschreibung des Albums. Sie muss nicht zwingend angegeben werden.
@@ -128,7 +97,7 @@ Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
 		 * @memberof Gallery.Album
 		 * @name description
 		*/
-		this.description = description || "";
+		this.description = album.description || "";
 		
 		/**
 		 * Die Anzahl der Fotos in diesem Album. Diese Eigenschaft kann verwendet werden, bis die Eigenschaft
@@ -138,7 +107,7 @@ Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
 		 * @memberof Gallery.Album
 		 * @name numberOfPictures
 		*/
-		this.numberOfPictures = numberOfPictures || 0;
+		this.numberOfPictures = album.pictures || 0;
 		
 		/**
 		 * Die Methode <a href="#_getPictures">_getPictures</a> füllt diese Eigenschaft mit einer Liste aller Fotos in
@@ -146,10 +115,10 @@ Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
 		 * @type Gallery.Picture[]
 		 * @memberof Gallery.Album
 		 * @name pictures
-		*/		
+		*/
 		this.pictures = [];
 	},
-
+	
  	/**
 	 * Zeigt ein Fenster an, in dem alle Fotos in diesem Album aufgelistet sind und welches dem Benutzer verschiedene
 	 * Funktionen bietet. Siehe <a href="Gallery.Album.Window.htm">Gallery.Album.Window</a>.
@@ -462,7 +431,8 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		if (this.album.pictures.length > 0) {
 			this._thumbnailTable.innerHTML = this.album.pictures.eachSlice(this.options.picturesPerPage)[this.currentPage]
 				.collect(function(picture, i) {
-					return "<div class=\"thumbnailContainer\" name=\"" + picture.fileName + "\"><img src=\"" + picture.getThumbnailPath() + "\" />" +
+					return "<div class=\"thumbnailContainer\" name=\"" + picture.fileName +
+						"\"><img src=\"" + picture.getThumbnailPath() + "\" />" +
 						"<div class=\"fileName\">" + picture.fileName.truncate(18) + "</div></div>";
 				}).join(" ");
 			
@@ -527,7 +497,7 @@ Gallery.Album.CreationWindow = Class.create(Controls.Window, {
 		// Der kurze Hilfetext und das Formular
         this.update("<h2>Neues Album erstellen</h2>" +
             "<p>Gib den Titel des neuen Albums ein und wahlweise auch eine kurze Beschreibung.</p>");
-            
+        
         this._form = this.content.insertControl(new Controls.Form({
 			submitButtonText: "Album erstellen",
 			submitButtonIcon: new Sprite("smallIcons", 6)
@@ -554,7 +524,7 @@ Gallery.Album.CreationWindow = Class.create(Controls.Window, {
 	},
 	
 	_submit: function(input) {
-		if (Gallery.Albums.pluck("name").include(input.name)) {
+		if (Gallery.pluck("name").include(input.name)) {
 			var msg = "Dieser Albumname wird bereits verwendet.";
 			
 			this._form.fields[0].markAsInvalid(msg);
@@ -564,7 +534,11 @@ Gallery.Album.CreationWindow = Class.create(Controls.Window, {
 		
 		var request = new JSONRPC.Request("gallery_createalbum", [input.name, input.description || ""], {
 			onSuccess: (function(response) {
-				Gallery._addAlbum(new Gallery.Album(response.result, input.name, 0, input.description || ""));
+				Gallery.add(new Gallery.Album(Object.extend({
+					id: response.result,
+					pictures: 0
+				}, input)));
+				
 				Gallery.fireEvent("updated");
 				this.close();
 			}).bind(this)
@@ -932,7 +906,7 @@ Gallery.PictureInfoWindow = Class.create(Controls.Window, {
 	_setPicture: function(picture) {
 		this._title.innerHTML = picture.fileName.truncate(30);
 		
-		var contact = Contacts.getContactById(picture.userid);
+		var contact = Contacts.getById(picture.userid);
 		var tmpl = new Template("<tr><td class=\"caption\">#{key}:</td><td>#{value}</td></tr>");
 		var data = [
 			{ key: "Hochgeladen von", value: contact.getFullName() },
@@ -1133,13 +1107,13 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 		
 		this.registerDynamicSubNode(
 			function(nodeName) {
-				return Gallery.Albums.find(function(album) {
+				return Gallery.find(function(album) {
 					return album.name.addressify() == nodeName;
 				}).show();
 			},
 			
 			function(nodeName) {
-				return Gallery.Albums.pluck("name").invoke("addressify").include(nodeName);
+				return Gallery.pluck("name").invoke("addressify").include(nodeName);
 			}
 		);
 		
@@ -1172,9 +1146,7 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 						var albumId = parseInt(element.readAttribute("name").replace("album", ""));
 						
 						if (albumId) {
-							this.reportNavigation(Gallery.Albums.find(function(album) {
-								return album.id === albumId;
-							}).name.addressify());
+							this.reportNavigation(Gallery.getById(albumId).name.addressify());
 						}
 					}
 				}).bindAsEventListener(this));
@@ -1201,7 +1173,7 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 	 * @memberof Gallery.View
 	*/
 	update: function() {
-		this._albumList.innerHTML = Gallery.Albums.collect(function(album) {
+		this._albumList.innerHTML = Gallery.collect(function(album) {
 			var numberStr = album.numberOfPictures + " Bilder";
 			
 			switch (album.numberOfPictures) {

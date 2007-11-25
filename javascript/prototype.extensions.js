@@ -121,6 +121,12 @@ Object.extend(Number.prototype, function() {
 	};
 }());
 
+Function.fromObject = function(object) {
+	return (Object.isFunction(object)) ? object : function() {
+		return object;
+	};
+};
+
 /**
  * @class Some extensions to native JavaScript strings. The methods added to String.prototype by the Prototype JavaScript
  * Framework are described in the <a href="http://www.prototypejs.org/api/object">Prototype API Documentation</a>.
@@ -506,9 +512,11 @@ JSONRPC.Request = Class.create(Ajax.Request, /** @scope JSONRPC.Request.prototyp
 		// Calling Ajax.Request's constructor.
 		$super(options.serviceFile, {
 			// In case an unexpected client side error occures.
-			onException: (function(e) {
-				options.onFailure(new JSONRPC.Response(null, 999, e.message || "Unbekannter Fehler"));
-			}).bind(this),
+			onException: function(request, exception) {
+				options.onFailure(new JSONRPC.Response(null, 999, (exception.message || "Unbekannter Fehler") +
+					"\nFehlertyp: " + exception.name
+				));
+			},
 			
 			// Processes the server response.
 			onComplete: (function(response) {
@@ -535,6 +543,44 @@ JSONRPC.Request = Class.create(Ajax.Request, /** @scope JSONRPC.Request.prototyp
 			evalJSON: false
 		});
 	}
+});
+
+JSONRPC.CachedRequest = Class.create(JSONRPC.Request, {
+	initialize: function($super, method, params, options) {
+		options = options || {};
+		
+		var empty = Prototype.K,
+			store = JSONRPC.CachedRequest._store,
+			onSuccess = options.onSuccess || empty;
+		
+		options = Object.extend({
+			onUpdated: Prototype.K,
+			onUnchanged: Prototype.K
+		}, options);
+		
+		options.onSuccess = function(response) {
+			onSuccess(response);
+			
+			var key = method + params.toJSON();
+			
+			if (response.raw && response.raw === store[key]) {
+				options.onUnchanged(response);
+			} else {
+				store[key] = response.raw;
+				options.onUpdated(response);
+			}
+		};
+		
+		$super(method, params, options);
+	}
+});
+
+Object.extend(JSONRPC.CachedRequest, {
+	clearCache: function() {
+		JSONRPC.CachedRequest._store = {};
+	},
+	
+	_store: {}
 });
 
 /**
@@ -595,7 +641,7 @@ JSONRPC.Response = Class.create( /** @scope JSONRPC.Response.prototype */ {
  * @static
 */
 JSONRPC.Response.fromAjaxResponse = function(response) {
-	var result = null, faultCode = 0, faultString = "";
+	var result = null, faultCode = 0, faultString = "", raw = "";
 	
 	// Handle Ajax.Response object.
 	response = response.responseText || response;
@@ -608,6 +654,7 @@ JSONRPC.Response.fromAjaxResponse = function(response) {
 	};
 	
 	if (Object.isString(response)) { // Need to parse response string first.
+		raw = response;
 		try {
 			response = response.evalJSON(true);
 		} catch(e) { // Malformed JSON string.
@@ -628,7 +675,11 @@ JSONRPC.Response.fromAjaxResponse = function(response) {
 	}
 	
 	// Generate JSONRPC.Response object.
-	return new JSONRPC.Response(result, faultCode, faultString);
+	var responseObj = new JSONRPC.Response(result, faultCode, faultString);
+	
+	responseObj.raw = raw;
+	
+	return responseObj;
 };
 
 /**
@@ -800,6 +851,125 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 
 JSONRPC.Upload.UPLOAD_ERROR = SWFUpload.UPLOAD_ERROR;
 JSONRPC.Upload.QUEUE_ERROR = SWFUpload.QUEUE_ERROR;
+
+JSONRPC.Store = Class.create(Hash, EventPublisher.prototype, {
+	initialize: function($super, options) {
+		$super();
+		EventPublisher.prototype.initialize.call(this);
+		
+		this.options = options || {};
+		
+		if (this.options.inlineData) {
+			this.loadData(this.options.inlineData);
+		} else if (this.options.autoLoad) {
+			this.load.bind(this).defer();
+		}
+		
+		if (this.options.periodicalUpdate) {
+			this.periodicalUpdate = new PeriodicalExecuter((function() {
+				this.load();
+			}).bind(this), this.options.periodicalUpdate);
+		}
+	},
+	
+    add: function(item) {
+		this.set(item.id, item);
+        this.fireEvent("add", item);
+    },
+	
+	remove: function(item) {
+		this.unset(item.id);
+		this.fireEvent("remove", item);
+	},
+	
+	clear: function() {
+		this._objects = {};
+		this.fireEvent("clear");
+	},
+	
+    getById: function(id){
+        return this.get(id);
+    },
+	
+	getItems: function(a, b) {
+		return this.findAll((Object.isFunction(a)) ? a : function(item) {
+			return item[a] === b;
+		});
+    },
+	
+	getItem: function(a, b) {
+		return this.find((Object.isFunction(a)) ? a : function(item) {
+			return item[a] === b;
+		});
+	},
+	
+    load: function(method, params, appendOnly) {
+        if (this.fireEvent("beforeload")) {
+			var method = method || this.options.method;
+			var params = Function.fromObject(params || this.options.params || []);
+			var appendOnly = appendOnly || false;
+			
+			var request = new JSONRPC.CachedRequest(method, params(), {
+				onUpdated: (function(response) {
+					this.loadSuccess(response, appendOnly);
+				}).bind(this)
+			});
+        }
+    },
+	
+	loadData: function(data) {
+		this.loadSuccess(new JSONRPC.Response(data));
+	},
+	
+	loadSuccess: function(response, appendOnly) {
+		var ItemClass = this.options.itemClass,
+			identifier = Object.isFunction(ItemClass.getKey) ? ItemClass.getKey() : "id",
+			self = this;
+		
+		response.result.each(function(newElement) {
+			var oldElement = self.get(newElement[identifier]);
+			
+			if (oldElement) {
+				if (!appendOnly) {
+					oldElement.__updated__ = true;
+				}
+				
+				oldElement.update(newElement);
+			} else {
+				var newEntry = new self.options.itemClass(newElement);
+				
+				if (!appendOnly) {
+					newEntry.__updated__ = true;
+				}
+				
+				self.add(newEntry);
+			}
+		});
+		
+		if (!appendOnly) {
+			this.each(function(item) {
+				if (item.__updated__) {
+					delete item.__updated__;
+				} else {
+					self.unset(item[identifier]);
+				}
+			});
+		}
+		
+		this.fireEvent("updated");
+	},
+	
+    _each: function(iterator) {
+		for (var key in this._object) {
+			iterator(this._object[key]);
+		}
+	},
+	
+	index: Prototype.emptyFunction,
+	update: Prototype.emptyFunction,
+	inspect: Prototype.emptyFunction,
+	toQueryString: Prototype.emptyFunction
+});
 
 // Stammt in Teilen aus der Entwicklermailingliste von Prototype.
 (function() {
@@ -1073,35 +1243,6 @@ Element.addMethods({
         
         return control;
     }
-});
-
-Hash.addMethods({
-	nonDestructiveUpdateFromArray: function(newElements, identifier, addFunction) {
-		identifier = identifier || "id";
-		
-		var self = this;
-		
-		newElements.each(function(newElement) {
-			var oldElement = self.get(newElement[identifier]);
-			
-			if (oldElement) {
-				oldElement.__updated__ = true;
-				oldElement.update(newElement);
-			} else {
-				var newEntry = Object.isFunction(addFunction) ? addFunction(newElement) : newElement;
-				newEntry.__updated__ = true;
-				self.set(newElement.id, newEntry);
-			}
-		});
-		
-		this.each(function(pair) {
-			if (pair.value.__updated__) {
-				delete pair.value.__updated__;
-			} else {
-				self.unset(pair.key);
-			}
-		});
-	}
 });
 
 var Collection = Class.create(Hash, EventPublisher.prototype, {
