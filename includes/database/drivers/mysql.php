@@ -41,7 +41,6 @@ defined("_KBSECURE") or die("Zugriff verweigert.");
  *
  * @package		Joomla.Framework
  * @subpackage	Database
- * @since		1.0
 */
 class DatabaseMysql extends Database {
 	/** @var string The database driver name */
@@ -58,7 +57,6 @@ class DatabaseMysql extends Database {
 	 *
 	 * @access	public
 	 * @param	array	List of options used to configure the connection
-	 * @since	1.5
 	 * @see		JDatabase
 	*/
 	public function __construct($options) {
@@ -93,7 +91,6 @@ class DatabaseMysql extends Database {
 	 * Database object destructor
 	 *
 	 * @return boolean
-	 * @since 1.5
 	*/
 	function __destruct() {
 		$return = false;
@@ -121,7 +118,6 @@ class DatabaseMysql extends Database {
 	 *
 	 * @access	public
 	 * @return	boolean
-	 * @since	1.5
 	*/
 	public function connected() {
 		if (is_resource($this->_resource)) {
@@ -137,7 +133,6 @@ class DatabaseMysql extends Database {
 	 * @access	public
 	 * @param	string $database
 	 * @return	boolean True if the database has been successfully selected
-	 * @since	1.5
 	*/
 	public function select($database) {
 		if (!$database) {
@@ -192,7 +187,7 @@ class DatabaseMysql extends Database {
 	* @return mixed A database resource if successful, FALSE if not.
 	*/
 	public function query() {
-		if (!is_resource($this->_resource)) {
+		if (!$this->_resource) {
 			return false;
 		}
 		

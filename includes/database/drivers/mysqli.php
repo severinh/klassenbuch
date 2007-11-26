@@ -43,7 +43,6 @@ Core::import("includes.database.drivers.mysql");
  *
  * @package		Joomla.Framework
  * @subpackage	Database
- * @since		1.0
 */
 class DatabaseMysqli extends DatabaseMysql {
 	/** @var string The database driver name */
@@ -54,8 +53,6 @@ class DatabaseMysqli extends DatabaseMysql {
 	 *
 	 * @access	public
 	 * @param	array	List of options used to configure the connection
-	 * @since	1.5
-	 * @see		JDatabase
 	*/
 	public function __construct($options) {
 		$host		= array_key_exists("host", 	   $options) ? $options["host"]		: "localhost";
@@ -95,14 +92,16 @@ class DatabaseMysqli extends DatabaseMysql {
 		}
 		
 		// Connect to the server
-		if (!($this->_resource = @mysqli_connect($host, $user, $password, NULL, $port, $socket))) {
+		$this->_resource = new mysqli($host, $user, $password, NULL, $port, $socket);
+		
+		if ($this->_errno()) {
 			$this->_errorNum = 2;
 			$this->_errorMsg = "Could not connect to MySQL";
 			return;
 		}
 		
 		// Finalize initialization
-		parent::__construct($options);
+		Database::__construct($options);
 		
 		// Select the database
 		$this->select($database);
@@ -112,13 +111,12 @@ class DatabaseMysqli extends DatabaseMysql {
 	 * Database object destructor
 	 *
 	 * @return boolean
-	 * @since 1.5
 	*/
 	function __destruct() {
 		$return = false;
 		
 		if (is_resource($this->_resource)) {
-			$return = mysqli_close($this->_resource);
+			return $this->_resource->close();
 		}
 		
 		return $return;
@@ -129,7 +127,6 @@ class DatabaseMysqli extends DatabaseMysql {
 	 *
 	 * @access	public
 	 * @return	boolean
-	 * @since	1.5
 	*/
 	public function connected() {
 		return $this->_resource->ping();
@@ -141,14 +138,13 @@ class DatabaseMysqli extends DatabaseMysql {
 	 * @access	public
 	 * @param	string $database
 	 * @return	boolean True if the database has been successfully selected
-	 * @since	1.5
 	*/
 	public function select($database) {
 		if (!$database) {
 			return false;
 		}
 		
-		if (!mysqli_select_db($this->_resource, $database)) {
+		if (!$this->_resource->select_db($database)) {
 			$this->_errorNum = 3;
 			$this->_errorMsg = "Could not connect to database";
 			return false;
@@ -168,7 +164,7 @@ class DatabaseMysqli extends DatabaseMysql {
 	 * @return string
 	*/
 	public function getEscaped($text) {
-		return mysqli_real_escape_string($this->_resource, $text);
+		return $this->_resource->real_escape_string($text);
 	}
 	
 	/**
@@ -195,31 +191,30 @@ class DatabaseMysqli extends DatabaseMysql {
 	}
 	
 	protected function _errno() {
-		return mysqli_errno($this->_resource);
+		return $this->_resource->errno;
 	}
 	
 	protected function _error() {
-		return mysqli_error($this->_resource);
+		return $this->_resource->error;
 	}
 	
 	protected function _query($query) {
-		return mysqli_query($query, $this->_resource);
+		return $this->_resource->query($query);
 	}
 	
 	public function insertId() {
-		return mysqli_insert_id($this->_resource);
+		return $this->_resource->insert_id;
 	}
 	
 	public function getVersion() {
-		return mysqli_get_server_info($this->_resource);
+		return $this->_resource->server_info;
 	}
 	
 	/**
 	 * @return int The number of affected rows in the previous operation
-	 * @since 1.0.5
 	*/
 	public function getAffectedRows() {
-		return mysqli_affected_rows($this->_resource);
+		return $this->_resource->affected_rows;
 	}
 }
 
