@@ -244,8 +244,10 @@ Storage.View = Class.create(Controls.View, {
 		$super("Dateiablage", new Sprite("smallIcons", 11), "Dateiablage", { className: "storageView" });
 		
 		this.registerSubNode("hochladen", function() {
-			Storage.uploadFile();
-		}, { restrictedAccess: true });
+			return Storage.uploadFile();
+		}, {
+			restrictedAccess: true
+		});
 		
 		this.on("activate", (function() {
 			if (!this.initialized) {
