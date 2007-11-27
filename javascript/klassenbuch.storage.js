@@ -339,8 +339,8 @@ Storage.View = Class.create(Controls.View, {
 						if (element.hasClassName("archiveLink")) {
 							var file = Storage.getById(parseInt(element.readAttribute("fileid")));
 							
-							if (confirm("Möchtest du die Datei " + file.name + " wirklich archivieren? Die Datei wird " +
-								"nicht gelöscht, sondern erscheint weiderhin in der Ansicht \"Alte Dateien\".")) {
+							if (confirm("Möchtest du die Datei '" + file.name + "' wirklich archivieren? Die Datei wird " +
+								"nicht gelöscht, sondern erscheint weiterhin in der Ansicht \"Alte Dateien\".")) {
 								file.archive();
 							}
 						}
