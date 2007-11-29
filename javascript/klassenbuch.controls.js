@@ -599,10 +599,11 @@ Controls.RoundedPane = function() {
 }();
 
 Controls.TabControl = Class.create(Control, {
-	initialize: function($super, contentParent) {
+	initialize: function($super, contentParent, autoActivateTabs) {
 		$super(new Element("div", { className: "tabControl" }));
 		
 		this.tabs = [];
+		this.autoActivateTabs = Object.isDefined(autoActivateTabs) ? autoActivateTabs : true;
 		this.activeTab = null;
 		this.on("remove", this.removeAllTabs, this);
 		
@@ -621,10 +622,16 @@ Controls.TabControl = Class.create(Control, {
 			this.tabs[index].tabElement.insert({ before: tab.tabElement });
 		}
 		
+		this.registerChildControl(tab);
 		this._contentParent.insertControl(tab, "bottom");
 		
-		tab.on("activate", this._onTabActivated, this);
-		tab[(this.activeTab) ? "deactivate" : "activate"]();
+		tab.on("activationEvent", this.activateTab, this);
+		
+		if (!(this.autoActivateTabs && !this.activeTab)) {
+			tab.deactivate();
+		} else {
+			this.activateTab(tab);
+		}
 		
 		this.tabs.splice(index, 0, tab);
 		this.fireEvent("addTab", tab);
@@ -654,29 +661,63 @@ Controls.TabControl = Class.create(Control, {
 		this.tabs.invoke("remove");
 	},
 	
-	activateTab: function(tab) {
+	getTab: function(tab) {
 		if (Object.isNumber(tab)) {
-			tab = this.tabs[tab.limitTo(0, this.tabs.length - 1)];
+			return this.tabs[tab.limitTo(0, this.tabs.length - 1)];
 		} else if (Object.isString(tab)) {
-			tab = this.tabs.find(function(item) {
+			return this.tabs.find(function(item) {
 				return item.caption === tab;
 			});
 		}
 		
-		if (tab !== this.activeTab) {
-			tab.activate();
-		}
+		return tab;
 	},
 	
-	_onTabActivated: function(tab) {
+	activateTab: function(tab) {
+		tab = this.getTab(tab);
+		
 		if (tab !== this.activeTab) {
 			if (this.activeTab) {
 				this.activeTab.deactivate();
 			}
 			
+			tab.activate();
+			
 			this.activeTab = tab;
 			this.fireEvent("activateTab", tab);
 		}
+		
+		return tab;
+	}
+});
+
+Controls.Menu = Class.create(Controls.TabControl, App.History.RootNode.prototype, {
+	initialize: function($super, initialState) {
+		$super("content", false);
+		
+		this.initializeHistoryNode(initialState);
+		
+		var self = this;
+		
+		this.on("addTab", function(tab) {
+			tab.removeListenersByEventName("activationEvent");
+			tab.on("activationEvent", self.reportNavigation.bind(self, tab.caption.toLowerCase()));
+			
+	        self.registerSubNode(tab.caption.toLowerCase(), function() {
+				return self.activateTab(tab.caption);
+			});
+		});
+	},
+	
+	activateTab: function(tab) {
+		tab = this.getTab(tab);
+		
+		tab.activate();
+		
+		this.activeTab = tab;
+		this.fireEvent("activateTab", tab);
+		
+		return tab;
 	}
 });
 
@@ -702,7 +743,7 @@ Controls.TabControl.TabPage = Class.create(Control, App.History.Node.prototype, 
 	},
 	
 	_createTabElement: function() {
-		this.tabElement = new Element("li").observe("click", this.activate.bind(this));
+		this.tabElement = new Element("li").observe("click", this.fireEvent.bind(this, "activationEvent", this));
 		this.tabElement.innerHTML = this.caption;
 		
 		this.on("remove", function() {
@@ -720,7 +761,9 @@ Controls.TabControl.TabPageWithButtonControl = Class.create(Controls.TabControl.
 	},
 
 	_createTabElement: function() {
-		this._tabButton = new Controls.Button(this.caption, this.activate.bind(this), {
+		this._tabButton = new Controls.Button(this.caption, (function() {
+			this.fireEvent("activationEvent", this);
+		}).bind(this), {
 			icon: this.icon,
 			buttonClass: this._buttonClass,
 			tag: "li"
@@ -737,6 +780,7 @@ Controls.TabControl.TabPageWithButtonControl = Class.create(Controls.TabControl.
 Controls.View = Class.create(Controls.TabControl.TabPageWithButtonControl, {
 	initialize: function($super, caption, icon, title, options) {
 		this.setOptions({ hasAdditionalCommands: true }, options);
+		
         $super(caption, icon);
         
         this.addClassName("viewContainer");
@@ -757,22 +801,9 @@ Controls.View = Class.create(Controls.TabControl.TabPageWithButtonControl, {
 		var resizingControl = new Controls.AutoResizingControl(this.content, { height: (Prototype.Browser.IE) ? 165 : 155 });
 	},
 	
-	deactivate: function($super) {
-		$super();
-		
-		this.removeListenersByEventName("leave");
-		this.leave();
-	},
-	
-	reportNavigation: function(state) {
-		if (App.History.started) {
-			if (this._currentState !== state) {
-				this._handleStateChange((state || "").split("/"));
-				App.History.navigate(this.caption.toLowerCase() + ((state) ? "/" + state : ""));
-			}
-		} else {
-			this._handleStateChange((state || "").split("/"));
-		}
+	leave: function() {
+		this.deactivate();
+		this._leaveActiveSubNode();
 	}
 });
 

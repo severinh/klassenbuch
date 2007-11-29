@@ -576,16 +576,14 @@ App.History.Node = Class.create({
 							}
 						}, this);
 						
-						return;
+						return true;
 					}
 					
 					if (this._activeSubNode && this._activeSubNodeName === first) {
-						this._activeSubNode._handleStateChange(state);
-						return;
+						return this._activeSubNode._handleStateChange(state);
 					}
 					
-					this._enterSubNode(first, state);
-					return;
+					return this._enterSubNode(first, state);
 				} else if (this._dynamicSubNode) {
 					if (this._dynamicSubNode.needsServerCommunication && !this._dynamicSubNode.ready) {
 						this.on("dynamicsubnodeready", function() {
@@ -596,33 +594,62 @@ App.History.Node = Class.create({
 							}
 						}, this);
 						
-						return;
+						return true;
 					}
 					
 					if (this._dynamicSubNode.checkValidity(first)) {
 						if (this._activeSubNode && this._activeSubNodeName === first) {
-							this._activeSubNode._handleStateChange(state);
-							return;
+							return this._activeSubNode._handleStateChange(state);
 						}
 						
-						this._enterSubNode(first, state);
-						return;
+						return this._enterSubNode(first, state);
 					}
 				}
 				
-				changeParams(first);
-				return;
+				return changeParams(first) !== false;
 			}
 		}
 		
-		changeParams(state);
+		return changeParams(state) !== false;
 	},
 	
 	handleParamsChange: Prototype.K,
 	
 	reportNavigation: function(state) {
 		if (this._currentState !== state) {
-			this.fireEvent("navigate", state);
+			if (this._handleStateChange((state || "").split("/")) !== false) {
+				this.fireEvent("navigate", state);
+			}
 		}
+	}
+});
+
+App.History.RootNode = Class.create(App.History.Node, {
+	initializeHistoryNode: function(initialState) {
+		var self = this;
+		
+		this._initialState = initialState;
+		
+		if (App.History.browserSupported) {
+			App.History.on("statechange", function(state) {
+				var parts = state.split("/");
+				
+				if (self._subNodes[parts[0]]) {
+					self._handleStateChange(parts);
+				}
+			});
+			
+			this.on("navigate", function(state) {
+				if (App.History.started) {
+					App.History.navigate(state);
+				}
+			});
+		}
+		
+		App.History.Node.prototype.initializeHistoryNode.call(this);
+	},
+	
+	_handleStateChange: function(state) {
+		App.History.Node.prototype._handleStateChange.call(this, (Object.isArray(state) && state.length) ? state : [this._initialState]);
 	}
 });

@@ -42,75 +42,30 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
         // Verhindert, dass das Klassenbuch mehrmals initialisiert werden kann und prüft die Kompatibilität
         if (!App.initialized && App.checkBrowserCompatibility()) {
             App.fireEvent("beforeInitialize");
-            
+			
             // Richtet das Hauptmenü ein.
-            App.Menu = $("menu").insertControl(new Controls.TabControl("content"), "top");
+            App.Menu = $("menu").insertControl(new Controls.Menu("aufgaben"), "top");
             
             App.fireEvent("initialize");
+			
+			var state = ["aufgaben"];
+			
+			if (App.History.browserSupported) {
+				App.History.start("aufgaben");
+				
+				var bookmarked = App.History.getBookmarkedState();
+				
+				if (bookmarked) {
+					state = bookmarked.split("/");
+				}
+            }
+			
+			App.Menu._handleStateChange(state);
             
             // Versteckt den Laden-Hinweis
             $("activeRequest").hide();
-            
-			App.setupHistoryManagement();
+			
             App.initialized = true;
-		}
-	},
-	
-	/**
-	 * Richtet die Möglichkeit der Navigation mit den Schaltflächen "Zurück" und "Weiter" des Browsers ein, sofern
-	 * der Browser dies unterstützt. Dazu wird <a href="App.History.htm">App.History</a> aktiviert und festgelegt, was
-	 * geschehen soll, wenn der Benutzer auf eine Navigationstaste klickt. Diese Information wird in diesem Fall von
-	 * dieser Funktion an den richtigen Ort weitergegeben. Diese Funktion wird am Ende der Initialisierungsphase des
-	 * Klassenbuchs aufgerufen. Weitere Informationen finden sich in der <a href="App.History.htm">Dokumentation von
-	 * App.History</a>.
-	*/
-	setupHistoryManagement: function() {
-		if (App.History.browserSupported) {
-			// Eine Liste aller existierenden Menüpunkte. Damit wird die Angabe hinter dem Rautezeichen in der
-			// Adresszeile auf ihre Korrektheit überprüft.
-			var allowedViews = App.Menu.tabs.pluck("caption").invoke("toLowerCase");
-			
-			// Gibt es im eingelesenen Status keine Angabe über die aktive Ansicht, wird die Aufgabenansicht
-			// angezeigt.
-			var standardView = "aufgaben";
-			
-			// Liest den Statustext hinter dem Rautezeichen in der Adresszeile ein.
-			var parseState = function(state) {
-				var parts = state.split("/");
-				
-				return (allowedViews.include(parts[0])) ? parts : [standardView];
-			};
-			
-			// Nimmt den eingelesenen Statustext entgegen.
-			var handleStateChange = function(state) {
-				if (Object.isString(state)) {
-					state = parseState(state);
-				}
-				
-				state = state.compact();
-				
-				// Aktiviert wenn nötig eine andere Ansicht.
-				App.Menu.activateTab(state.shift().capitalize());
-				
-				// Gibt den detaillierten Status der Ansicht an die Ansicht selber weiter.
-				App.Menu.activeTab._handleStateChange(state);
-			};
-			
-			handleStateChange(App.History.getBookmarkedState());
-			App.History.start(standardView);
-			
-			// Wenn der Benutzer die Navigationstasten des Browsers verwendet...
-			App.History.on("statechange", handleStateChange);
-			
-			// Wenn der Benutzer eine neue Ansicht wählt, ...
-			App.Menu.on("activateTab", function(tab) {
-				var currentState = parseState(App.History.getCurrentState());
-				
-				if (tab.caption.toLowerCase() !== currentState[0]) {
-					// ... muss der Inhalt der Adresszeile entsprechend angepasst werden.
-					App.History.navigate(tab.caption.toLowerCase());
-				}
-			});
 		}
 	},
 	
