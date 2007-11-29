@@ -227,14 +227,6 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 	},
 	
 	/**
-	 * 
-	 * @returns
-	*/
-	toDate: function() {
-		return $D(this);
-	},
-	
-	/**
 	 * Strips all leading and trailing whitespace from the string. This method overwrites the one shipped with Prototype,
 	 * because it's considered faster.
 	 * @returns
@@ -273,17 +265,17 @@ var Cookie = {
 	 * @returns {String} Der Wert des Cookies.
 	*/
 	get: function(name) {
-		var start = document.cookie.indexOf(name + "=");
-		var len = start + name.length + 1;
+		var cookie = document.cookie;
+		var start = cookie.indexOf(name + "=");
 		
-		if ((!start && name !== document.cookie.substring(0, name.length)) || start === -1) {
-			return null;
+		if (start === -1) {
+			return false;
 		}
 		
-		var end = document.cookie.indexOf(";", len);
-		end = (end === -1) ? document.cookie.length : end;
+		var len = start + name.length + 1;
+		var end = cookie.indexOf(";", len);
 		
-		return document.cookie.substring(len, end).unescapeHTML();
+		return cookie.substring(len, (end === -1) ? cookie.length : end);
 	},
 	
 	/**
@@ -292,8 +284,7 @@ var Cookie = {
 	 * @param {String} value Der Wert, der dem betreffenden Cookie gegeben werden soll.
 	*/
 	set: function(name, value) {
-		var expires = new Date(Date.getCurrentTimestamp() + 31536000000);
-		document.cookie = name + "=" + value.escapeHTML() + ";expires=" + expires.toGMTString();
+		document.cookie = name + "=" + value + ";expires=" + new Date().add(1, "year").toGMTString();
 	},
 	
 	/**
@@ -301,9 +292,7 @@ var Cookie = {
 	 * @param {String} name Der Name des betreffenden Cookies.
 	*/
 	remove: function(name) {
-		if (Cookie.get(name)) {
-			document.cookie = name + "=;expires=Thu, 01-Jan-1970 00:00:01 GMT";
-		}
+		document.cookie = name + "=;expires=Thu, 01-Jan-1970 00:00:01 GMT";
 	}
 };
 
@@ -449,21 +438,15 @@ Object.extend(Prototype.Browser, (function() {
 	
 	Object.extend(Date.prototype, {
 		succ: function() {
-			return new Date(this.getTime() + (24 * 60 * 60 * 1000));
+			return new Date(this.getTime() + 24 * 60 * 60 * 1000);
 		},
 		
 		add: function(number, unit) {
-			this.setTime(this.getTime() + (number * multipliers.get(unit || "day")));
+			this.setTime(this.getTime() + number * multipliers.get(unit || "day"));
 			return this;
 		},
 		
 		diff: function(dateObj, unit, allowDecimal) {
-			dateObj = $D(dateObj);
-			
-			if (Object.isNull(dateObj)) {
-				return null;
-			}
-			
 			var ms = this.getTime() - dateObj.getTime();
 			var unitDiff = ms / multipliers.get(unit || "day");
 			return (allowDecimal ? unitDiff : Math.floor(unitDiff));
@@ -545,15 +528,6 @@ Object.extend(Prototype.Browser, (function() {
 	});
 	
 	Object.extend(Date, {
-		create: function(str) {
-			if (str.constructor === Date) {
-				return str;
-			}
-			
-			var ms = Date.parse(str.replace("-", "/"));
-			return isNaN(ms) ? null : new Date(ms);
-		},
-		
 		getCurrentTimestamp: function() {
 			return new Date().getTimestamp();
 		},
@@ -591,8 +565,6 @@ Object.extend(Prototype.Browser, (function() {
 		months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 	});
 })();
-
-$D = Date.create;
 
 Object.extend(PeriodicalExecuter.prototype, {
 	enable: function() {
@@ -651,7 +623,6 @@ Element.addMethods({
 	
     createChild: function(element, options, position) {
         options = Object.extend({ tag: "div" }, options || {});
-        position = position || "bottom";
         
         var attributes = {};
         var insertion = {};
@@ -674,7 +645,7 @@ Element.addMethods({
 			child.innerHTML = options.content;
 		}
         
-        insertion[position] = child;
+        insertion[position || "bottom"] = child;
         
         $(element).insert(insertion);
         
