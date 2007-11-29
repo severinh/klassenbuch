@@ -3,29 +3,27 @@ var Comments = {};
 Comments.MainWindow = Class.create(Controls.Window, {
 	initialize: function($super, task, options) {
 		this.task = task;
+		this.comments = task.commentsStore;
+		
 		this.setOptions({ commentsPerPage: 15 }, options);
 		
-		var title = "Kommentare zur Aufgabe \"" + this.task.text.truncate(50) + "\"";
-		var self = this;
+		var title = "Kommentare zur Aufgabe \"" + this.task.text.truncate(50) + "\"",
+			self = this;
 		
 		if (!$super("TaskCommentsWindow", { title: title })) {
 			return;
         }
         
         this.registerSubNode("neuerkommentar", function() {
-				if (self.task.date.getTimestamp() >= Date.getTodaysTimestamp()) {
-					var createWindow = new Comments.CreateCommentWindow(self.task.id);
+				if (task.date.getTimestamp() >= Date.getTodaysTimestamp()) {
+					var createWindow = new Comments.CreateCommentWindow(task.id);
 					createWindow.on("success", self._createCommentSuccess, self);
 					
 					return createWindow;
-				} else {
-					(function() {
-						self.reportNavigation("");
-						alert("Aufgaben in der Vergangenheit können leider nicht mehr kommentiert werden.");
-					}).defer();
-					
-					return false;
 				}
+				
+				alert("Aufgaben in der Vergangenheit können leider nicht mehr kommentiert werden.");
+				return false;
 			}, {
 				restrictedAccess: true
 			}
@@ -33,16 +31,14 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		
 		this.registerDynamicSubNode(
 			function(nodeName, state) {
-				return self.task.commentsStore.find(function(comment) {
-					return comment.id === parseInt(nodeName, 10);
-				});
+				return self.comments.get(parseInt(nodeName));
 			},
 			
 			function(nodeName) {
-				return self.task.commentsStore.pluck("id").include(parseInt(nodeName, 10));
+				return !!self.comments.get(parseInt(nodeName));
 			},
 			
-			{ needsServerCommunication: Object.isNull(this.task.commentsStore) }
+			{ needsServerCommunication: !this.comments.loaded }
 		);
 		
 		this._onExternalEvent(Comments.Comment.Control, "showprofile", function(comment) {
@@ -78,35 +74,38 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		
 		this.registerChildControl(this.newCommentButton, this.tabControl);
 		
-		this.periodicalUpdate = new PeriodicalExecuter(function() {
-			self.task.getComments(self._insertComments.bind(self), true);
-		}, 120);
+		this._onExternalEvent(this.task.commentsStore, "updated", this._insertComments, this);
+		
+		if (this.comments.loaded) {
+			this._insertComments();
+		} else if (!this.comments.loading) {
+			this.comments.load();
+		}
 		
 		this.on("remove", function() {
-			self.periodicalUpdate.disable();
+			self.comments.periodicalUpdate.disable();
 		});
 		
-		this.task.getComments(this._insertComments.bind(this), false);
+		this.comments.enablePeriodicalUpdate();
+		
 		this.show();
 	},
 	
-	_insertComments: function(comments) {
-		if (!App.Windows.hasWindowOfType("CommentWindowAbstract")) {
-            this.tabControl.removeAllTabs();
-			
-            if (this.task.comments > 0) {
-                comments.eachSlice(this.options.commentsPerPage).each(function(groupOfComments) {
-					this._addTab().addComments(groupOfComments);
-				}, this);
-            } else {
-				this._addTab();
-            }
-            
-            this.loadingComments.hide();
-            this._updateNumberOfComments();
-            
-			this.fireEvent("dynamicsubnodeready");
-        }
+	_insertComments: function() {
+		this.tabControl.removeAllTabs();
+		
+		if (this.task.comments > 0) {
+			this.comments.eachSlice(this.options.commentsPerPage).each(function(groupOfComments) {
+				this._addTab().addComments(groupOfComments);
+			}, this);
+		} else {
+			this._addTab();
+		}
+		
+		this.loadingComments.hide();
+		this._updateNumberOfComments();
+		
+		this.fireEvent("dynamicsubnodeready");
 	},
 	
 	_addTab: function() {
@@ -136,7 +135,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
             this._addTab();
         }
         
-        this.task.commentsStore.push(comment);
+        this.task.commentsStore.add(comment);
         this.tabControl.activateTab(this.tabControl.tabs.length - 1);
         this.tabControl.tabs.last().addComment(comment);
         this.task.comments++;
@@ -413,10 +412,7 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 		$super();
 		
 		this.id = comment.id;
-		this.taskid = comment.taskid;
-		this.userid = comment.userid;
-		this.text = comment.text;
-		this.date = new Date(comment.date * 1000);
+		this.update(comment);
 		
 		this.contact = Contacts.get(this.userid);
 		
@@ -432,6 +428,13 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 			
 			return profileWindow;
 		}).bind(this));
+	},
+	
+	update: function(comment) {
+		this.taskid = comment.taskid;
+		this.userid = comment.userid;
+		this.text = comment.text;
+		this.date = new Date(comment.date * 1000);
 	},
 	
 	edit: function() {
