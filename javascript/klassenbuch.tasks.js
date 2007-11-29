@@ -199,12 +199,12 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		this.registerDynamicSubNode(
 			// Gibt an Hand der Aufgaben-ID die Referenz auf die gewünschte Aufgabe zurück
 			function(nodeName, state) {
-				return TaskManagement.getById(parseInt(nodeName));
+				return TaskManagement.get(parseInt(nodeName));
 			},
 			
 			// Prüft, ob es sich um eine gültige Aufgaben-ID handelt
 			function(nodeName) {
-				return !!TaskManagement.getById(parseInt(nodeName));
+				return !!TaskManagement.get(parseInt(nodeName));
 			}
 		);
 		
@@ -305,6 +305,8 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 			}
 		);
 		
+		var importantIcon = new Sprite("smallIcons", 20).toHTML("importantIcon");
+		
 		this._taskTable.addColumn("Wichtig",	function(task) {
 				return (task.important) ? "a" : "b";
 			}, {
@@ -315,7 +317,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 				centerColumnText: true,
 				
 				processCellContent: function(a) {
-					return (a === "a") ? (new Sprite("smallIcons", 20)).toHTML("importantIcon") : "&nbsp;";
+					return (a === "a") ? importantIcon : "&nbsp;";
 				},
 				
 				processGroupCaption: function(a) {
@@ -428,7 +430,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 						} else if (element.hasClassName("iconEditTask")) {
 							this.reportNavigation(taskId + "/bearbeiten")
 						} else if (element.hasClassName("iconDeleteTask")) {
-							this.removeTask(TaskManagement.Tasks.getById(taskId));
+							this.removeTask(TaskManagement.Tasks.get(taskId));
 						}
 					}
 				}
@@ -583,7 +585,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 	_onHighlightTask: function(task) {
 		task.getComments();
 		
-		var contact = Contacts.getById(task.userid);
+		var contact = Contacts.get(task.userid);
 		
 		this._taskInfoBox.innerHTML = (contact) ? "Eingetragen am " + task.added.format("j. F") + "<br />von " +
 			contact.getFullName() : "";
@@ -1164,7 +1166,7 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 	remove: function() {
 		this.removed = true;
 		this.fireEvent("change");
-	
+		
         var request = new JSONRPC.Request("removetask", [this.id], {
 			onFailure: (function(response) {
 				this.removed = false;

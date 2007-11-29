@@ -449,59 +449,37 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 JSONRPC.Upload.UPLOAD_ERROR = SWFUpload.UPLOAD_ERROR;
 JSONRPC.Upload.QUEUE_ERROR = SWFUpload.QUEUE_ERROR;
 
-JSONRPC.Store = Class.create(Hash, EventPublisher.prototype, {
+JSONRPC.Store = Class.create(Collection, {
 	initialize: function($super, options) {
 		$super();
-		EventPublisher.prototype.initialize.call(this);
 		
 		this.options = options || {};
+		this.loading = false;
+		this.loaded = false;
 		
 		if (this.options.inlineData) {
 			this.loadData(this.options.inlineData);
 		} else if (this.options.autoLoad) {
 			this.load.bind(this).defer();
 		}
-		
-		if (this.options.periodicalUpdate) {
-			this.periodicalUpdate = new PeriodicalExecuter((function() {
-				this.load();
-			}).bind(this), this.options.periodicalUpdate);
-		}
 	},
-	
-    add: function(item) {
-		this.set(item.id, item);
-        this.fireEvent("add", item);
-    },
-	
-	remove: function(item) {
-		this.unset(item.id);
-		this.fireEvent("remove", item);
-	},
-	
-	clear: function() {
-		this._objects = {};
-		this.fireEvent("clear");
-	},
-	
-    getById: function(id){
-        return this.get(id);
-    },
 	
 	getItems: function(a, b) {
-		return this.findAll((Object.isFunction(a)) ? a : function(item) {
+		return this.findAll(function(item) {
 			return item[a] === b;
 		});
     },
 	
 	getItem: function(a, b) {
-		return this.find((Object.isFunction(a)) ? a : function(item) {
+		return this.find(function(item) {
 			return item[a] === b;
 		});
 	},
 	
     load: function(method, params, appendOnly) {
         if (this.fireEvent("beforeload")) {
+			this.loading = true;
+			
 			var method = method || this.options.method;
 			var params = Function.fromObject(params || this.options.params || []);
 			var appendOnly = appendOnly || false;
@@ -553,17 +531,27 @@ JSONRPC.Store = Class.create(Hash, EventPublisher.prototype, {
 			});
 		}
 		
+		this.loading = false;
+		this.loaded = true;
+	
+		this.enablePeriodicalUpdate();
+		
 		this.fireEvent("updated");
 	},
 	
-    _each: function(iterator) {
-		for (var key in this._object) {
-			iterator(this._object[key]);
+	enablePeriodicalUpdate: function() {
+		if (this.options.periodicalUpdate) {
+			if (this.periodicalUpdate) {
+				this.periodicalUpdate.enable();
+			} else {
+				this.periodicalUpdate = new PeriodicalExecuter((function() {
+					this.load();
+				}).bind(this), this.options.periodicalUpdate);
+			}
 		}
 	},
 	
-	index: Prototype.emptyFunction,
-	update: Prototype.emptyFunction,
-	inspect: Prototype.emptyFunction,
-	toQueryString: Prototype.emptyFunction
+	count: function() {
+		return this.keys().length;
+	}
 });

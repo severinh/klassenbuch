@@ -214,7 +214,7 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
 	 */
 	updateLocalProfile: function(profileInformation) {
         Object.extend(this.profile, profileInformation);
-		Object.extend(Contacts.getById(this.id), this.profile);
+		Object.extend(Contacts.get(this.id), this.profile);
 		Contacts.fireEvent("updated");
 	},
 	
@@ -260,7 +260,7 @@ User.StateDetection = function() {
 	
 	var update = function(state) {
 		if (currentState !== state) {
-			Contacts.getById(User.id).state = state;
+			Contacts.get(User.id).state = state;
 			Contacts.fireEvent("updated");
 			
 			new JSONRPC.Request("setuserstate", [state], {

@@ -1188,10 +1188,6 @@ var DragAble = Class.create({
 
 Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype, {
 	initialize: function($super, type, options) {
-		if (!Object.isString(type)) {
-			return;
-		}
-		
 		this.type = type;
 		
 		this.setOptions({
@@ -1211,8 +1207,8 @@ Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype,
 		$super("window " + ((this.options.showTitleBar) ? "withTitleBar" : "withoutTitleBar") + " " +
 			this.type.lowerFirstLetter());
 		
-		this.element.hide();
 		this.initializeHistoryNode();
+		this.element.hide();
 		
 		App.Windows.add(this);
 		
@@ -1294,9 +1290,9 @@ Controls.Window.Overlay = function() {
 						{ id: a }), { height: 0, width: 0 });
 				});
 				
-				App.Windows.on("addValue", function(pair) {
+				App.Windows.on("add", function(window) {
 					$w("show hide remove").each(function(event) {
-						pair.value.on(event, self.update, self);
+						window.on(event, self.update, self);
 					});
 				});
 				
@@ -1375,7 +1371,7 @@ Controls.Table = Class.create(Control, {
 	},
 	
 	addRow: function(row) {
-		this.sortedRows.push(this.rows.add(row));
+		this.sortedRows.push(this.rows.add(row).id);
 	},
 	
 	clear:  function() {
@@ -1420,10 +1416,10 @@ Controls.Table = Class.create(Control, {
 					var sortMethod = column.sortMethod || null;
 					var sortType   = column.sortType   || null;
 					
-					this.rows.each(function(pair) {
+					this.rows.each(function(row) {
 						toSort.push({
-							key: pair.key,
-							value: getContent(pair.value) || ""
+							key: row.id,
+							value: getContent(row) || ""
 						});
 					});
 					
@@ -1599,8 +1595,8 @@ Controls.Table = Class.create(Control, {
 			var oldKey = this.oldHighlightedRowId;
 			
 			if (!this.highlightedRowId && toKeep && oldKey) {
-				var row = this.rows.find(function(pair) {
-					return pair.value[toKeep] === oldKey;
+				var row = this.rows.find(function(row) {
+					return row[toKeep] === oldKey;
 				}, this);
 				
 				if (row) {
@@ -1785,7 +1781,7 @@ Controls.Calendar = function() {
 			
 			var output = "";
 			
-			for (var j = 0; j < rows; j++) { 
+			for (var j = 0; j < rows; j++) {
 				var row = "";
 				
 				for (var i = 1; i <= 7; i++) {
@@ -1825,7 +1821,7 @@ Controls.Calendar = function() {
 						}
 					}
 					
-					row += "<td class=\"day " + classNames.join(" ") + "\">" + dayText  + "</td>";
+					row += "<td class=\"day " + classNames.join(" ") + "\">" + dayText + "</td>";
 				}
 				
 				output += "<tr>" + row + "</tr>";

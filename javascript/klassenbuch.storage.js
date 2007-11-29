@@ -295,7 +295,7 @@ Storage.View = Class.create(Controls.View, {
 				});
 				
 				this.filesTable.addColumn("Hochgeladen von", function(a) {
-						return Contacts.getById(a.userid).nickname;
+						return Contacts.get(a.userid).nickname;
 					}, {
 						width: "100px",
 						sortable: true,
@@ -337,7 +337,7 @@ Storage.View = Class.create(Controls.View, {
 						var element = event.element();
 						
 						if (element.hasClassName("archiveLink")) {
-							var file = Storage.getById(parseInt(element.readAttribute("fileid")));
+							var file = Storage.get(parseInt(element.readAttribute("fileid")));
 							
 							if (confirm("Möchtest du die Datei '" + file.name + "' wirklich archivieren? Die Datei wird " +
 								"nicht gelöscht, sondern erscheint weiterhin in der Ansicht \"Alte Dateien\".")) {

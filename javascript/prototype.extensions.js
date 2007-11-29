@@ -673,71 +673,89 @@ var Collection = Class.create(Hash, EventPublisher.prototype, {
 		EventPublisher.prototype.initialize.call(this);
 	},
 	
-	set: function($super, value) {
-		var key = "id-" + Collection.KEY_COUNTER;
+	set: function(item) {
+		this._object[item.id] = item;
 		
-		$super(key, value);
-		Collection.KEY_COUNTER++;
+		this.fireEvent("add", item);
 		
-		this.fireEvent("addValue", { key: key, value: value });
-		
-		return { key: key, value: value };
+		return item;
 	},
 	
-	unset: function($super, key, silent) {
-		if (Object.isDefined(this.get(key))) {
-			var value = $super(key);
-			
-			if (!silent) {
-				this.fireEvent("removeValue", { key: key, value: value });
-			}
-			
-			return value;
-		}
+	unset: function($super, value) {
+		var key = (value.id) ? value.id : value;
+		
+		var item = this._object[key];
+		delete this._object[key];
+		
+		this.fireEvent("remove", item);
+		
+		return item;
 	},
 	
 	clear: function() {
-		this.keys().each(function(key) {
-			this.unset(key, true);
-		}, this);
-		
+		this._objects = {};
 		this.fireEvent("clear");
-	}
+	},
+	
+    _each: function(iterator) {
+		for (var key in this._object) {
+			iterator(this._object[key]);
+		}
+	},
+	
+	index: Prototype.emptyFunction,
+	update: Prototype.emptyFunction,
+	inspect: Prototype.emptyFunction,
+	toQueryString: Prototype.emptyFunction
 });
-
-Collection.KEY_COUNTER = 0;
 
 Collection.prototype.add = Collection.prototype.set;
 Collection.prototype.remove = Collection.prototype.unset;
+Collection.prototype.removeAll = Collection.prototype.clear;
 
 var ControlCollection = Class.create(Collection, {
-	set: function($super, value) {
-		value.on("remove", this.unset.bind(this, $super(value).key));
+	initialize: function($super, autoRemove) {
+		$super();
+		
+		this._autoRemove = autoRemove || true;
 	},
 	
-	removeAll: function() {
-		this.values().invoke("remove");
+	set: function($super, control) {
+		$super(control);
+		
+		if (this._autoRemove) {
+			control.on("remove", this.unset.bind(this, control.id));
+		}
+	},
+	
+	clear: function($super) {
+		if (this._autoRemove) {
+			this.invoke("remove");
+		}
+		
+		$super();
 	}
 });
 
 ControlCollection.prototype.add = ControlCollection.prototype.set;
+ControlCollection.prototype.removeAll = ControlCollection.prototype.clear;
 
 var WindowCollection = Class.create(ControlCollection, {
 	hasWindowOfType: function(type) {
-		return this.find(function(pair) {
-			return pair.value.type === type;
+		return this.find(function(window) {
+			return window.type === type;
 		});
 	},
 	
 	closeAllOfType: function(type) {
-		this.findAll(function(pair) {
-			return pair.value.type === type;
-		}).pluck("value").invoke("close");
+		this.findAll(function(window) {
+			return window.type === type;
+		}).invoke("close");
 	},
 	
 	getNumberOfOpenWindows: function() {
-        return this.findAll(function(pair) {
-			return !pair.value.removed && pair.value.visible();
+        return this.findAll(function(window) {
+			return !window.removed && window.visible();
         }).length;
 	}
 });

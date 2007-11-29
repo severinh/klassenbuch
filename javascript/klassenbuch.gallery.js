@@ -906,7 +906,7 @@ Gallery.PictureInfoWindow = Class.create(Controls.Window, {
 	_setPicture: function(picture) {
 		this._title.innerHTML = picture.fileName.truncate(30);
 		
-		var contact = Contacts.getById(picture.userid);
+		var contact = Contacts.get(picture.userid);
 		var tmpl = new Template("<tr><td class=\"caption\">#{key}:</td><td>#{value}</td></tr>");
 		var data = [
 			{ key: "Hochgeladen von", value: contact.getFullName() },
@@ -1146,7 +1146,7 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 						var albumId = parseInt(element.readAttribute("name").replace("album", ""));
 						
 						if (albumId) {
-							this.reportNavigation(Gallery.getById(albumId).name.addressify());
+							this.reportNavigation(Gallery.get(albumId).name.addressify());
 						}
 					}
 				}).bindAsEventListener(this));

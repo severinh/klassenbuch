@@ -55,8 +55,6 @@ Contacts.View = Class.create(Controls.View, {
 				
 				if (contact) {
 					return contact.showProfile();
-				} else {
-					return false;
 				}
 			}).bind(this), {
 				rebuildOnStateChange: true
