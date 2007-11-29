@@ -121,42 +121,41 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
 	initialized: false
 });
 
-var Sprite = Object.extend(Class.create({
-		initialize: function(spriteName, index, className) {
-			this.spriteName = spriteName;
-			this.index = index || 0;
-			this.className = className || "";
-		},
+var Sprite = Class.create({
+	initialize: function(spriteName, index, className) {
+		this.spriteName = spriteName;
+		this.index = index || 0;
+		this.className = className || "";
+	},
+	
+	toHTML: function(additionalClassName, tag) {
+		tag = tag || "div";
 		
-		toHTML: function(additionalClassName, tag) {
-			tag = tag || "div";
-			
-			var sprite = Sprite.List[this.spriteName];
-			var position = ((this.index > 0) ? "-" : "") + (sprite.offset * this.index) + "px";
-			
-			return "<" + tag + " class=\"sprite sprite" + this.spriteName.capitalize() + " " + this.className + " " +
-				(additionalClassName || "") + "\" style=\"background-position: " +
-				((sprite.alignment === "horizontal") ? position + " 0px" : "0px " + position) + "\"></" + tag + ">";
-		}
-	}), {
-		List: {
-			smallIcons: {
-				offset: 16,
-				alignment: "horizontal"
-			},
-			
-			gradients: {
-				offset: 40,
-				alignment: "vertical"
-			},
-			
-			fileTypesSmall: {
-				offset: 16,
-				alignment: "horizontal"
-			}
-		}
+		var sprite = Sprite.List[this.spriteName];
+		var position = ((this.index > 0) ? "-" : "") + (sprite.offset * this.index) + "px";
+		
+		return "<" + tag + " class=\"sprite sprite" + this.spriteName.capitalize() + " " + this.className + " " +
+			(additionalClassName || "") + "\" style=\"background-position: " +
+			((sprite.alignment === "horizontal") ? position + " 0px" : "0px " + position) + "\"></" + tag + ">";
 	}
-);
+});
+
+Sprite.List = {
+	smallIcons: {
+		offset: 16,
+		alignment: "horizontal"
+	},
+	
+	gradients: {
+		offset: 40,
+		alignment: "vertical"
+	},
+	
+	fileTypesSmall: {
+		offset: 16,
+		alignment: "horizontal"
+	}
+};
 
 /**
  * @class Stellt verschiedene Funktionen bereit, die den Vergleich zweier Werte ermöglichen. Diese Funktionen werden
