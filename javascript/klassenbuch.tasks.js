@@ -351,7 +351,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		);
 		
 		this._taskTable.addColumn("Kommentare", function(task) {
-				return task.comments + ((task.newComments) ? " (neu)" : "");
+				return task.comments.count() + ((task.newComments) ? " (neu)" : "");
 			}, {
 				width: "40px",
 				sortable: true,
@@ -583,8 +583,8 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 	 * @memberof TaskManagement.View
 	*/
 	_onHighlightTask: function(task) {
-		if (!task.commentsStore.loaded) {
-			task.commentsStore.load();
+		if (!task.comments.loaded) {
+			task.comments.load();
 		}
 		
 		var contact = Contacts.get(task.userid);
@@ -1016,11 +1016,12 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 		
 		this.update(task);
 		
-		this.commentsStore = new JSONRPC.Store({
+		this.comments = new JSONRPC.Store({
 			method: "getcomments",
 			params: [this.id],
 			itemClass: Comments.Comment,
-			periodicalUpdate: 120
+			periodicalUpdate: 120,
+			unloadedCount: task.comments
 		});
 		
 		this.registerSubNode("bearbeiten", this.edit.bind(this), {
@@ -1087,14 +1088,6 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 		 * @name userid
 		*/
         this.userid = task.userid;
-        
-		/**
-		 * Die Anzahl der Kommentare, die zu dieser Aufgabe geschrieben wurden.
-		 * @type Integer
-		 * @memberof TaskManagement.Task
-		 * @name comments
-		*/
-        this.comments = task.comments || 0;
 		
 		/**
 		 * Gibt an, ob ungelesene Kommentare zu dieser Aufgabe vorhanden sind. Wenn der Benutzer nicht angemeldet ist,

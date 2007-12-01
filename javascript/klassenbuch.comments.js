@@ -3,7 +3,7 @@ var Comments = {};
 Comments.MainWindow = Class.create(Controls.Window, {
 	initialize: function($super, task, options) {
 		this.task = task;
-		this.comments = task.commentsStore;
+		this.comments = task.comments;
 		
 		this.setOptions({ commentsPerPage: 15 }, options);
 		
@@ -74,7 +74,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		
 		this.registerChildControl(this.newCommentButton, this.tabControl);
 		
-		this._onExternalEvent(this.task.commentsStore, "updated", this._insertComments, this);
+		this._onExternalEvent(this.task.comments, "updated", this._insertComments, this);
 		
 		if (this.comments.loaded) {
 			this._insertComments();
@@ -94,7 +94,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
 	_insertComments: function() {
 		this.tabControl.removeAllTabs();
 		
-		if (this.task.comments > 0) {
+		if (this.task.comments.count() > 0) {
 			this.comments.eachSlice(this.options.commentsPerPage).each(function(groupOfComments) {
 				this._addTab().addComments(groupOfComments);
 			}, this);
@@ -119,12 +119,13 @@ Comments.MainWindow = Class.create(Controls.Window, {
 	},
 	
 	_updateNumberOfComments: function() {
-		var a = "";
+		var a = "",
+			commentsCount = this.task.comments.count();
 		
-        switch (this.task.comments) {
+        switch (commentsCount) {
 			case 0:  a = "Keine Kommentare"; break;
 			case 1:  a = "Ein Kommentar"; break;
-			default: a = this.task.comments + " Kommentare"; break;
+			default: a = commentsCount + " Kommentare"; break;
 		}
 		
         this.numberOfComments.innerHTML = a;
@@ -135,10 +136,9 @@ Comments.MainWindow = Class.create(Controls.Window, {
             this._addTab();
         }
         
-        this.task.commentsStore.add(comment);
+        this.task.comments.add(comment);
         this.tabControl.activateTab(this.tabControl.tabs.length - 1);
         this.tabControl.tabs.last().addComment(comment);
-        this.task.comments++;
         this._updateNumberOfComments();
         this.commentsContainer.scrollToBottom();
         
