@@ -552,6 +552,6 @@ JSONRPC.Store = Class.create(Collection, {
 	},
 	
 	count: function() {
-		return this.keys().length;
+		return (this.loaded) ? this.keys().length : this.options.unloadedCount || 0;
 	}
 });
