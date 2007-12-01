@@ -312,21 +312,22 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 			begin_upload_on_queue: 			false,
 			
 			file_size_limit: 				10240,
-			file_types: 					"*.*",
 			file_types_description: 		"Alle Dateien"
 		}, options || {});
 		
 		/** @ignore */
-		var uploadComplete = function(file, data) {
-			this.fireEvent("uploadComplete", file, data);
-			
-			var response = JSONRPC.Response.fromAjaxResponse(data);
-			
-			this.fireEvent((response.success()) ? "uploadSuccess" : "uploadFailure", file, response);
+		var uploadComplete = function(file) {
+			this.fireEvent("uploadComplete", file);
 			
 			if (options.begin_upload_on_queue) {
 				this.startUpload();
 			}
+		};
+		
+		var uploadSuccess = function(file, data) {
+			var response = JSONRPC.Response.fromAjaxResponse(data);
+			
+			this.fireEvent((response.success()) ? "uploadSuccess" : "uploadFailure", file, response);
 		};
 		
 		/** @ignore */
@@ -411,6 +412,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 			
             file_queue_error_handler:       fileQueueError.bind(this),
             upload_complete_handler:		uploadComplete.bind(this),
+			upload_success_handler:			uploadSuccess.bind(this),
             upload_error_handler:			uploadError.bind(this)
 		}));
 		

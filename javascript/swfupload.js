@@ -1,5 +1,5 @@
 /**
- * SWFUpload Revision 7.0 by Jacob Roberts, Oct 2007, http://linebyline.blogspot.com
+ * SWFUpload v2.0 by Jacob Roberts, Nov 2007, http://www.swfupload.org, http://linebyline.blogspot.com
  * -------- -------- -------- -------- -------- -------- -------- --------
  * SWFUpload is (c) 2006 Lars Huring and Mammon Media and is released under the MIT License:
  * http://www.opensource.org/licenses/mit-license.php
@@ -8,7 +8,7 @@
  *
  * Development Notes:
  *  * This version of SWFUpload requires Flash Player 9.0.28 and should autodetect the correct flash version.
- *  * In Linux Flash Player 9 setting the post file variable name does not work. It is always set to "FileData".
+ *  * In Linux Flash Player 9 setting the post file variable name does not work. It is always set to "Filedata".
  *  * There is a lot of repeated code that could be refactored to single functions.  Feel free.
  *  * It's dangerous to do "circular calls" between Flash and JavaScript. I've taken steps to try to work around issues
  *     by having the event calls pipe through setTimeout.  However you should still avoid calling in to Flash from
@@ -22,34 +22,41 @@
 
 var SWFUpload = Class.create(EventPublisher, {
 	initialize: function ($super, init_settings) {
-		// Remove background flicker in IE (read this: http://misterpixel.blogspot.com/2006/09/forensic-analysis-of-ie6.html)
-		// This doesn't have anything to do with SWFUpload but can help your UI behave better in IE.
-		try {
-			document.execCommand('BackgroundImageCache', false, true);
-		} catch (ex1) {
-		}
 		$super();
-		try {
-			this.customSettings = {};	// A container where developers can place their own settings associated with this instance.
-			this.settings = {};
-			this.eventQueue = [];
-			this.movieName = "SWFUpload_" + SWFUpload.movieCount++;
-			this.movieElement = null;
-
-			// Setup global control tracking
-			SWFUpload.instances[this.movieName] = this;
-
-			// Load the settings.  Load the Flash movie.
-			this.initSettings(init_settings);
-			this.loadFlash();
-
-			this.displayDebugInfo();
-
-		} catch (ex2) {
-			this.debug(ex2);
-		}
+		
+		this.initSWFUpload(init_settings);
 	}
 });
+
+SWFUpload.prototype.initSWFUpload = function (init_settings) {
+	// Remove background flicker in IE (read this: http://misterpixel.blogspot.com/2006/09/forensic-analysis-of-ie6.html)
+	// This doesn't have anything to do with SWFUpload but can help your UI behave better in IE.
+	try {
+		document.execCommand('BackgroundImageCache', false, true);
+	} catch (ex1) {
+	}
+
+
+	try {
+		this.customSettings = {};	// A container where developers can place their own settings associated with this instance.
+		this.settings = {};
+		this.eventQueue = [];
+		this.movieName = "SWFUpload_" + SWFUpload.movieCount++;
+		this.movieElement = null;
+
+		// Setup global control tracking
+		SWFUpload.instances[this.movieName] = this;
+
+		// Load the settings.  Load the Flash movie.
+		this.initSettings(init_settings);
+		this.loadFlash();
+
+		this.displayDebugInfo();
+
+	} catch (ex2) {
+		this.debug(ex2);
+	}
+}
 
 /* *************** */
 /* Static thingies */
@@ -95,8 +102,8 @@ SWFUpload.prototype.initSettings = function (init_settings) {
 	this.addSetting("post_params",		 		init_settings.post_params,		  		{});
 
 	// File Settings
-	this.addSetting("file_types",			  	init_settings.file_types,				"*.gif;*.jpg;*.png");
-	this.addSetting("file_types_description", 	init_settings.file_types_description, 	"Common Web Image Formats (gif, jpg, png)");
+	this.addSetting("file_types",			  	init_settings.file_types,				"*.*");
+	this.addSetting("file_types_description", 	init_settings.file_types_description, 	"All Files");
 	this.addSetting("file_size_limit",		  	init_settings.file_size_limit,			"1024");
 	this.addSetting("file_upload_limit",	  	init_settings.file_upload_limit,		"0");
 	this.addSetting("file_queue_limit",		  	init_settings.file_queue_limit,			"0");
@@ -109,7 +116,6 @@ SWFUpload.prototype.initSettings = function (init_settings) {
 
 	// Debug Settings
 	this.addSetting("debug_enabled", init_settings.debug,  false);
-	this.debug_enabled = this.getSetting("debug_enabled");
 
 	// Event Handlers
 	this.flashReady_handler         = SWFUpload.flashReady;	// This is a non-overrideable event handler
@@ -123,17 +129,13 @@ SWFUpload.prototype.initSettings = function (init_settings) {
 	this.uploadStart_handler		= this.retrieveSetting(init_settings.upload_start_handler,			SWFUpload.uploadStart);
 	this.uploadProgress_handler		= this.retrieveSetting(init_settings.upload_progress_handler,		SWFUpload.uploadProgress);
 	this.uploadError_handler		= this.retrieveSetting(init_settings.upload_error_handler,			SWFUpload.uploadError);
+	this.uploadSuccess_handler		= this.retrieveSetting(init_settings.upload_success_handler,		SWFUpload.uploadSuccess);
 	this.uploadComplete_handler		= this.retrieveSetting(init_settings.upload_complete_handler,		SWFUpload.uploadComplete);
-	this.fileComplete_handler		= this.retrieveSetting(init_settings.file_complete_handler,			SWFUpload.fileComplete);
 
 	this.debug_handler				= this.retrieveSetting(init_settings.debug_handler,			   		SWFUpload.debug);
 
-	// UI setting - These settings are used by the default swfUploadLoaded_handler and if SWFUpload is loaded successfully
-	// then the ui_containder is displayed (using display: block) and the degraded_container is hidden (display: none).
-	this.addSetting("ui_container_id",		 	init_settings.ui_container_id,		  	"");
-	this.addSetting("degraded_container_id", 	init_settings.degraded_container_id, 	"");
-
-	
+	// Other settings
+	this.customSettings = this.retrieveSetting(init_settings.custom_settings, {});
 };
 
 // loadFlash is a private method that generates the HTML tag for the Flash
@@ -151,7 +153,7 @@ SWFUpload.prototype.loadFlash = function () {
 	try {
 		target_element = document.getElementsByTagName("body")[0];
 		if (typeof(target_element) === "undefined" || target_element === null) {
-			this.debug('Could not find an element to add the Flash too. Failed to find element for "flash_container_id" or the BODY element.');
+			this.debug('Could not find the BODY element. SWFUpload failed to load.');
 			return false;
 		}
 	} catch (ex) {
@@ -268,7 +270,7 @@ SWFUpload.prototype.addSetting = function (name, value, default_value) {
 	return this.settings[name];
 };
 
-// Gets a setting.	Returns null if it wasn't found.
+// Gets a setting.	Returns empty string if not found.
 SWFUpload.prototype.getSetting = function (name) {
 	if (typeof(this.settings[name]) === "undefined") {
 		return "";
@@ -293,7 +295,7 @@ SWFUpload.prototype.retrieveSetting = function (value, default_value) {
 SWFUpload.prototype.displayDebugInfo = function () {
 	var key, debug_message = "";
 
-	debug_message += "----- SWFUPLOAD SETTINGS     ----\nID: " + this.getMovieElement().id + "\n";
+	debug_message += "----- SWFUPLOAD SETTINGS     ----\nID: " + this.moveName + "\n";
 
 	debug_message += this.outputObject(this.settings);
 
@@ -449,6 +451,34 @@ SWFUpload.prototype.getStats = function () {
 		this.debug("Could not find Flash element");
 	}
 };
+SWFUpload.prototype.setStats = function (stats_object) {
+	var self = this;
+	var movie_element = this.getMovieElement();
+	if (movie_element !== null && typeof(movie_element.SetStats) === "function") {
+		try {
+			movie_element.SetStats(stats_object);
+		}
+		catch (ex) {
+			self.debug("Could not call SetStats");
+		}
+	} else {
+		this.debug("Could not find Flash element");
+	}
+};
+SWFUpload.prototype.getFile = function (file_id) {
+	var self = this;
+	var movie_element = this.getMovieElement();
+	if (movie_element !== null && typeof(movie_element.GetFile) === "function") {
+		try {
+			return movie_element.GetFile(file_id);
+		}
+		catch (ex) {
+			self.debug("Could not call GetFile");
+		}
+	} else {
+		this.debug("Could not find Flash element");
+	}
+};
 
 SWFUpload.prototype.addFileParam = function (file_id, name, value) {
 	var self = this;
@@ -592,7 +622,6 @@ SWFUpload.prototype.setDebugEnabled = function (debug_enabled) {
 	if (movie_element !== null && typeof(movie_element.SetDebugEnabled) === "function") {
 		try {
 			this.addSetting("debug_enabled", debug_enabled);
-			this.debug_enabled = this.getSetting("debug_enabled");
 			movie_element.SetDebugEnabled(this.getSetting("debug_enabled"));
 		}
 		catch (ex) {
@@ -602,8 +631,6 @@ SWFUpload.prototype.setDebugEnabled = function (debug_enabled) {
 		this.debug("Could not find Flash element in SetDebugEnabled");
 	}
 };
-
-
 
 /* *******************************
 	Internal Event Callers
@@ -686,22 +713,40 @@ SWFUpload.prototype.fileDialogComplete = function (num_files_selected) {
 };
 
 /* Gets called when a file upload is about to be started.  Return true to continue the upload. Return false to stop the upload. 
-	If you return false then uploadError and fileComplete are called (like normal).
+	If you return false then uploadError and uploadComplete are called (like normal).
 	
 	This is a good place to do any file validation you need.
-	
-	This is the only function that cannot be called on a setTimeout because it must return a value to Flash.
-	You SHOULD NOT make any calls in to Flash (i.e., changing settings, getting stats, etc).  A bug in the Flash Player
-	causes function calls to fail they are circled through JS -> Flash -> JS -> Flash.
-*/
+	*/
 SWFUpload.prototype.uploadStart = function (file) {
-	if (typeof(this.uploadStart_handler) === "function") {
-		return this.uploadStart_handler(file);
+	var self = this;
+	if (typeof(self.fileDialogComplete_handler) === "function") {
+		this.eventQueue[this.eventQueue.length] = function() { self.returnUploadStart(self.uploadStart_handler(file)); };
+		setTimeout(function () { self.executeNextEvent();}, 0);
 	} else {
 		this.debug("uploadStart event not defined");
-		return true;
 	}
 };
+
+/* Note: Internal use only.  This function returns the result of uploadStart to
+	flash.  Since returning values in the normal way can result in Flash/JS circular
+	call issues we split up the call in a Timeout.  This is transparent from the API
+	point of view.
+*/
+SWFUpload.prototype.returnUploadStart = function (return_value) {
+	var movie_element = this.getMovieElement();
+	if (movie_element !== null && typeof(movie_element.ReturnUploadStart) === "function") {
+		try {
+			movie_element.ReturnUploadStart(return_value);
+		}
+		catch (ex) {
+			this.debug("Could not call ReturnUploadStart");
+		}
+	} else {
+		this.debug("Could not find Flash element in returnUploadStart");
+	}
+};
+
+
 
 /* Called during upload as the file progresses. Use this event to update your UI. */
 SWFUpload.prototype.uploadProgress = function (file, bytes_complete, bytes_total) {
@@ -715,9 +760,8 @@ SWFUpload.prototype.uploadProgress = function (file, bytes_complete, bytes_total
 };
 
 /* Called when an error occurs during an upload. Use error_code and the SWFUpload.UPLOAD_ERROR constants to determine
-   which error occurred. The fileComplete event is often called after an error code indicating that the next file is
-   ready for upload.  However for the UPLOAD_STOPPED and in some cases the UPLOAD_CANCELLED errors fileComplete will
-   not be called. */
+   which error occurred. The uploadComplete event is called after an error code indicating that the next file is
+   ready for upload.  For files cancelled out of order the uploadComplete event will not be called. */
 SWFUpload.prototype.uploadError = function (file, error_code, message) {
 	var self = this;
 	if (typeof(this.uploadError_handler) === "function") {
@@ -730,27 +774,27 @@ SWFUpload.prototype.uploadError = function (file, error_code, message) {
 
 /* This gets called when a file finishes uploading and the server-side upload script has completed and returned a 200 
 status code. Any text returned by the server is available in server_data. 
-**NOTE: The upload script MUST return some text or the uploadComplete and fileComplete events will not fire and the
+**NOTE: The upload script MUST return some text or the uploadSuccess and uploadComplete events will not fire and the
 upload will become 'stuck'. */
-SWFUpload.prototype.uploadComplete = function (file, server_data) {
+SWFUpload.prototype.uploadSuccess = function (file, server_data) {
 	var self = this;
-	if (typeof(self.uploadComplete_handler) === "function") {
-		this.eventQueue[this.eventQueue.length] = function() { self.uploadComplete_handler(file, server_data); };
+	if (typeof(self.uploadSuccess_handler) === "function") {
+		this.eventQueue[this.eventQueue.length] = function() { self.uploadSuccess_handler(file, server_data); };
 		setTimeout(function () { self.executeNextEvent();}, 0);
 	} else {
-		this.debug("uploadComplete event not defined");
+		this.debug("uploadSuccess event not defined");
 	}
 };
 
-/* fileComplete is called when the file is uploaded or an error occurred and SWFUpload is ready to make the next upload.
+/* uploadComplete is called when the file is uploaded or an error occurred and SWFUpload is ready to make the next upload.
    If you want the next upload to start to automatically you can call startUpload() from this event. */
-SWFUpload.prototype.fileComplete = function (file) {
+SWFUpload.prototype.uploadComplete = function (file) {
 	var self = this;
-	if (typeof(self.fileComplete_handler) === "function") {
-		this.eventQueue[this.eventQueue.length] = function() { self.fileComplete_handler(file); };
+	if (typeof(self.uploadComplete_handler) === "function") {
+		this.eventQueue[this.eventQueue.length] = function() { self.uploadComplete_handler(file); };
 		setTimeout(function () { self.executeNextEvent();}, 0);
 	} else {
-		this.debug("fileComplete event not defined");
+		this.debug("uploadComplete event not defined");
 	}
 };
 
@@ -791,37 +835,12 @@ SWFUpload.flashReady = function () {
 	} catch (ex) {
 		this.debug(ex);
 	}
-}
-/* This is the default action when SWFUpload has loaded.  If you want something else to happen set
-   swfupload_loaded_handler in your settings.
-   By default the special ui_container_id and degraded_container_id settings are used to display the ui_container and
-   hide the degraded_container.
-*/
-SWFUpload.swfUploadLoaded = function () {
-	var ui_container_id, ui_target, degraded_container_id, degraded_target;
-	try {
-		ui_container_id = this.getSetting("ui_container_id");
-		
-		// Show the UI container
-		if (typeof(ui_container_id) === "string" && ui_container_id !== "") {
-			ui_target = document.getElementById(ui_container_id);
-			if (ui_target !== null) {
-				ui_target.style.display = "block";
+};
 
-				// Now take care of hiding the degraded UI
-				degraded_container_id = this.getSetting("degraded_container_id");
-				if (typeof(degraded_container_id) && degraded_container_id !== "") {
-					degraded_target = document.getElementById(degraded_container_id);
-					if (degraded_target !== null) {
-						degraded_target.style.display = "none";
-					}
-				}
-			}
-		}
-	} catch (ex) {
-		this.debug(ex);
-	}
-}
+/* This is a chance to something immediately after SWFUpload has loaded.
+   Like, hide the default/degraded upload form and display the SWFUpload form. */
+SWFUpload.swfUploadLoaded = function () {
+};
 
 /* This is a chance to do something before the browse window opens */
 SWFUpload.fileDialogStart = function () {
@@ -863,12 +882,13 @@ SWFUpload.fileDialogComplete = function (num_files_selected) {
 };
 
 /* Gets called when a file upload is about to be started.  Return true to continue the upload. Return false to stop the upload. 
-	If you return false then the uploadError callback is called and then fileComplete (like normal).
+	If you return false then the uploadError callback is called and then uploadComplete (like normal).
 	
 	This is a good place to do any file validation you need.
 	
 	This is the only function that cannot be called on a setTimeout because it must return a value to Flash.
-	You MUST NOT make any calls in to Flash (e.i, changing settings, getting stats, etc).
+	You SHOULD NOT make any calls in to Flash (e.i, changing settings, getting stats, etc).  Flash Player bugs prevent
+	calls in to Flash from working reliably.
 */
 SWFUpload.uploadStart = function (file) {
 	return true;
@@ -880,20 +900,20 @@ SWFUpload.uploadProgress = function (file, bytes_complete, bytes_total) {
 };
 
 /* This gets called when a file finishes uploading and the upload script has completed and returned a 200 status code.	Any text returned by the
-server is available in server_data.	 The upload script must return some text or uploadComplete will not fire (neither will fileComplete). */
-SWFUpload.uploadComplete = function (file, server_data) {
+server is available in server_data.	 The upload script must return some text or uploadSuccess will not fire (neither will uploadComplete). */
+SWFUpload.uploadSuccess = function (file, server_data) {
 };
 
 /* This is called last.	 The file is uploaded or an error occurred and SWFUpload is ready to make the next upload.
 	If you want to automatically start the next file just call startUpload from here.
 */
-SWFUpload.fileComplete = function (file) {
+SWFUpload.uploadComplete = function (file) {
 };
 
-// Called by SWFUpload JavaScript and Flash flash functions when debug is enabled.
+// Called by SWFUpload JavaScript and Flash functions when debug is enabled.
 // Override this method in your settings to call your own debug message handler
 SWFUpload.debug = function (message) {
-	if (this.debug_enabled) {
+	if (this.getSetting("debug_enabled")) {
 		this.debugMessage(message);
 	}
 };
