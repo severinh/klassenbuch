@@ -348,7 +348,7 @@ Comments.CommentInputField = function() {
 		},
 		
 		getInput: function() {
-			return this.inputArea.value.stripScripts().stripTags().replaceAll("\r\n", "[BR /]").replaceAll("\n", "[BR /]");
+			return this.inputArea.value.stripScripts().stripTags().replace(/\r?\n/g, "[BR /]");
 		},
 		
 		setInput: function(input) {
