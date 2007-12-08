@@ -470,28 +470,24 @@ Object.extend(Prototype.Browser, (function() {
 			return this;
 		},
 		
-		diff: function(dateObj, unit, allowDecimal) {
-			var ms = this.getTime() - dateObj.getTime();
+		diff: function(date, unit, allowDecimal) {
+			var ms = this.getTime() - date.getTime();
 			var unitDiff = ms / multipliers.get(unit || "day");
-			return (allowDecimal ? unitDiff : Math.floor(unitDiff));
-		},
-		
-		toJSON: function() {
-			return this.format("\"Y-m-dTH:i:s\"");
+			
+			return allowDecimal ? unitDiff : Math.floor(unitDiff);
 		},
 		
 		// Inspiriert von http://www.codeproject.com/jscript/dateformat.asp
 		format: function(f) {
-			var self = this;
+			var self = this,
+				hours = this.getHours(),
+				a = (hours < 12) ? "am" : "pm",
+				g = (hours >= 12) ? hours - 12 : hours,
+				G = hours,
+				j = this.getDate(),
+				n = this.getMonth() + 1;
 			
-			var hours = this.getHours();
-			var a = (hours < 12) ? "am" : "pm";
-			var g = (hours >= 12) ? hours - 12 : hours;
-			var G = hours;
-			var j = this.getDate();
-			var n = this.getMonth() + 1;
-			
-			return f.replace(/(a|A|d|D|F|g|G|h|H|i|j|m|n|M|s|Y)/gi, function($1) {
+			return f.replace(/[aAdDFgGhHijmnMsY]/g, function($1) {
 				switch ($1) {
 					case "a": return a;
 					case "A": return a.toUpperCase();
@@ -524,7 +520,7 @@ Object.extend(Prototype.Browser, (function() {
 		},
 		
 		equals: function(date) {
-			return this.getTimestamp() === date.getTimestamp();
+			return this.getTime() === date.getTime();
 		},
 		
 		isToday: compare.curry(0),
@@ -568,13 +564,13 @@ Object.extend(Prototype.Browser, (function() {
 		 * Eine Auflistung der Wochentagenamen, beginnend mit dem Sonntag.
 		 * @type {String[]}
 		*/
-		weekdays: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
+		weekdays: $w("Sonntag Montag Dienstag Mittwoch Donnerstag Freitag Samstag"),
 		
 		/**
 		 * Eine Auflistung der Wochentagenamen in abgekürzter Form, beginnend mit dem Sonntag.
 		 * @type {String[]}
 		*/
-		weekdaysAbbr: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+		weekdaysAbbr: $w("So Mo Di Mi Do Fr Sa"),
 		
 		/**
 		 * Eine Auflistung der Anzahl Tage in den einzelnen Monaten, beginnend mit Januar.
@@ -586,7 +582,7 @@ Object.extend(Prototype.Browser, (function() {
 		 * Eine Auflistung der Monatsnamen, beginnend mit Januar.
 		 * @type {String[]}
 		*/
-		months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
+		months: $w("Januar Februar März April Mai Juni Juli August September Oktober November Dezember")
 	});
 })();
 
