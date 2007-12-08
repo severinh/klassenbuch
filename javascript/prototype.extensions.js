@@ -87,6 +87,13 @@ Object.extend(Number.prototype, function() {
 		 * @param {Number} a The lower limit
 		 * @param {Number} b The upper limit
 		 * @returns {Number} The number that is within the specified range.
+		 * @example
+(1).limitTo(2, 8);
+// -> 2
+(12).limitTo(2, 8);
+// -> 8
+(5).limitTo(2, 8);
+// -> 5
 		*/
 		limitTo: function(a, b) {
 			return (this < a) ? a : ((this > b) ? b : this);
@@ -96,6 +103,11 @@ Object.extend(Number.prototype, function() {
 		 * Adds the appropriate file size unit to number representing a data size.
 		 * @param {Number} [roundTo] The number of decimal places to be returned.
 		 * @returns {String} The resulting data size string.
+		 * @example
+(2187393).getFormatedDataSize();
+// -> "2.09 MB"
+(1).getFormatedDataSize();
+// -> "1 Byte"
 		*/
 		getFormatedDataSize: function(roundTo) {
 			var temp = this;
@@ -114,6 +126,9 @@ Object.extend(Number.prototype, function() {
 		 * Rounds the number to a certain decimal places.
 		 * @param {Number} a The number of decimal places.
 		 * @returns {Number} The rounded number.
+		 * @example
+(3.1415).roundTo(2);
+// -> 3.14
 		*/
 		roundTo: function(a) {
 			return (this * Math.pow(10, a)).round() / Math.pow(10, a);
