@@ -686,6 +686,12 @@ Element.addMethods({
     }
 });
 
+Class.Methods.alias = function(source, destination) {
+	this.prototype[destination] = this.prototype[source];
+	
+	return this;
+};
+
 var Collection = Class.create(Hash, EventPublisher.prototype, {
 	initialize: function($super, object) {
 		$super(object);
@@ -727,11 +733,7 @@ var Collection = Class.create(Hash, EventPublisher.prototype, {
 	update: Prototype.emptyFunction,
 	inspect: Prototype.emptyFunction,
 	toQueryString: Prototype.emptyFunction
-});
-
-Collection.prototype.add = Collection.prototype.set;
-Collection.prototype.remove = Collection.prototype.unset;
-Collection.prototype.removeAll = Collection.prototype.clear;
+}).alias("set", "add").alias("unset", "remove").alias("clear", "removeAll");
 
 var ControlCollection = Class.create(Collection, {
 	initialize: function($super, autoRemove) {
@@ -755,10 +757,7 @@ var ControlCollection = Class.create(Collection, {
 		
 		$super();
 	}
-});
-
-ControlCollection.prototype.add = ControlCollection.prototype.set;
-ControlCollection.prototype.removeAll = ControlCollection.prototype.clear;
+}).alias("set", "add").alias("clear", "removeAll");
 
 var WindowCollection = Class.create(ControlCollection, {
 	hasWindowOfType: function(type) {
@@ -778,6 +777,4 @@ var WindowCollection = Class.create(ControlCollection, {
 			return !window.removed && window.visible();
         }).length;
 	}
-});
-
-WindowCollection.prototype.closeAll = ControlCollection.prototype.removeAll;
+}).alias("clear", "closeAll");
