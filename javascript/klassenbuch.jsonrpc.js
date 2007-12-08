@@ -464,6 +464,10 @@ JSONRPC.Store = Class.create(Collection, {
 		} else if (this.options.autoLoad) {
 			this.load.bind(this).defer();
 		}
+		
+		this.on("clear", function() {
+			this.loaded = false;
+		}, this);
 	},
 	
 	getItems: function(a, b) {
@@ -484,7 +488,7 @@ JSONRPC.Store = Class.create(Collection, {
 			
 			var method = method || this.options.method;
 			var params = Function.fromObject(params || this.options.params || []);
-			var appendOnly = appendOnly || false;
+			var appendOnly = appendOnly || this.options.appendOnly || false;
 			
 			var request = new JSONRPC.CachedRequest(method, params(), {
 				onUpdated: (function(response) {
@@ -495,13 +499,14 @@ JSONRPC.Store = Class.create(Collection, {
     },
 	
 	loadData: function(data) {
-		this.loadSuccess(new JSONRPC.Response(data));
+		this.loadSuccess(data instanceof JSONRPC.Response ? data : new JSONRPC.Response(data));
 	},
 	
 	loadSuccess: function(response, appendOnly) {
 		var ItemClass = this.options.itemClass,
 			identifier = Object.isFunction(ItemClass.getKey) ? ItemClass.getKey() : "id",
-			self = this;
+			self = this,
+			newItems = [];
 		
 		response.result.each(function(newElement) {
 			var oldElement = self.get(newElement[identifier]);
@@ -519,6 +524,7 @@ JSONRPC.Store = Class.create(Collection, {
 					newEntry.__updated__ = true;
 				}
 				
+				newItems.push(newEntry);
 				self.add(newEntry);
 			}
 		});
@@ -535,10 +541,10 @@ JSONRPC.Store = Class.create(Collection, {
 		
 		this.loading = false;
 		this.loaded = true;
-	
+		
 		this.enablePeriodicalUpdate();
 		
-		this.fireEvent("updated");
+		this.fireEvent("updated", newItems);
 	},
 	
 	enablePeriodicalUpdate: function() {
