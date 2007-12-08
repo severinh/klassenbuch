@@ -509,7 +509,7 @@ Comments.Comment.Control = function() {
 			this._onExternalEvent(Contacts, "updated", _refreshProfileInformation);
 			_refreshProfileInformation();
 		},
-
+		
 		refreshControl: function() {
 			var comment = this.comment.text;
 			
