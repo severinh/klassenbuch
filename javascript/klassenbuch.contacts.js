@@ -49,7 +49,7 @@ Contacts.View = Class.create(Controls.View, {
 		$super("Kontaktliste", new Sprite("smallIcons", 14), "Kontaktliste", { className: "contactView" });
 		
 		this.registerSubNode("profil", (function(state) {
-				var contact = Contacts.getItem(function(contact) {
+				var contact = Contacts.find(function(contact) {
 					return contact.getFlattenedFullName() === state.first();
 				});
 				
@@ -63,11 +63,11 @@ Contacts.View = Class.create(Controls.View, {
 		
 		this.on("activate", function() {
 			if (!this.contactTable) {
-				this.contactTable = this.content.insertControl(new Controls.Table({ keepHighlightedOnUpdate: "id" }));
+				var table = new Controls.Table({ keepHighlightedOnUpdate: "id" });
 				
-				this.contactTable.on("sort", this._updateTitle, this);
-				this.contactTable.on("highlightRow", this._onHighlightRow, this);
-				this.contactTable.on("selectRow", function(contact) {
+				table.on("sort", this._updateTitle, this);
+				table.on("highlightRow", this._onHighlightRow, this);
+				table.on("selectRow", function(contact) {
 					this.reportNavigation("profil/" + contact.getFlattenedFullName());
 				}, this);
 				
@@ -75,7 +75,7 @@ Contacts.View = Class.create(Controls.View, {
 					return a.replace("hidden", "<span class=\"hiddenInformation\">000 000 00 00</span>");
 				};
 				
-				this.contactTable.addColumn("Name", function(a) {
+				table.addColumn("Name", function(a) {
 						return a.getFullName();
 					}, {
 						width: "150px",
@@ -83,25 +83,25 @@ Contacts.View = Class.create(Controls.View, {
 						allowReversedSorting: true
 				});
 				
-				this.contactTable.addColumn("Nickname", "nickname", {
+				table.addColumn("Nickname", "nickname", {
 					width: "120px",
 					sortable: true,
 					allowReversedSorting: true
 				});
 				
-				this.contactTable.addColumn("Telefon", "phone", {
+				table.addColumn("Telefon", "phone", {
 					width: "100px",
 					sortable: false,
 					processCellContent: processCell34
 				});
 				
-				this.contactTable.addColumn("Natel", "mobile", {
+				table.addColumn("Natel", "mobile", {
 					width: "100px",
 					sortable: false,
 					processCellContent: processCell34
 				});
 				
-				this.contactTable.addColumn("SF", "mainsubject", {
+				table.addColumn("SF", "mainsubject", {
 					width: "50px",
 					sortable: true,
 					showSortedInGroups: "outlookStyle",
@@ -111,7 +111,7 @@ Contacts.View = Class.create(Controls.View, {
 					}
 				});
 				
-				this.contactTable.addColumn("Status", function(contact) {
+				table.addColumn("Status", function(contact) {
 					return contact.getState();
 				}, {
 					width: "75px",
@@ -120,9 +120,11 @@ Contacts.View = Class.create(Controls.View, {
 					}
 				});
 				
-				this.sideMenu = new Controls.SideMenu(this, false);
+				this.contactTable = this.content.insertControl(table);
 				
-				this.sideMenu.addItem("Profil anzeigen", new Sprite("fileTypesSmall", 0), (function() {
+				var sideMenu = new Controls.SideMenu(this, false);
+				
+				sideMenu.addItem("Profil anzeigen", new Sprite("fileTypesSmall", 0), (function() {
 						this.reportNavigation("profil/" + this.contactTable.getHighlightedRow().getFlattenedFullName());
 					}).bind(this), {
 						abilityToDisable: true,
@@ -130,25 +132,27 @@ Contacts.View = Class.create(Controls.View, {
 						enable: false
 				});
 				
-				this.sideMenu.addItem("E-Mail senden", new Sprite("smallIcons", 9), this.sendMailToOne.bind(this),   {
+				sideMenu.addItem("E-Mail senden", new Sprite("smallIcons", 9), this.sendMailToOne.bind(this),   {
 					abilityToDisable: true,
 					iconDisabled: new Sprite("smallIcons", 10),
 					enable: false
 				});
 				
-				this.sideMenu.addItem("E-Mail an alle senden", new Sprite("smallIcons", 9), this.sendMailToAll.bind(this), {
+				sideMenu.addItem("E-Mail an alle senden", new Sprite("smallIcons", 9), this.sendMailToAll.bind(this), {
 					abilityToDisable: true,
 					iconDisabled: new Sprite("smallIcons", 10),
 					signedInOnly: true
 				});
 				
-				this.sideMenu.setHelpText("Hier findest du die Kontakt-<br />informationen unserer Klasse. " +
+				sideMenu.setHelpText("Hier findest du die Kontakt-<br />informationen unserer Klasse. " +
 					"<span style=\"display: none;\">Mit einem Doppelklick auf eine Person öffnest du ihr Profil.</span>" +
 					"<br /><br /><span class=\"notSignedIn\"" + 
 					((User.signedIn) ? " style=\"display: none;\"" : "") + ">" + "Um eine E-Mail an eine einzelne " +
 					"Person oder gleich alle zu senden, musst du dich zuerst anmelden.</span><span class=\"signedIn\"" + 
 					((User.signedIn) ? "" : " style=\"display: none;\"") + ">Du kannst auch eine E-Mail an eine " +
 					"einzelne Person oder gleich alle in der Klasse senden.</span>");
+				
+				this.sideMenu = sideMenu;
 				
 				this.registerChildControl(this.contactTable, this.sideMenu);
 				
@@ -184,9 +188,9 @@ Contacts.View = Class.create(Controls.View, {
 	},
 	
 	sendMailToAll: function() {
-		this.sendMailTo(Contacts.getItems(function(contact) {
-			return (contact.classmember && contact.mail !== "hidden");
-		}).pluck("mail"));
+		if (User.signedIn) {
+			this.sendMailTo(Contacts.getClassMembers().pluck("mail"));
+		}
 	},
 	
 	sendMailTo: function(addresses) {
@@ -259,10 +263,12 @@ Contacts.Contact = Class.create({
 	},
 	
 	getState: function() {
+		var states = User.StateDetection;
+		
 		switch (this.state) {
-			case User.StateDetection.AWAY: return "Abwesend";
-			case User.StateDetection.ONLINE: return "Online";
-			default: return "Offline";
+			case states.AWAY: 	return "Abwesend";
+			case states.ONLINE: return "Online";
+			default: 			return "Offline";
 		}
 	}
 });
@@ -275,9 +281,8 @@ Contacts.Contact.Window = Class.create(Controls.Window, {
 			return;
 		}
 		
-		var row = new Template("<tr><td class=\"caption\">#{caption}:</td><td>#{content}</td></tr>");
-		
-		var totalComments = Contacts.pluck("posts").inject(0, function(acc, n) { return acc + n; });
+		var row = new Template("<tr><td class=\"caption\">#{caption}:</td><td>#{content}</td></tr>"),
+			totalComments = Contacts.pluck("posts").inject(0, function(acc, n) { return acc + n; });
 		
 		this.update("<h2>" + title + "</h2><h3>Kontaktinformationen</h3><table class=\"simpleList\">" +
 			row.evaluate({
