@@ -218,7 +218,7 @@ Controls.AutoResizingControl = Class.create(Control, {
      * @private
     */
     _resize: function() {
-        var windowSize = Tools.getWindowSize();
+        var windowSize = document.viewport.getDimensions();
         var style = {};
         
         ["width", "height"].each(function(a) {
