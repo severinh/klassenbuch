@@ -586,10 +586,21 @@ Object.extend(Prototype.Browser, (function() {
 	});
 })();
 
-Object.extend(PeriodicalExecuter.prototype, {
+PeriodicalExecuter.addMethods({
 	enable: function() {
 		if (!this.timer) {
 			this.registerCallback();
+		}
+	},
+	
+	setFrequency: function(frequency) {
+		if (frequency !== this.frequency) {
+			this.disable();
+			
+			if (frequency !== 0) {
+				this.frequency = frequency;
+				this.enable();
+			}
 		}
 	}
 });
