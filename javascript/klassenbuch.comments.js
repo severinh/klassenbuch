@@ -76,6 +76,8 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		
 		this._onExternalEvent(this.task.comments, "updated", this._insertComments, this);
 		
+		this.show();
+		
 		if (this.comments.loaded) {
 			this._insertComments();
 		} else if (!this.comments.loading) {
@@ -87,8 +89,6 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		});
 		
 		this.comments.enablePeriodicalUpdate();
-		
-		this.show();
 	},
 	
 	_insertComments: function() {
@@ -457,12 +457,13 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 
 Comments.Comment.Control = function() {
 	var editButtonHTML = new Sprite("smallIcons", 2).toHTML("editButton");
-	var bbCodeSignatures = $H({
-		"B": "strong",
-		"I": "em",
-		"U": "u"
-	}).collect(function(pair) {
-		return ["[" + pair.key + "]", "[/" + pair.key + "]", "<" + pair.value + ">", "</" + pair.value + ">"];
+	
+	var emoMap = {};
+	
+	Comments.Emoticons.each(function(pair) {
+		pair.value.each(function(emo) {
+			emoMap[emo] = pair.key;
+		});
 	});
 	
 	return Class.create(Control, {
@@ -510,19 +511,42 @@ Comments.Comment.Control = function() {
 		},
 
 		refreshControl: function() {
-			var comment = this.comment.text.replaceAll("[BR /]", "<br />");
+			var comment = this.comment.text;
 			
-			bbCodeSignatures.each(function(a) {
-				var count1 = comment.count(a[0]);
-				if (count1 && count1 === comment.count(a[1])) {
-					comment = comment.replaceAll(a[0], a[2]).replaceAll(a[1], a[3]);
-				}
-			});
+			if (comment.include("[")) { // Performance optimization: Don't do the whole parsing thing if there isn't a BBCode tag.
+				var replace = function(re, str) {
+					return comment = comment.replace(re, str);
+				};
+				
+				var replaceLazy = function(re, str, check) {
+					if (comment.include(check)) {
+						return replace(re, str);
+					}
+				};
+				
+				var replacePair = function(re1, re2, str1, str2, match) {
+					if (!replaceLazy(re1, str1, match)) {
+						return false;
+					};
+					
+					replace(re2, str2);
+				};
+				
+				replace(/\[BR \/\]/g, "<br />");
+				
+				replacePair(/\[B\]/g, /\[\/B\]/g, "<strong>", "</strong>", "[B]");
+				replacePair(/\[I\]/g, /\[\/I\]/g, "<em>", "</em>", "[I]");
+				replacePair(/\[U\]/g, /\[\/U\]/g, "<u>", "</u>", "[U]");
+				
+				replaceLazy(/\[URL=([^\]]+)\](.*?)\[\/URL\]/g, "<a href=\"$1\">$2</a>", "[URL=");
+				replaceLazy(/\[URL\](.*?)\[\/URL\]/g, "<a href=\"$1\">$1</a>", "[URL]");
+				replaceLazy(/\[COLOR=(.*?)\](.*?)\[\/COLOR\]/g, "<a href=\"$1\">$2</a>", "[COLOR=");
+				replaceLazy(/\[QUOTE.*?\](.*?)\[\/QUOTE\]/g, "<blockquote>$1</blockquote>", "[QUOTE");
+			}
 			
-			Comments.Emoticons.each(function(pair) {
-				pair.value.each(function(e) {
-					comment = comment.replaceAll(e, "<img src=\"images/emoticons/" + pair.key + ".gif\" style=\"vertical-align: middle;\" />");
-				}); 
+			comment = comment.replace(
+/(\*(angry|blush|excl|huh|mellow|rolleyes|unsure)\*|:-?[D\(P]|o\.?O|B-?\)|8-?D|-[._]-|:-(\||o|\/|\*\))|;-?\)|\^\^|lol|[xX]D|=\()/g, function($1) {
+				return "<img src=\"images/emoticons/" + emoMap[$1] + ".gif\" style=\"vertical-align: middle;\" />"
 			});
 			
 			this._content.innerHTML = comment;
