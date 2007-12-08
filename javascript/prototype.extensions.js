@@ -713,7 +713,7 @@ var Collection = Class.create(Hash, EventPublisher.prototype, {
 	},
 	
 	clear: function() {
-		this._objects = {};
+		this._object = {};
 		this.fireEvent("clear");
 	},
 	
