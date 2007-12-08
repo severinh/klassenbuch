@@ -349,22 +349,6 @@ document.viewport.getHeight();
 	};
 }());
 
-Object.extend(Event, (function() {
-	var navEvents = $w("TAB ESC LEFT UP RIGHT DOWN HOME END PAGEUP PAGEDOWN INSERT");
-	
-	return {
-		isNavigationKey: function(e) {
-			var k = e.keyCode;
-			
-			navEvents.any(function(navEvent) {
-				return k === Event["KEY_" + navEvent];
-			});
-		},
-		
-		KEY_SPACE: 32
-	};
-})());
-
 /**
  * Some extensions to Prototype's browser detection functionality (<em>Prototype.Browser</em>). It checks whether the browser supports
  * cookies or is supported in general.
