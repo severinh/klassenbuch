@@ -25,14 +25,14 @@ if (phpversion() < '4.1.0') {
 
 // instantiate a new phpThumb() object
 ob_start();
-if (!include_once(dirname(__FILE__).'/phpthumb.class.php')) {
+if (!include_once(dirname(__FILE__).'/phpthumb.php')) {
 	ob_end_flush();
-	die('failed to include_once("'.realpath(dirname(__FILE__).'/phpthumb.class.php').'")');
+	die('failed to include_once("'.realpath(dirname(__FILE__).'/phpthumb.php').'")');
 }
 ob_end_clean();
 
 $phpThumb = new phpThumb();
-$phpThumb->DebugTimingMessage('phpThumb.php start', __FILE__, __LINE__, $starttime);
+$phpThumb->DebugTimingMessage('phpThumb.direct.php start', __FILE__, __LINE__, $starttime);
 $phpThumb->SetParameter('config_error_die_on_error', true);
 
 if (!phpthumb_functions::FunctionIsDisabled('set_time_limit')) {
