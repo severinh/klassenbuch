@@ -179,20 +179,6 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 	},
 	
 	/**
-	 * 
-	 * @param
-	 * @param
-	 * @returns
-	*/
-	replaceAll: function(a, b) {
-		if (a === "") {
-			return this;
-		}
-		
-        return this.split(a).join(b);
-	},
-	
-	/**
 	 * Lowercases the first character in the string.
 	 * @returns {String} The resulting string.
 	 * @example
@@ -219,12 +205,13 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 	},
 	
 	/**
-	 * Turns the string into a more URL-friendly version that has no whitespaces and German umlauts. This method uses an
-	 * internal cache that causes a significant performance improvment when addressifying a string two or more times.
+	 * Turns the string into a more URL-friendly version that has no whitespaces and special charactes such as German
+	 * umlauts. This method uses an internal cache that causes a significant performance improvment when addressifying
+	 * a string two or more times.
 	 * @returns {String} The addressified string.
 	 * @example
 "A string with a German umlaut: ö".addressify();
-// -> "a-string-with-a-german-umlaut-oe"
+// -> "a-string-with-a-german-umlaut-"
 	*/
 	addressify: function() {
 		var store = arguments.callee._STORE[this];
@@ -234,11 +221,8 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 		}
 		
 		return arguments.callee._STORE[this] = this.toLowerCase()
-			.replace(/([\s])/g, "-")
-			.replaceAll("ü", "ue")
-			.replaceAll("ä", "ae")
-			.replaceAll("ö", "oe")
-			.replace(/[^A-Z^a-z^0-9-]/g, "");
+			.replace(/\s/g, "-")
+			.replace(/[^A-Z^0-9-]/gi, "");
 	},
 	
 	/**
@@ -264,7 +248,7 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 	}
 });
 
-/** @ignore This is an internal cache used by String#addressify */
+/** @ignore This is an internal cache used by String#addressify. */
 String.prototype.addressify._STORE = {};
 
 /**
