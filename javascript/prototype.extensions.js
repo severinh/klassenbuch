@@ -296,33 +296,58 @@ var Cookie = {
 };
 
 /**
- * Enthält verschiedene Hilffunktionen, die sich sonst nirgendwo unterbringen lassen.
+ * Provides various methods to get the browser window inner dimensions (so called viewport), which can be used to center elements on
+ * screen or to cover the whole screen with a single element. This definition overrides the original Prototype defition to improve
+ * performance.
  * @namespace
+ * @name document.viewport
 */
-var Tools = {
-	/**
-	 * Erzeugt eine zufällige alphanummerische Zeichenfolge einer bestimmten Länge. Diese Funktion wird zum Generieren
-	 * von IDs für Elemente, Objekte vom Typ <em>Collection</em> usw. verwendet.
-	 * @param {Integer} [a] Die Länge der zu erzeugenden Zeichenfolge. Standardwert ist 32.
-	 * @returns {String} Die erzeugte Zeichenfolge.
-	*/
-	generateRandomString: function(a) {
-		return $R(1, a || 32).collect(function(i) {
-			return "abcdefghiklmnopqrstuvwxyz01234567890123456789".charAt(Math.random() * ((i === 1) ? 25 : 45));
-		}).join("");
-	},
+Object.extend(document.viewport, function() {
+	// Shortcuts to reduce code size and improve code readability.
+	var B = Prototype.Browser;
 	
-    getWindowSize: function() {
-		var getSize = function(a) {
-			return window["inner" + a] || document.documentElement["client" + a] || document.body["client" + a] - 5 || 0;
-		};
-		
-		return {
-			width: getSize("Width"),
-			height: getSize("Height")
-		};
-	}
-};
+	// The getter function that differs from browser to browser (prevent wrong calculations due to scroll bars). 
+	var get = (B.WebKit && !document.evaluate)
+		? function(D) { return self["inner" + D]; }
+		: (B.Opera)
+			? function(D) { return document.body["client" + D]; }
+			: function(D) { return document.documentElement["client" + D] };
+
+	return {
+		/**
+		 * Returns both the viewport's width and height in pixels.
+		 * @returns {Object} The viewport's dimensions.
+		 * @example
+document.viewport.getDimensions();
+// -> { width: 1280, height: 725 }
+		*/
+		getDimensions: function() {
+			return { width: get("Width"), height: get("Height") };
+		},
+
+		/**
+		 * Returns the viewport's width in pixels.
+		 * @returns {Object} The viewport's width.
+		 * @example
+document.viewport.getWidth();
+// -> 1280
+		*/
+		getWidth: function() {
+			return get("Width");
+		},
+
+		/**
+		 * Returns the viewport's height in pixels.
+		 * @returns {Object} The viewport's height.
+		 * @example
+document.viewport.getHeight();
+// -> 725
+		*/
+		getHeight: function() {
+			return get("Height");
+		}
+	};
+}());
 
 Object.extend(Event, (function() {
 	var navEvents = $w("TAB ESC LEFT UP RIGHT DOWN HOME END PAGEUP PAGEDOWN INSERT");
@@ -607,17 +632,17 @@ Element.addMethods({
 	},
 	
 	centerVertically: function(element) {
-		var windowSize = Tools.getWindowSize();
-        var top = (windowSize.height - parseInt(element.getStyle("height"), 10)) / 2;
+		var windowHeight = document.viewport.getHeight();
+        var top = (windowHeight - parseInt(element.getStyle("height"), 10)) / 2;
         
-        return element.setStyle({ top: top.limitTo(0, windowSize.height) + "px" });
+        return element.setStyle({ top: top.limitTo(0, windowHeight) + "px" });
 	},
 	
 	centerHorizontally: function(element) {
-		var windowSize = Tools.getWindowSize();
-		var left = (windowSize.width - parseInt(element.getStyle("width"), 10)) / 2;
+		var windowWidth = document.viewport.getWidth();
+		var left = (windowWidth - parseInt(element.getStyle("width"), 10)) / 2;
 		
-		return element.setStyle({ left: left.limitTo(0, windowSize.width) + "px" });
+		return element.setStyle({ left: left.limitTo(0, windowWidth) + "px" });
 	},
 	
     createChild: function(element, options, position) {

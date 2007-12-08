@@ -534,7 +534,7 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		this._list.setStyle({ minWidth: elementSize.width });
 		
 		var listSize = this._list.getDimensions();
-		var top = buttonPos[1] + ((buttonPos[1] + elementSize.height + listSize.height < Tools.getWindowSize().height) ? elementSize.height + 1 : (-1 * listSize.height + 1));
+		var top = buttonPos[1] + ((buttonPos[1] + elementSize.height + listSize.height < document.viewport.getHeight()) ? elementSize.height + 1 : (-1 * listSize.height + 1));
 		
 		this._list.setStyle({ top: top + "px", left: (buttonPos[0] - listSize.width + elementSize.width) + "px" }).show();
 		
@@ -1154,7 +1154,7 @@ var DragAble = Class.create({
 			document.observe("mouseup", this.stopDraggingListener);
 			document.observe("mousemove", this.moveListener);
 			
-			this._windowSize = Tools.getWindowSize();
+			this._windowSize = document.viewport.getDimensions();
 		}
 	},
 	
