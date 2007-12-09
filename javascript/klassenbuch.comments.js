@@ -74,7 +74,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
 		
 		this.registerChildControl(this.newCommentButton, this.tabControl);
 		
-		this._onExternalEvent(this.task.comments, "updated", this._insertComments, this);
+		this._onExternalEvent(this.comments, "updated", this._insertComments, this);
 		
 		this.show();
 		
@@ -94,7 +94,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
 	_insertComments: function() {
 		this.tabControl.removeAllTabs();
 		
-		if (this.task.comments.count() > 0) {
+		if (this.comments.count() > 0) {
 			this.comments.eachSlice(this.options.commentsPerPage).each(function(groupOfComments) {
 				this._addTab().addComments(groupOfComments);
 			}, this);
@@ -120,7 +120,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
 	
 	_updateNumberOfComments: function() {
 		var a = "",
-			commentsCount = this.task.comments.count();
+			commentsCount = this.comments.count();
 		
         switch (commentsCount) {
 			case 0:  a = "Keine Kommentare"; break;
@@ -136,7 +136,7 @@ Comments.MainWindow = Class.create(Controls.Window, {
             this._addTab();
         }
         
-        this.task.comments.add(comment);
+        this.comments.add(comment);
         this.tabControl.activateTab(this.tabControl.tabs.length - 1);
         this.tabControl.tabs.last().addComment(comment);
         this._updateNumberOfComments();
@@ -144,28 +144,6 @@ Comments.MainWindow = Class.create(Controls.Window, {
         
         this.fireEvent("createComment");
     }
-});
-
-Comments.Emoticons = $H({
-    angry:    ["*angry*"],
-    biggrin:  [":-D", ":D", "=D"],
-    blink:    ["o.O", "oO"],
-    blush:    ["*blush*", ":-*)"],
-    cool:     ["B-)", "B)", "8-D", "8D"],
-    dry:      ["-.-"],
-    excl:     ["*excl*"],
-    happy:    ["^^"],
-    huh:      ["*huh*"],
-    laugh:    ["lol"],
-    mellow:   ["*mellow*", ":-|"],
-    ohmy:     [":-o"],
-    rolleyes: ["*rolleyes*"],
-    sad:      [":-(", ":(", "=("],
-    sleep:    ["-_-"],
-    tongue:   [":-P", ":P"],
-    unsure:   ["*unsure*", ":-/"],
-    wink:     [";-)", ";)"],
-    lol:	  ["xD", "XD"]
 });
 
 Comments.MainWindow.TabPage = Class.create(Controls.TabControl.TabPage, {
@@ -322,7 +300,7 @@ Comments.CommentInputField = function() {
 		return "<img src=\"images/formatting/" + f.toLowerCase() + ".gif\" name=\"" + f + "\" />";
 	}).join("");
 	
-	var emoticonsHTML =	Comments.Emoticons.collect(function(pair) {
+	var emoticonsHTML =	BBCode.Emoticons.collect(function(pair) {
 		return "<img src=\"images/emoticons/" + pair.key + ".gif\" name=\"" + pair.key + "\" />";
 	}).join("");
 	
@@ -401,7 +379,7 @@ Comments.CommentInputField = function() {
 			var fileName = Event.element(e).name;
 			
 			if (fileName) {
-				this.insertTag(Comments.Emoticons.get(fileName)[0], "");
+				this.insertTag(BBCode.Emoticons.get(fileName)[0], "");
 			}
 		}
 	});
@@ -458,14 +436,6 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 Comments.Comment.Control = function() {
 	var editButtonHTML = new Sprite("smallIcons", 2).toHTML("editButton");
 	
-	var emoMap = {};
-	
-	Comments.Emoticons.each(function(pair) {
-		pair.value.each(function(emo) {
-			emoMap[emo] = pair.key;
-		});
-	});
-	
 	return Class.create(Control, {
 		initialize: function($super, comment) {
 			this.comment = comment;
@@ -511,45 +481,7 @@ Comments.Comment.Control = function() {
 		},
 		
 		refreshControl: function() {
-			var comment = this.comment.text;
-			
-			if (comment.include("[")) { // Performance optimization: Don't do the whole parsing thing if there isn't a BBCode tag.
-				var replace = function(re, str) {
-					return comment = comment.replace(re, str);
-				};
-				
-				var replaceLazy = function(re, str, check) {
-					if (comment.include(check)) {
-						return replace(re, str);
-					}
-				};
-				
-				var replacePair = function(re1, re2, str1, str2, match) {
-					if (!replaceLazy(re1, str1, match)) {
-						return false;
-					};
-					
-					replace(re2, str2);
-				};
-				
-				replace(/\[BR \/\]/g, "<br />");
-				
-				replacePair(/\[B\]/g, /\[\/B\]/g, "<strong>", "</strong>", "[B]");
-				replacePair(/\[I\]/g, /\[\/I\]/g, "<em>", "</em>", "[I]");
-				replacePair(/\[U\]/g, /\[\/U\]/g, "<u>", "</u>", "[U]");
-				
-				replaceLazy(/\[URL=([^\]]+)\](.*?)\[\/URL\]/g, "<a href=\"$1\">$2</a>", "[URL=");
-				replaceLazy(/\[URL\](.*?)\[\/URL\]/g, "<a href=\"$1\">$1</a>", "[URL]");
-				replaceLazy(/\[COLOR=(.*?)\](.*?)\[\/COLOR\]/g, "<a href=\"$1\">$2</a>", "[COLOR=");
-				replaceLazy(/\[QUOTE.*?\](.*?)\[\/QUOTE\]/g, "<blockquote>$1</blockquote>", "[QUOTE");
-			}
-			
-			comment = comment.replace(
-/(\*(angry|blush|excl|huh|mellow|rolleyes|unsure)\*|:-?[D\(P]|o\.?O|B-?\)|8-?D|-[._]-|:-(\||o|\/|\*\))|;-?\)|\^\^|lol|[xX]D|=\()/g, function($1) {
-				return "<img src=\"images/emoticons/" + emoMap[$1] + ".gif\" style=\"vertical-align: middle;\" />"
-			});
-			
-			this._content.innerHTML = comment;
+			this._content.innerHTML = BBCode.parse(this.comment.text);
 		}
 	});
 }();
