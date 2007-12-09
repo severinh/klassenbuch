@@ -256,6 +256,8 @@ User.StateDetection = function() {
 			alreadyChecked = true;
 			lastActivity = getTimestamp();
 		}
+		
+		return true;
 	};
 	
 	var update = function(state) {
@@ -277,6 +279,7 @@ User.StateDetection = function() {
 		initialize: function() {
 			User.on("signIn", function() {
 				document.observe("mousemove", handleActivity);
+				document.observe("keyup", handleActivity);
 				
 				if (!inactivityCheck) {
 					inactivityCheck = new PeriodicalExecuter(function() {
@@ -285,7 +288,7 @@ User.StateDetection = function() {
 						} else {
 							update(User.StateDetection.ONLINE);
 						}
-					}, 5);
+					}, 2.5);
 				} else {
 					inactivityCheck.enable();
 				}
@@ -304,6 +307,7 @@ User.StateDetection = function() {
 			
 			User.on("signOut", function() {
 				document.stopObserving("mousemove", handleActivity);
+				document.stopObserving("keyup", handleActivity);
 				
 				inactivityCheck.disable();
 				decreaseCheckFrequency.disable();
@@ -514,9 +518,9 @@ User.SettingsWindow = Class.create(Controls.Window, {
 		if (!error) {
 			if (settings.values().length) {
 				var request = new JSONRPC.Request("changeusersettings", [settings], {
-					onSuccess: (function(response) {
+					onSuccess: function() {
 						User.settings.update(settings);
-					}).bind(this)
+					}
 				});
 			}
 			
