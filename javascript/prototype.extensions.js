@@ -408,7 +408,8 @@ Object.extend(Prototype.Browser, (function() {
 		version: version,
 		
 		/**
-		 * Indicates whether the used browser should be able to run the application smoothly. Currently 
+		 * Indicates whether the used browser should be able to run the application smoothly. Currently Firefox versions older than 1.5
+		 * and IE versions older than 6 aren't supported.
 		 * @todo Should be moved to a more reasonable place.
 		 * @type Boolean
 		*/
@@ -439,14 +440,38 @@ Object.extend(Prototype.Browser, (function() {
 	
 	/** @ignore */
 	var compare = function(add) {
-		return this.removeTime(true).getTime() === new Date().removeTime().add(add).getTime();
+		return this.removeTime(true).equals(new Date().removeTime().add(add));
 	};
 	
+	/**
+	 * @class Some extensions to native JavaScript dates. The methods added to Date.prototype by the Prototype JavaScript
+	 * Framework are described in the <a href="http://www.prototypejs.org/api/date">Prototype API Documentation</a>.
+	 * @name Date
+	*/
 	Object.extend(Date.prototype, {
+		/**
+		 * Makes it possible to iterate through date ranges using $R. One iteration step spans one day.
+		 * @example
+$R(new Date(), new Date().add(3, "days")).invoke("format", "d.m.Y").join(", ");
+// -> "08.12.2007, 09.12.2007, 10.12.2007, 11.12.2007"
+		*/
 		succ: function() {
-			return new Date(this.getTime() + 24 * 60 * 60 * 1000);
+			return new Date(this.getTime() + multipliers.get("day"));
 		},
 		
+		/**
+		 * Adds a specific amount of time to the date object. In addition to the numerical amount of time a textual time unit can be
+		 * specified that can be both singular and plural. Even negative values are allowed.
+		 * @param {Number} number The amount of time to add.
+		 * @param {String} [unit] The textual time unit to be used. Defaults to "day".
+		 * @example
+new Date().format("d.m.Y H:i");
+// -> "08.12.2007 22:05"
+new Date().add(23, "days").format("d.m.Y H:i");
+// -> "31.12.2007 22:05"
+new Date().add(-3, "minutes").format("d.m.Y H:i");
+// -> "08.12.2007 22:02"
+		*/
 		add: function(number, unit) {
 			this.setTime(this.getTime() + number * multipliers.get(unit || "day"));
 			return this;
