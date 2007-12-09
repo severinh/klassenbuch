@@ -252,16 +252,14 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 String.prototype.addressify._STORE = {};
 
 /**
- * Ermöglicht es, auf einfache Art und Weise Cookies zu erstellen bzw. zu löschen, und den Wert von bestehenden Cookies
- * zu erfahren.
- * @class
- * @static
+ * Provides methods to dynamically create and remove cookies.
+ * @namespace
 */
 var Cookie = {
 	/**
-	 * Gibt den Wert eines bestimmten Cookies zurück.
-	 * @param {String} name Der Name des betreffenden Cookies.
-	 * @returns {String} Der Wert des Cookies.
+	 * Returns the value of a certain cookie.
+	 * @param {String} name The name of the cookie to read.
+	 * @returns {String} The cookie's value. Returns false if the cookie doesn't exist.
 	*/
 	get: function(name) {
 		var cookie = document.cookie;
@@ -278,17 +276,17 @@ var Cookie = {
 	},
 	
 	/**
-	 * Legt den Wert für ein bestimmtes Cookie fest.
-	 * @param {String} name Der Name des betreffenden Cookies.
-	 * @param {String} value Der Wert, der dem betreffenden Cookie gegeben werden soll.
+	 * Creates respecively edits a cookie. Both a value and the name of the cookie need to be specified.
+	 * @param {String} name The name of the cookie to create.
+	 * @param {String} value The value to be assigned to this cookie.
 	*/
 	set: function(name, value) {
 		document.cookie = name + "=" + value + ";expires=" + new Date().add(1, "year").toGMTString();
 	},
 	
 	/**
-	 * Löscht ein bestimmtes Cookie.
-	 * @param {String} name Der Name des betreffenden Cookies.
+	 * Removes a certain cookie.
+	 * @param {String} name The name of the cookie to remove.
 	*/
 	remove: function(name) {
 		document.cookie = name + "=;expires=Thu, 01-Jan-1970 00:00:01 GMT";
