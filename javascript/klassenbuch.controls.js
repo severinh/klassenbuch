@@ -640,12 +640,9 @@ Controls.TabControl = Class.create(Control, {
 	},
 
 	removeTab: function(tab) {
-		if (Object.isNumber(tab)) {
-			var index = tab.limitTo(0, this.tabs.length - 1);
-			tab = this.tabs[index];
-		} else {
-			var index = this.tabs.indexOf(tab);
-		}
+		tab = this.getTab(tab);
+		
+		var index = this.tabs.indexOf(tab);
 		
 		if (this.tabs.length > 1 && tab === this.activeTab) {
 			this.activateTab((index === this.tabs.length - 1) ? index - 1 : index + 1);
@@ -658,7 +655,9 @@ Controls.TabControl = Class.create(Control, {
 	},
 	
 	removeAllTabs: function() {
+		this.activeTab = null;
 		this.tabs.invoke("remove");
+		this.tabs = [];
 	},
 	
 	getTab: function(tab) {
