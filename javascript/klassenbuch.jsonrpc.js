@@ -148,17 +148,16 @@ JSONRPC.CachedRequest = Class.create(JSONRPC.Request, {
 		
 		var empty = Prototype.K,
 			store = JSONRPC.CachedRequest._store,
-			onSuccess = options.onSuccess || empty;
+			onSuccess = options.onSuccess || empty,
+			key = method + params.toJSON();
 		
 		options = Object.extend({
-			onUpdated: Prototype.K,
-			onUnchanged: Prototype.K
+			onUpdated: empty,
+			onUnchanged: empty
 		}, options);
 		
 		options.onSuccess = function(response) {
 			onSuccess(response);
-			
-			var key = method + params.toJSON();
 			
 			if (response.raw && response.raw === store[key]) {
 				options.onUnchanged(response);
@@ -493,7 +492,9 @@ JSONRPC.Store = Class.create(Collection, {
 			var request = new JSONRPC.CachedRequest(method, params(), {
 				onUpdated: (function(response) {
 					this.loadSuccess(response, appendOnly);
-				}).bind(this)
+				}).bind(this),
+				
+				onFailure: (this.options.suppressErrors) ? Prototype.K : null
 			});
         }
     },
@@ -508,35 +509,37 @@ JSONRPC.Store = Class.create(Collection, {
 			self = this,
 			newItems = [];
 		
-		response.result.each(function(newElement) {
-			var oldElement = self.get(newElement[identifier]);
-			
-			if (oldElement) {
-				if (!appendOnly) {
-					oldElement.__updated__ = true;
-				}
+		if (response && response.result) {
+			response.result.each(function(newElement) {
+				var oldElement = self.get(newElement[identifier]);
 				
-				oldElement.update(newElement);
-			} else {
-				var newEntry = new self.options.itemClass(newElement);
-				
-				if (!appendOnly) {
-					newEntry.__updated__ = true;
-				}
-				
-				newItems.push(newEntry);
-				self.add(newEntry);
-			}
-		});
-		
-		if (!appendOnly) {
-			this.each(function(item) {
-				if (item.__updated__) {
-					delete item.__updated__;
+				if (oldElement) {
+					if (!appendOnly) {
+						oldElement.__updated__ = true;
+					}
+					
+					oldElement.update(newElement);
 				} else {
-					self.unset(item[identifier]);
+					var newEntry = new self.options.itemClass(newElement);
+					
+					if (!appendOnly) {
+						newEntry.__updated__ = true;
+					}
+					
+					newItems.push(newEntry);
+					self.add(newEntry);
 				}
 			});
+			
+			if (!appendOnly) {
+				this.each(function(item) {
+					if (item.__updated__) {
+						delete item.__updated__;
+					} else {
+						self.unset(item[identifier]);
+					}
+				});
+			}
 		}
 		
 		this.loading = false;
