@@ -67,6 +67,7 @@ if (!$settings->get("online")) {
 		$userData = doInternalRequest("getuserdata");
 		$albums   = doInternalRequest("gallery_getalbums");
 		$tasks 	  = doInternalRequest("gettasks", Array(mktime(0, 0, 0) - 2592000));
+		$subjects = doInternalRequest("getsubjects");
 		$contacts = doInternalRequest("getcontacts");
 		$files 	  = doInternalRequest("getfiles");
 		$albums   = doInternalRequest("gallery_getalbums");
@@ -85,6 +86,10 @@ if (!$settings->get("online")) {
 		
 		if ($tasks->val) {
 			$directData[] = "tasks: " . $tasks->payload;
+		}
+		
+		if ($subjects->val) {
+			$directData[] = "subjects: " . $subjects->payload;
 		}
 		
 		if ($contacts->val) {

@@ -31,6 +31,12 @@ var TaskManagement = new (Class.create(JSONRPC.Store, {
 		});
 		
 		App.on("initialize", function() {
+			this.Subjects = new JSONRPC.Store({
+				method: "getsubjects",
+				inlineData: DirectData.get("subjects").result,
+				itemClass: TaskManagement.Subject
+			});
+		
 			this.options.itemClass = TaskManagement.Task;
 			this.loadData(DirectData.get("tasks").result);
 			
@@ -99,66 +105,19 @@ var TaskManagement = new (Class.create(JSONRPC.Store, {
 	*/
 	getUpcomingTasks: function() {
 		return this.getTasksWithinTimeRange(Date.getTodaysTimestamp());
+	}
+}))();
+
+TaskManagement.Subject = Class.create({
+	initialize: function(subject) {
+		this.id = subject.id;
+		this.update(subject);
 	},
 	
-	/**
-	 * Eine Auflistung aller Fächer, die in der Aufgabenverwaltung gewählt werden können.
-	 * @type String[]
-	 * @name subjects
-	 * @memberof TaskManagement
-	 * @todo Sollte schon auf Server-Seite angegeben werden können, beispielsweise in einer Datenbanktabelle. Dies
-	 * würde auch die Menge der übertragenen Daten beim Abfragen der Aufgabenliste reduzieren.
-	*/
-	subjects: [
-		"Anwendungen der Mathematik",
-		"Bildnerisches Gestalten",
-		"Biologie",
-		"Chemie (Ergänzungsfach)", 
-		"Deutsch",
-		"Englisch",
-		"Französisch",
-		"Geschichte",
-		"Italienisch",
-		"Lateinisch",
-		"Mathematik", 
-		"Musik (Schwerpunktfach)",
-		"Musik (Grundlagenfach)",
-		"Physik (Schwerpunktfach)",
-		"Physik (Grundlagenfach)",
-		"Religion (Ergänzungsfach)",
-		"Sonstiges",
-		"Sport",
-		"Wirtschaft und Recht (Ergänzungsfach)"
-	],
-
-	/**
-	 * Eine Auflistung aller Fächer, die in der Aufgabenverwaltung gewählt werden können; in abgekürzter Form.
-	 * @type String[]
-	 * @name subjectsShort
-	 * @memberof TaskManagement
-	*/	
-	subjectsShort: [
-		"AM",
-		"BG",
-		"Biologie",
-		"Chemie (EF)",
-		"Deutsch",
-		"Englisch",
-		"Französisch",
-		"Geschichte",
-		"Italienisch",
-		"Lateinisch",
-		"Mathematik",
-		"Musik (SF)",
-		"Musik (GF)",
-		"Physik (SF)", 
-		"Physik (GF)",
-		"Religion (EF)",
-		"Sonstiges",
-		"Sport",
-		"WR (EF)"
-	]
-}))();
+	update: function(subject) {
+		Object.extend(this, subject);
+	}
+});
 
 /**
  * Definiert den Menüpunkt <em>Aufgaben</em> im Klassenbuch, der neben einem Seitenmenü, das Zugriff auf verschiedene
@@ -326,14 +285,16 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 			}
 		);
 		
-		this._taskTable.addColumn("Fach", "subject", {
+		this._taskTable.addColumn("Fach", function(task) {
+				return task.subject["long"];
+			}, {
 				width: "120px",
 				sortable: true,
 				showSortedInGroups: "outlookStyle",
 				processGroupCaption: Prototype.K,
 				
 				processCellContent: function(a, task) {
-					a = task.subjectShorted;
+					a = task.subject["short"];
 					return (task.removed) ? "<span class=\"removedTask\">" + a + "</span>" : a;
 				}
 			}
@@ -388,10 +349,11 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 				 * @name _getContent5Cache
 				 * @memberof TaskManagement.View
 				*/
-				this._getContent5Cache = this._getContent5Cache ||
-					new Sprite("smallIcons", 0).toHTML("actionIcon iconShowComments") + ((User.signedIn) ? 
+				this._getContent5Cache = this._getContent5Cache || ((User.signedIn) ? 
+					new Sprite("smallIcons", 0).toHTML("actionIcon iconShowComments") + 
 					new Sprite("smallIcons", 2).toHTML("actionIcon iconEditTask") +
 					new Sprite("smallIcons", 4).toHTML("actionIcon iconDeleteTask") :
+					new Sprite("smallIcons", 1).toHTML() +
 					new Sprite("smallIcons", 3).toHTML() +
 					new Sprite("smallIcons", 5).toHTML());
 				
@@ -555,7 +517,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 	*/
 	_onSignIn: function() {
 		if (this._taskTable.getHighlightedRow()) {
-			[1, 2].each(function(a) {
+			[0, 1, 2].each(function(a) {
 				this._sideMenu.items[a].enable();
 			}, this);
 		}
@@ -569,7 +531,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 	 * @memberof TaskManagement.View
 	*/
 	_onSignOut: function() {
-		[1, 2].each(function(a) {
+		[0, 1, 2].each(function(a) {
 			this._sideMenu.items[a].disable();
 		}, this);
 	},
@@ -592,11 +554,12 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		this._taskInfoBox.innerHTML = (contact) ? "Eingetragen am " + task.added.format("j. F") + "<br />von " +
 			contact.getFullName() : "";
 		
-		this._sideMenu.items[0].enable();
+		
 		
 		if (User.signedIn) {
-			this._sideMenu.items[1].enable();
-			this._sideMenu.items[2].enable();
+			[0, 1, 2].each(function(a) {
+				this._sideMenu.items[a].enable();
+			}, this);
 		}
 	},
 	
@@ -628,7 +591,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		
 		if (task.removed) {
             alert("Diese Aufgabe wurde bereits gelöscht."); // Es bringt nichts, eine Aufgabe zweimal zu löschen ;-)
-		} else if (confirm("Möchtest du die " + task.subjectShorted + "-Aufgabe \"" + task.text + "\" wirklich löschen?")
+		} else if (confirm("Möchtest du die " + task.subject["short"] + "-Aufgabe \"" + task.text + "\" wirklich löschen?")
 			&& confirm("Bist du wirklich ganz sicher?")) {
 			task.remove();
 		}
@@ -711,7 +674,6 @@ TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope Tas
 			})) {
 			return false;
 		}
-		
 		
 		// Legt den Fensterinhalt fest
 		this.content.innerHTML = "<h2>" + title + "</h2>" +
@@ -851,14 +813,10 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
 			return;
 		}
 		
-		/**
-		 * Das Drop-Down-Menü, mit dem der Benutzer das gewünschte Fach auswählen kann. Die Liste mit den Schulfächern
-		 * stammt von <a href="TaskManagement.htm#subjects">TaskManagement.subjects</a>.
-		 * @type Controls.DropDownSelection
-		 * @name _subjectSelection
-		 * @memberof TaskManagement.TaskCreationWindow
-		*/
-		this._subjectSelection = this.select(".subjectContainer")[0].insertControl(new Controls.DropDownSelection(TaskManagement.subjects));
+		this._subjectSelection = this.select(".subjectContainer")[0].insertControl(
+			new Controls.DropDownSelection(TaskManagement.Subjects.pluck("long"))
+		);
+		
 		this.registerChildControl(this._subjectSelection);
 		
 		// Der Parameter 'true' bewirkt, dass das Fenster mit einer unmerklichen Verzögerung sichtbar gemacht wird, um
@@ -903,7 +861,7 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
 	 * bereitstellt. Beispiel für einen Rückgabewert:
 <pre class="code">
 {
-	subject: "Wirtschaft und Recht",
+	subject: 3,
 	date: 1181470470,
 	text: "Probe Buchhaltung",
 	important: true
@@ -913,7 +871,7 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
 	*/	
 	getInput: function($super) {
 		return Object.extend($super(), {
-			subject: this._subjectSelection.getSelectedItem()
+			subject: TaskManagement.Subjects.getItem("long", this._subjectSelection.getSelectedItem()).id
 		});
 	}
 });
@@ -945,7 +903,7 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
 		
 		this.submitButton.enable();
 		this.dateSelection.setSelectedDate(this.task.date);
-		this.select(".subjectContainer").first().innerHTML = "<em>" + this.task.subject + "</em>";
+		this.select(".subjectContainer").first().innerHTML = "<em>" + this.task.subject["long"] + "</em>";
 		
 		(function() {
 			this.taskInput.value = this.task.text;
@@ -1028,7 +986,9 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 			restrictedAccess: true
 		});
 		
-		this.registerSubNode("kommentare", this.showComments.bind(this));
+		this.registerSubNode("kommentare", this.showComments.bind(this), {
+			restrictedAccess: true
+		});
 	},
 	
 	update: function(task) {
@@ -1050,11 +1010,11 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 		
 		/**
 		 * Das Schulfach.
-		 * @type String
+		 * @type TaskManagement.Subject
 		 * @memberof TaskManagement.Task
 		 * @name subject
 		*/
-        this.subject = task.subject;
+        this.subject = TaskManagement.Subjects.get(task.subject);
         
 		/**
 		 * Gibt an, ob die Aufgabe speziell wichtig ist, z. B. wenn es sich um eine Probe handelt.
@@ -1106,14 +1066,6 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 		 * @name removed
 		*/
 		this.removed = task.removed || false;
-		
-		/**
-		 * Die abgekürzte Schreibweise des Schulfachs.
-		 * @type String
-		 * @memberof TaskManagement.Task
-		 * @name subjectShorted
-		*/
-		this.subjectShorted = TaskManagement.subjectsShort[TaskManagement.subjects.indexOf(this.subject)];
 	},
 
 	/**

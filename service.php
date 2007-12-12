@@ -38,7 +38,7 @@ function gettasks($start = null, $end = null) {
         $tasks[] = Array(
             "id"          => (int)    $task["id"],
             "date"        => (int)    $task["date"],
-            "subject"     => (string) $task["subject"],
+            "subject"     => (int) 	  $task["subject"],
             "important"   => (bool)   $task["important"],
             "text"        => (string) $task["text"],
             "userid"      => (int)    $task["userid"],
@@ -60,7 +60,7 @@ function gettasks($start = null, $end = null) {
     
 	$commentsCount = $database->loadAssocList("taskid");
 	
-	if ($commentsCount == null) {
+	if (!$database->success()) {
         return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
     }
     
@@ -106,8 +106,7 @@ function createtask($subject, $date, $text, $important = false) {
     $database = Core::getDatabase();
     $user = Core::getUser();
 	
-	$subject = trim(strip_tags($subject));
-	$text 	 = trim(strip_tags($text));
+	$text = trim(strip_tags($text));
     
     // Prüft, ob der Benuzter angemeldet ist
     if (!$user->authenticated) {
@@ -191,10 +190,50 @@ function edittask($id, $date, $text, $important = false) {
     return true;
 }
 
+function getsubjects() {
+	$database = Core::getDatabase();
+	
+	$database->setQuery("SELECT * FROM #__subjects");
+	$subjectsResponse = $database->loadAssocList();
+	
+    if (!$database->success()) {
+        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	}
+	
+	$subjects = Array();
+	
+	foreach ($subjectsResponse as $subject) {
+        $subjects[] = Array(
+            "id"    => (int)    $subject["id"],
+            "long"  => (string) $subject["long"],
+            "short" => (string) $subject["short"]
+		);
+	}
+	
+	return $subjects;
+}
+
+function getsubject($subjectid) {
+	$database = Core::getDatabase();
+	
+	$database->setQuery("SELECT * FROM #__subjects WHERE id = " . $database->quote($subjectid));
+	$subject = $database->loadAssoc();
+	
+    if (!$database->success()) {
+        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	}
+	
+	return Array("id" => (int) $subject["id"], "long" => (string) $subject["long"], "short" => (string) $subject["short"]);
+}
+
 function getcomments($taskid) {
     $database = Core::getDatabase();
     $user = Core::getUser();
     
+    if (!$user->authenticated) {
+        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+	
     $database->setQuery("SELECT * FROM #__comments WHERE taskid = " . $database->quote($taskid) . " ORDER BY date");
     
 	$commentsResponse = $database->loadAssocList();
@@ -215,26 +254,24 @@ function getcomments($taskid) {
 		);
 	}
     
-    if ($user->authenticated) {
-        $database->setQuery("SELECT * FROM #__tasks WHERE id = " . $database->quote($taskid));
-        
-		$task = $database->loadAssoc();
+	$database->setQuery("SELECT * FROM #__tasks WHERE id = " . $database->quote($taskid));
+	
+	$task = $database->loadAssoc();
+	
+	if ($database->success()) {
+		$commentsReadBy = explode(",", $task["commentsreadby"]);
 		
-        if ($database->success()) {
-            $commentsReadBy = explode(",", $task["commentsreadby"]);
-            
-            if (!in_array($user->id, $commentsReadBy)) {
-                array_push($commentsReadBy, $user->id);
-				
-                $database->setQuery("UPDATE #__tasks SET " .
-					"commentsreadby = " . $database->quote(implode(",", $commentsReadBy)) . " " .
-					"WHERE id = " . $database->quote($taskid)
-				);
-				
-				$database->query();
-            }
-        }
-    }
+		if (!in_array($user->id, $commentsReadBy)) {
+			array_push($commentsReadBy, $user->id);
+			
+			$database->setQuery("UPDATE #__tasks SET " .
+				"commentsreadby = " . $database->quote(implode(",", $commentsReadBy)) . " " .
+				"WHERE id = " . $database->quote($taskid)
+			);
+			
+			$database->query();
+		}
+	}
     
     return $comments;
 }
@@ -670,7 +707,7 @@ function setuserstate($state) {
 	
 	if ($state == User::OFFLINE || $state == User::AWAY || $state == User::ONLINE) {
 		return $user->setState($state);
-	} {
+	} else {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiger Status angegeben.");
 	}
 }
@@ -1096,7 +1133,7 @@ $dispatchMap = Array(
     
     "createtask" => Array(
         "function"  => "createtask",
-        "signature" => Array(Array("int", "string", "int", "string"), Array("int", "string", "int", "string", "boolean")),
+        "signature" => Array(Array("int", "int", "int", "string"), Array("int", "int", "int", "string", "boolean")),
         "docstring" => "Trägt eine Aufgabe in die Datenbank ein und gibt die ID der Aufgabe zurück."
     ),
     
@@ -1105,6 +1142,12 @@ $dispatchMap = Array(
         "signature" => Array(Array("boolean", "int", "int", "string"), Array("boolean", "int", "int", "string", "boolean")),
         "docstring" => "Bearbeitet eine bestehende Aufgabe. Dabei kann nur das Datum, der Aufgabetext und die " .
 					   "Wichtigkeit verändert werden."
+    ),
+	
+    "getsubjects" => Array(
+        "function"  => "getsubjects",
+        "signature" => Array(Array("array")),
+        "docstring" => "Gibt eine Liste der Schulfächer zurück, die beim Eintragen von Aufgaben verwendet werden können."
     ),
     
     "getcomments" => Array(

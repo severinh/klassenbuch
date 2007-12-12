@@ -63,13 +63,26 @@ CREATE TABLE `kb_gallery_pictures` (
 -- --------------------------------------------------------
 
 -- 
+-- Table structure for table `subjects`
+-- 
+
+CREATE TABLE `kb_subjects` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `long` text collate utf8_unicode_ci NOT NULL,
+  `short` text collate utf8_unicode_ci NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+-- 
 -- Table structure for table `tasks`
 -- 
 
 CREATE TABLE `kb_tasks` (
   `id` int(5) unsigned NOT NULL auto_increment,
   `date` double unsigned NOT NULL default '0',
-  `subject` tinytext collate utf8_unicode_ci NOT NULL,
+  `subject` int(5) NOT NULL,
   `text` text collate utf8_unicode_ci NOT NULL,
   `important` tinyint(1) NOT NULL default '0',
   `userid` int(5) NOT NULL default '0',
