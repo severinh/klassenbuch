@@ -138,7 +138,7 @@ function localizedDate($format, $timestamp) {
 	$weekdaysDE = Array("Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag",  "Samstag", "Sonntag");
 	
 	$monthsEN = Array("/January/", "/February/", "/March/", "/April/", "/May/", "/June/", "/July/", "/August/", "/September/", "/October/", "/November/", "/December/");
-	$monthsDE = Array("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember");
+	$monthsDE = Array("Januar", "Februar", "MÃ¤rz", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember");
 	
 	$result = preg_replace($weekdaysEN, $weekdaysDE, $result);
 	$result = preg_replace($monthsEN, $monthsDE, $result);
