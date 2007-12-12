@@ -490,8 +490,7 @@ function uploadfile($description) {
     
     if ($_FILES["Filedata"]) {
         $date = time();
-        
-        $fnParts = parseFileName(utf8_decode($_FILES["Filedata"]["name"]));
+		$fnParts = parseFileName(utf8_decode(sanitizeFileName($_FILES["Filedata"]["name"])));
         
         if (in_array(strtolower($fnParts["ext"]), $settings->get("upload_extblacklist"))) {
 			return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Aus Sicherheitsgründen sind keine " . 
@@ -508,7 +507,7 @@ function uploadfile($description) {
 		$newFileName = $fnPartsNew["base"] . "." . $fnPartsNew["ext"];
 		$fileSize = $_FILES["Filedata"]["size"];
 		
-		if (move_uploaded_file($_FILES["Filedata"]["tmp_name"], "files/$newFileName")) {
+		if (move_uploaded_file($_FILES["Filedata"]["tmp_name"], "files/" . $newFileName)) {
 			$database->setQuery("INSERT INTO #__files (name, description, size, userid, uploaded) VALUES(" .
 				$database->quote($newFileName) . ", " .
 				$database->quote($description) . ", " .

@@ -131,9 +131,8 @@ function smartStripSlashes($str) {
 	}
 }
 
-// Source: http://www.plogger.org/
 function sanitizeFileName($str) {
-	return preg_replace("/[^\w|\.|'|\-|\[|\]]/", "_", $str);
+	return preg_replace("/[^A-Z0-9|\.|'|\-|\[|\]]/i", "_", $str);
 }
 
 function parseFileName($fileName) {
