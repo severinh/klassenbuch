@@ -121,6 +121,41 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
 	initialized: false
 });
 
+App.LoadingIndicator = function() {
+	var active = true;
+	
+	var show = function() {
+		if (active && Ajax.activeRequestCount !== 0) {
+			$(document.body).setStyle({ cursor: "wait" });
+			$("activeRequest").show();
+		};
+	};
+	
+	var hide = function() {
+		if (Ajax.activeRequestCount === 0) {
+			$(document.body).setStyle({ cursor: "default" });
+			$("activeRequest").hide();
+		}
+	};
+	
+	// Bewirkt, dass der "Laden..."-Hinweis angezeigt wird, wenn eine Kommunikation mit dem Server stattfindet. Zusätzlich
+	// wird die Form des Cursors entsprechend verändert.
+	Ajax.Responders.register({
+		onCreate: show,
+		onComplete: hide
+	});
+	
+	return {
+		activate: function() {
+			active = true;
+		},
+		
+		deactivate: function() {
+			active = false;
+		}
+	};
+}();
+
 var Sprite = Class.create({
 	initialize: function(spriteName, index, className) {
 		this.spriteName = spriteName;
@@ -187,22 +222,6 @@ var Comparators = {
 		return (a === b) ? 0 : ((a === "") ? 1 : ((b === "") ? -1 : ((a > b) ? 1 : -1)));
 	}
 };
-
-// Bewirkt, dass der "Laden..."-Hinweis angezeigt wird, wenn eine Kommunikation mit dem Server stattfindet. Zusätzlich
-// wird die Form des Cursors entsprechend verändert.
-Ajax.Responders.register({
-	onCreate: function() {
-        $(document.body).setStyle({ cursor: "wait" });
-		$("activeRequest").show();
-	},
-	
-	onComplete: function() {
-		if (Ajax.activeRequestCount === 0) {
-            $(document.body).setStyle({ cursor: "default" });
-            $("activeRequest").hide();
-        }
-	}
-});
 
 // Wenn der ganze HTML-Text und der JavaScript-Code vom Browser eingelesen wurde und das DOM bereit ist, wird das
 // Klassenbuch initialisiert. Dadurch wird erreicht, dass nicht gewartet werden muss, bis alle Bilddateien usw. geladen

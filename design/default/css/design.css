@@ -65,7 +65,8 @@ a:hover {
 }
 
 input,
-select {
+select,
+textarea {
 	font: normal 12px Arial, sans-serif;
 	border: #AAA 1px solid;
 }
@@ -1605,4 +1606,82 @@ img {
 .pictureUploadNoteWindow {
 	width: 450px;
 	height: 400px;
+}
+
+.shoutboxView .sidePane{
+	float: right;
+	width: 200px;
+	margin-left: 10px;
+	clear: both;
+	margin-bottom: 20px;
+}
+
+.shoutboxView .sidePane h3 {
+	margin: 0 0 10px 0;
+}
+
+.shoutboxView .sidePane input {
+	border: none;
+}
+
+.shoutboxView .messages {
+	height: 400px;
+	overflow: auto;
+	margin-bottom: 5px;
+	border: 1px #406090 solid;
+	overflow-x: hidden;
+}
+
+.shoutboxView .messages table {
+	margin: 0px;
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.shoutboxView .messages table td {
+	padding: 2px;
+}
+
+.shoutboxView .messages .left {
+	vertical-align: top;
+	width: 100px;
+	font-weight: bold;
+	border-right: dotted 1px #D1D1D1;
+	padding-right: 6px;
+	text-align: right;
+}
+
+.shoutboxView .messages .date td {
+	color: #888888;
+	padding-top: 12px;
+}
+
+.shoutboxView .messages .right {
+	padding-left: 6px;
+}
+
+.shoutboxView .messages .ownMessage {
+	background-color: #D5E5FF;
+}
+
+.shoutboxView .messages .systemMessage {
+	background-color: #FFE5D5;
+}
+
+.shoutboxView ul {
+	color: #CCC;
+	padding: 5px;
+	padding-left: 18px;
+	margin: 0;
+}
+
+.shoutboxView textarea {
+	width: 50%;
+	margin-right: 5px;
+	height: 55px;
+}
+
+.ie .shoutboxView textarea {
+	position: relative;
+	left: -10px;
 }

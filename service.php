@@ -99,6 +99,13 @@ function removetask($taskid) {
         return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Eine Aufgabe mit der ID " . $taskid . " existiert nicht.");
 	}
 	
+	$database->setQuery("SELECT * FROM #__tasks WHERE id = " . $database->quote($taskid));
+	
+	$task = $database->loadAssoc();
+	$subject = getsubject($task["subject"]);
+	
+	shoutbox_say_system("hat die " . $subject["short"] . "-Aufgabe \"" . $task["text"] . "\" gelöscht.");
+	
     return true;
 }
 
@@ -145,6 +152,11 @@ function createtask($subject, $date, $text, $important = false) {
     if (!$database->query()) {
         return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
     }
+	
+	$subject = getsubject($subject);
+	
+	shoutbox_say_system("hat eine neue " . $subject["short"] . "-Aufgabe für den " . localizedDate("j. F", $date) .
+		" eingetragen:[BR /]\"" . $text . "\"");
     
     return $database->insertId();
 }
@@ -376,7 +388,7 @@ function getcontacts() {
 		$lastcontact = (double) $contact["lastcontact"];
 		$state 		 = (int) 	$contact["state"];
 		
-		if ($lastcontact < time() - 150) {
+		if ($lastcontact < time() - 100) {
 			$state = 0;
 		}
 		
@@ -470,6 +482,8 @@ function archivefile($id) {
         return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
 	}
 	
+	shoutbox_say_system("hat die Datei \"" . $file["name"] . "\" archiviert.");
+	
 	return true;
 }
 
@@ -490,7 +504,7 @@ function uploadfile($description) {
     
     if ($_FILES["Filedata"]) {
         $date = time();
-		$fnParts = parseFileName(utf8_decode(sanitizeFileName($_FILES["Filedata"]["name"])));
+        $fnParts = parseFileName(utf8_decode(sanitizeFileName($_FILES["Filedata"]["name"])));
         
         if (in_array(strtolower($fnParts["ext"]), $settings->get("upload_extblacklist"))) {
 			return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Aus Sicherheitsgründen sind keine " . 
@@ -517,6 +531,8 @@ function uploadfile($description) {
 			);
 			
 			if ($database->query()) {
+				shoutbox_say_system("hat die Datei \"" . $newFileName . "\" hochgeladen.");
+				
 				return Array("id" => $database->insertId(), "filename" => $newFileName);
 			} else {
 				return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
@@ -828,6 +844,8 @@ function gallery_createalbum($name, $description = "") {
 		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
 	}
 	
+	shoutbox_say_system("hat das Fotoalbum \"" . $name . "\" hinzugefügt.");
+	
 	return $database->insertId();
 }
 
@@ -852,6 +870,8 @@ function gallery_removealbum($id) {
 	if ($database->getAffectedRows() != 1) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiges Album angegeben");
 	}
+	
+	shoutbox_say_system("hat das Fotoalbum " . $name . " gelöscht.");
 	
     return true;
 }
@@ -963,7 +983,6 @@ function gallery_uploadpicture($albumid) {
     }
 	
     if ($_FILES["Filedata"]) {
-		// Todo...
 		$allowedExtensions = Array("jpg", "bmp", "gif", "png");
 		
         $fnParts = parseFileName(sanitizeFileName(utf8_decode($_FILES["Filedata"]["name"])));
@@ -972,9 +991,10 @@ function gallery_uploadpicture($albumid) {
         $size = $_FILES["Filedata"]["size"];
 		
         if ($size != 0 && in_array($fnParts["ext"], $allowedExtensions)) {
-			$database->setQuery("SELECT id FROM #__gallery_albums WHERE id = " . $database->quote($albumid));
+			$database->setQuery("SELECT * FROM #__gallery_albums WHERE id = " . $database->quote($albumid));
+			$album = $database->loadAssoc();
 			
-			if ($database->getNumRows($database->query()) == 1) {
+			if ($album) {
 				$i = 1;
 				
 				while (is_file("gallery/originals/" . $fnPartsNew["base"] . "." . $fnPartsNew["ext"])) {
@@ -983,8 +1003,8 @@ function gallery_uploadpicture($albumid) {
 				
 				$newFileName = $fnPartsNew["base"] . "." . $fnPartsNew["ext"];
 				
-				if (move_uploaded_file($_FILES["Filedata"]["tmp_name"], "gallery/originals/$newFileName")) {
-					$exifData = exif_read_data("gallery/originals/$newFileName", 0, true);
+				if (move_uploaded_file($_FILES["Filedata"]["tmp_name"], "gallery/originals/" . $newFileName)) {
+					$exifData = exif_read_data("gallery/originals/" . $newFileName, 0, true);
 					$takenRaw = $exifData["EXIF"]["DateTimeOriginal"];
 					
 					$taken = mktime(
@@ -999,11 +1019,21 @@ function gallery_uploadpicture($albumid) {
 					$retval = gallery_generatethumbnails($newFileName);
 					
 					if ($retval !== true) {
-						unlink("gallery/originals/$newFileName");
+						unlink("gallery/originals/" . $newFileName);
 						return $retval;
 					}
 					
-					chmod("gallery/originals/$newFileName",  0644);
+					chmod("gallery/originals/" . $newFileName,  0644);
+					
+					$database->setQuery("SELECT * FROM #__gallery_pictures WHERE " .
+						"userid = " . $database->quote($user->id) . " AND " .
+						"albumid = " . $database->quote($albumid) . " AND " .
+						"submitted > " . $database->quote(time() - 15)
+					);
+					
+					if (!$database->getNumRows($database->query())) {
+						shoutbox_say_system("lädt neue Fotos ins Album \"" . $album["name"] . "\".");
+					}
 					
 					$database->setQuery("INSERT INTO #__gallery_pictures (filename, albumid, userid, submitted, taken) VALUES(" .
 						$database->quote($newFileName) 	. ", " .
@@ -1014,7 +1044,9 @@ function gallery_uploadpicture($albumid) {
 					);
 					
 					if ($database->query()) {
-						return $database->insertId();
+						$pictureid = $database->insertId();
+						
+						return $pictureid;
 					} else {
 						return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
 					}
@@ -1081,7 +1113,7 @@ function gallery_generatethumbnails($fileName) {
 	
 	$phpThumb = new phpThumb();
 	
-	$phpThumb->src = "gallery/originals/$fileName";
+	$phpThumb->src = "gallery/originals/" . $fileName;
 	$phpThumb->w = 120;
 	$phpThumb->h = 90;
 	$phpThumb->q = 85;
@@ -1110,6 +1142,81 @@ function gallery_generatethumbnails($fileName) {
 	chmod("gallery/thumbnails/" . $fileName, 0644);
 	
 	return true;
+}
+
+function shoutbox_poll($startAfter) {
+	$database = Core::getDatabase();
+	
+	if ($startAfter) {
+		$database->setQuery("SELECT * FROM #__messages WHERE id > " . $database->quote($startAfter));
+	} else {
+		$database->setQuery("SELECT * FROM #__messages ORDER BY id DESC LIMIT 100");
+	}
+	
+	$messagesResponse = $database->loadAssocList();
+	
+    if (!$database->success()) {
+        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	}
+	
+    $messages = Array();
+    
+	foreach ($messagesResponse as $message) {
+        $messages[] = Array(
+            "id"     => (int)    $message["id"],
+            "userid" => (int)    $message["userid"],
+            "date"   => (int)    $message["date"],
+            "text"   => (string) $message["text"],
+			"system" => (bool)	 $message["system"]
+		);
+	}
+	
+	if (count($messages)) {
+		$user = Core::getUser();
+		
+	    if (!$user->authenticated) {
+	        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	    }
+	}
+	
+	return array_reverse($messages);
+};
+
+function shoutbox_say($text, $startAfter, $system = false) {
+	$database = Core::getDatabase();
+	$user = Core::getUser();
+	
+    if (!$user->authenticated) {
+        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+    }
+	
+	$text = trim(strip_tags($text));
+	
+    if (!$text) {
+        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keine Nachricht eingegeben.");
+    }
+	
+	$database->setQuery("INSERT INTO #__messages (userid, date, text, system) VALUES(" .
+		$database->quote($user->id) . ", " . 
+		$database->quote(time()) 	. ", " . 
+		$database->quote($text)  	. ", " . 
+		$database->quote($system)	. ")"
+	);
+	
+    if (!$database->query()) {
+        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+    }
+    
+	if ($startAfter) {
+		return shoutbox_poll($startAfter);
+	} else {
+		return true;
+	}
+}
+
+// Used internally only
+function shoutbox_say_system($text) {
+	return shoutbox_say($text, 0, true);
 }
 
 // Die Dispatch Map für diesen Webservice: In ihr enthalten sind die Namen aller Methoden, die dieser Service bereitstellt.
@@ -1312,7 +1419,21 @@ $dispatchMap = Array(
         "signature" => Array(Array("boolean", "int", "int")),
         "docstring" => "Ermöglicht es, ein Foto in der Fotogalerie um einen bestimmten Winkel zu drehen. Erlaubt sind " .
 					   "nur Vielfache von 90°. Diese Aktion kann nur vom Administrator, oder von demjenigen Benutzer, " .
-					   "der das Foto hochgeladen hat, durchgeführt werden.")
+					   "der das Foto hochgeladen hat, durchgeführt werden."),
+	
+    "shoutbox_poll" => Array(
+        "function"  => "shoutbox_poll",
+        "signature" => Array(Array("array"), Array("array", "int")),
+        "docstring" => "Gibt die aktuellen Nachrichten in der Shoutbox zurück. Standardmässig werden die letzten 100 " .
+					   "Nachrichten übertragen, es ist jedoch auch möglich, alle Nachrichten zu erhalten, die neuer " .
+					   "sind als eine bestimmte Nachricht."),
+	
+    "shoutbox_say" => Array(
+        "function"  => "shoutbox_say",
+        "signature" => Array(Array("array", "string"), Array("array", "string", "int")),
+        "docstring" => "Trägt eine neue Nachricht in die Shoutbox ein. Falls zusätzlich ein Wert für den zweiten " .
+					   "Parameter angegeben wird, gibt die Methode zusätzlich eine Auflistung der neuen Nachrichten " .
+					   "zurück.")
 );
 
 $service = new JSONRPCService($dispatchMap, false);

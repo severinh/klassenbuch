@@ -63,6 +63,21 @@ CREATE TABLE `kb_gallery_pictures` (
 -- --------------------------------------------------------
 
 -- 
+-- Table structure for table `messages`
+-- 
+
+CREATE TABLE `kb_messages` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `userid` int(11) NOT NULL,
+  `date` double NOT NULL,
+  `text` text collate utf8_unicode_ci NOT NULL,
+  `system` tinyint(1) NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+-- 
 -- Table structure for table `subjects`
 -- 
 

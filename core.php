@@ -131,6 +131,21 @@ function smartStripSlashes($str) {
 	}
 }
 
+function localizedDate($format, $timestamp) {
+	$result = date($format, $timestamp);
+	
+	$weekdaysEN = Array("/Monday/", "/Tuesday/", "/Wednesday/", "/Thursday/", "/Fr iday/", "/Saturday/", "/Sunday/");
+	$weekdaysDE = Array("Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag",  "Samstag", "Sonntag");
+	
+	$monthsEN = Array("/January/", "/February/", "/March/", "/April/", "/May/", "/June/", "/July/", "/August/", "/September/", "/October/", "/November/", "/December/");
+	$monthsDE = Array("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember");
+	
+	$result = preg_replace($weekdaysEN, $weekdaysDE, $result);
+	$result = preg_replace($monthsEN, $monthsDE, $result);
+	
+	return $result;
+}
+
 function sanitizeFileName($str) {
 	return preg_replace("/[^A-Z0-9|\.|'|\-|\[|\]]/i", "_", $str);
 }

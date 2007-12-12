@@ -22,7 +22,7 @@ var Contacts = new (Class.create(JSONRPC.Store, {
 	initialize: function($super) {
 		$super({
 			method: "getcontacts",
-			periodicalUpdate: 120
+			periodicalUpdate: 30
 		});
 		
 		App.on("initialize", function() {
