@@ -236,6 +236,10 @@ class Services_JSON
     */
     function encode($var)
     {
+		if (!function_exists("json_encode")) {
+			return json_encode($var);
+		}
+		
         switch (gettype($var)) {
             case 'boolean':
                 return $var ? 'true' : 'false';
@@ -387,6 +391,10 @@ class Services_JSON
     */
     function decode($str)
     {
+		if (!function_exists("json_decode")) {
+			return json_decode($str, $this->use & SERVICES_JSON_LOOSE_TYPE);
+		}
+	
         $str = $this->reduce_string($str);
 
         switch (strtolower($str)) {
