@@ -20,10 +20,13 @@ function gettasks($start = null, $end = null) {
     }
 	
 	if ($end) {
-        $cond = " AND date < " . $database->quote($end);
+        $cond = " AND t.date < " . $database->quote($end);
 	}
 	
-	$database->setQuery("SELECT * FROM #__tasks WHERE date >= " . $database->quote($start) . $cond . " ORDER BY date");
+	$database->setQuery("SELECT t.*, COUNT(c.userid) AS comments" .
+		($user->authenticated ? ", FIND_IN_SET(" . $database->quote($user->id) . ", t.commentsreadby) AS commentsread " : " ") .
+		"FROM #__tasks AS t LEFT JOIN #__comments AS c ON t.id = c.taskid " .
+		"WHERE t.date >= " . $database->quote($start) . $cond . " GROUP BY t.id ORDER BY t.date");
 	
 	$taskResponse = $database->loadAssocList();
 	
@@ -32,7 +35,6 @@ function gettasks($start = null, $end = null) {
     }
 	
 	$tasks = Array();
-	$oldestSumbission = time();
 	
 	foreach ($taskResponse as $task) {
         $tasks[] = Array(
@@ -44,35 +46,10 @@ function gettasks($start = null, $end = null) {
             "userid"      => (int)    $task["userid"],
             "added"       => (int)    $task["added"],
             "removed"     => (bool)   $task["removed"],
-			"comments"	  => 0,
-			"newcomments" => (string) $task["commentsreadby"]
+			"comments"	  => (int)    $task["comments"],
+			"newcomments" => ($user->authenticated && (int) $task["comments"] && !(bool) $task["commentsread"] ? true : false),
         );
-		
-		$added = (int) $task["added"];
-        
-        if ($added < $oldestSumbission) {
-			$oldestSumbission = $added;
-        }
     }
-    
-    $database->setQuery("SELECT taskid, COUNT(*) AS comments FROM #__comments WHERE date >= " .
-		$database->quote($oldestSumbission) . " GROUP BY taskid");
-    
-	$commentsCount = $database->loadAssocList("taskid");
-	
-	if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
-    }
-    
-	foreach ($tasks as $i => $task) {
-		$tasks[$i]["comments"] = (int) $commentsCount[$task["id"]]["comments"];
-		
-		if ($tasks[$i]["comments"] && $user->authenticated && !in_array($user->id, explode(",", $task["newcomments"]))) {
-			$tasks[$i]["newcomments"] = true;
-		} else {
-			$tasks[$i]["newcomments"] = false;
-		}
-	}
 	
     return $tasks;
 }
