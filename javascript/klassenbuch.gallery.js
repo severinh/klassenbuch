@@ -62,10 +62,6 @@ var Gallery = new (Class.create(JSONRPC.Store, {
  * darüber, welche Bilder in diesem Album enthalten sind. Diese Information muss manuell mit der Methode
  * <a href="#_getPictures">_getPictures</a> abgerufen werden. Allerdings kann über den Konstruktor die Anzahl der
  * Fotos in diesem Album angegeben werden.
- * @param {Integer} id Die einzigartige ID des Albums.
- * @param {String} name Der Titel des Albums.
- * @param {Integer} numberOfPictures Die Anzahl Fotos in diesem Album.
- * @param {String} description Die Beschreibung des Albums (optional).
  * @class
  * @inherits EventPublisher
 */
@@ -74,6 +70,16 @@ Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
 		$super();
 		
 		this.update(album);
+		
+		this.pictures = new JSONRPC.Store({
+			method: "gallery_getpictures",
+			params: [this.id],
+			itemClass: Gallery.Picture,
+			periodicalUpdate: 120,
+			unloadedCount: album.pictures
+		});
+		
+		this.pictures.on("updated", this.fireEvent.bind(this, "updated"));
 	},
 
 	update: function(album) {
@@ -98,25 +104,6 @@ Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
 		 * @name description
 		*/
 		this.description = album.description || "";
-		
-		/**
-		 * Die Anzahl der Fotos in diesem Album. Diese Eigenschaft kann verwendet werden, bis die Eigenschaft
-		 * <a href="#pictures">pictures</a> mit der Liste der Fotos in diesem Album gefüllt wird.<br /><br />
-		 * Standardmässig beträgt der Wert dieser Eigenschaft 0;
-		 * @type Integer
-		 * @memberof Gallery.Album
-		 * @name numberOfPictures
-		*/
-		this.numberOfPictures = album.pictures || 0;
-		
-		/**
-		 * Die Methode <a href="#_getPictures">_getPictures</a> füllt diese Eigenschaft mit einer Liste aller Fotos in
-		 * diesem Album.
-		 * @type Gallery.Picture[]
-		 * @memberof Gallery.Album
-		 * @name pictures
-		*/
-		this.pictures = [];
 	},
 	
  	/**
@@ -129,34 +116,6 @@ Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
 	},
 
  	/**
-	 * Ruft die Liste der Fotos in diesem Album vom Server ab und fügt sie in die Eigenschaft
-	 * <a href="#pictures">pictures</a> ein und aktualisiert gleichzeitig die Eigenschaft
-	 * <a href="#numberOfPictures">numberOfPicturess</a>. Schliesslich wird noch das Ereignis <em>updated</em> des
-	 * Albums ausgelöst.
-	 * @memberof Gallery.Album
-	*/	
-	_getPictures: function() {
-		var request = new JSONRPC.Request("gallery_getpictures", [this.id], {
-			onSuccess: (function(response) {
-				// Leert die bestehende Fotoliste
-				this.pictures.clear();
-				this.numberOfPictures = response.result.length;
-				
-				response.result.each((function(picture) {
-					var picture = new Gallery.Picture(picture.id, picture.filename, picture.userid,
-						picture.submitted, picture.taken);
-					
-					picture.on("edited", this.fireEvent.bind(this, "updated"));
-					
-					this.pictures.push(picture);
-				}).bind(this));
-				
-				this.fireEvent("updated");
-			}).bind(this)
-		});
-	},
-
- 	/**
 	 * Zeigt ein Fenster an, mit welchem der Benutzer neue Fotos zu dem Album hinzufügen kann. Wenn die Bilder 
 	 * erfolgreich hochgeladen wurden, wird die Methode <a href="#_getPictures">_getPictures</a> aufgerufen, um die
 	 * Liste der in diesem Album enthaltenen Fotos zu aktualisieren.
@@ -164,7 +123,11 @@ Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
 	*/
 	addPictures: function() {
 		var uploadWindow = new Gallery.PictureUploadWindow(this.id);
-		uploadWindow.on("uploadComplete", this._getPictures, this);
+		
+		uploadWindow.on("uploadComplete", function() {
+			this.pictures.load();
+		}, this);
+		
 		return uploadWindow;
 	},
 
@@ -209,6 +172,7 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		 * @memberof Gallery.Album.Window
 		*/
 		this.album = album;
+		this.pictures = album.pictures;
 		this.currentPage = 0;
 		this.ready = false;
 		this.setOptions({ picturesPerPage: 28 }, options);
@@ -230,14 +194,14 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 				var index = 0;
 				
 				if (state) {
-					this.album.pictures.each(function(picture, i) {
+					this.pictures.each(function(picture, i) {
 						if (picture.fileName === state.reduce()) {
 							index = i;
 						}
 					});
 				}
 				
-				return new Gallery.PictureViewer(this.album.pictures, index, !((state || []).reduce()));
+				return new Gallery.PictureViewer(this.pictures, index, !((state || []).reduce()));
 			}).bind(this), {
 				needsServerCommunication: true
 			}
@@ -366,15 +330,14 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		
 		// Wenn dies noch nicht geschehen ist, wird noch die Fotoliste für das Album geholt, ansonsten erfolgt
 		// die Generierung der Tabelle schon jetzt.
-		if (this.album.pictures.length !== this.album.numberOfPictures) {
-			this.album._getPictures();
-		} else {
+		if (this.pictures.loaded) {
 			this._generatePictureTable();
+		} else if (!this.pictures.loading) {
+			this.pictures.load();
 		}
 		
 		// Wenn das Fenster geschlossen wird, soll auch ein möglicherweise offenes Hochlade-Fenster geschlossen werden.
 		this.on("remove", function() {
-			App.Windows.closeAllOfType("PictureUploadWindow");
 			this._thumbnailTable.stopObserving("click");
 		}, this);
 		
@@ -390,11 +353,11 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 	},
 	
 	showPage: function(index) {
-		if (this.album.pictures.length > index * this.options.picturesPerPage && index >= 0) {
+		if (this.pictures.count() > index * this.options.picturesPerPage && index >= 0) {
 			this.currentPage = index;
 			this._generatePictureTable();
 			
-			this.reportNavigation((index === 0) ? "" : index + 1);
+			this.reportNavigation((index === 0) ? "" : String(index + 1));
 		}
 	},
 	
@@ -407,19 +370,21 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 			this.ready = true;
 		}
 		
-		this.currentPage = this.currentPage.limitTo(0, Math.floor(this.album.pictures.length / this.options.picturesPerPage));
+		var picturesCount = this.pictures.count();
 		
-		if (this.options.picturesPerPage < this.album.pictures.length) {
+		this.currentPage = this.currentPage.limitTo(0, Math.floor(picturesCount / this.options.picturesPerPage));
+		
+		if (this.options.picturesPerPage < picturesCount) {
 			this._previousButton[(this.currentPage > 0) ? "enable" : "disable"]();
 			
-			if (this.album.pictures.length > (this.currentPage + 1) * this.options.picturesPerPage) {
+			if (this.pictures.count() > (this.currentPage + 1) * this.options.picturesPerPage) {
 				this._nextButton.enable();
 			} else {
 				this._nextButton.disable();
 			}
 			
 			this.select(".currentPage")[0].innerHTML = "Seite " + (this.currentPage + 1) + " von " + 
-				(Math.floor(this.album.pictures.length / this.options.picturesPerPage) + 1);
+				(Math.floor(picturesCount / this.options.picturesPerPage) + 1);
 			
 			this._navigation.show();
 		} else {
@@ -428,8 +393,8 @@ Gallery.Album.Window = Class.create(Controls.Window, /** @scope Gallery.Album.Wi
 		
 		this._thumbnailTable.clear();
 		
-		if (this.album.pictures.length > 0) {
-			this._thumbnailTable.innerHTML = this.album.pictures.eachSlice(this.options.picturesPerPage)[this.currentPage]
+		if (picturesCount > 0) {
+			this._thumbnailTable.innerHTML = this.pictures.eachSlice(this.options.picturesPerPage)[this.currentPage]
 				.collect(function(picture, i) {
 					return "<div class=\"thumbnailContainer\" name=\"" + picture.fileName +
 						"\"><img src=\"" + picture.getThumbnailPath() + "\" />" +
@@ -556,22 +521,29 @@ Gallery.Album.CreationWindow = Class.create(Controls.Window, {
  * @extends EventPublisher
 */
 Gallery.Picture = Class.create(EventPublisher, /** @scope Gallery.Picture */ {
-	initialize: function($super, id, fileName, userid, submitted, taken) {
+	initialize: function($super, picture) {
+		$super();
+		
 		/**
 		 * Die ID des Fotos.
 		 * @type Integer
 		 * @name id
 		 * @memberof Gallery.Picture
 		*/
-		this.id = id;
+		this.id = picture.id;
 		
+		this._reloadParam = "";
+		this.update(picture);
+	},
+	
+	update: function(picture) {
 		/**
 		 * Der Dateiname des Fotos.
 		 * @type String
 		 * @name fileName
 		 * @memberof Gallery.Picture
 		*/
-		this.fileName = fileName;
+		this.fileName = picture.filename;
 		
 		/**
 		 * Die ID der Benutzers, der das Foto hochgeladen hat.
@@ -579,15 +551,11 @@ Gallery.Picture = Class.create(EventPublisher, /** @scope Gallery.Picture */ {
 		 * @name userid
 		 * @memberof Gallery.Picture
 		*/
-		this.userid = userid;
+		this.userid = picture.userid;
 		
-		this.submitted = Date.fromTimestamp(submitted);
+		this.submitted = Date.fromTimestamp(picture.submitted);
 		
-		this.taken = Date.fromTimestamp(taken);
-		
-		this._reloadParam = "";
-		
-		$super();
+		this.taken = Date.fromTimestamp(picture.taken);
 	},
 	
 	/**
@@ -626,7 +594,7 @@ Gallery.Picture = Class.create(EventPublisher, /** @scope Gallery.Picture */ {
 
 Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.Node.prototype, {
 	initialize: function($super, pictures, indexToDisplay, autoStartSlideShow) {
-		this.pictures = pictures;
+		this.pictures = pictures.toArray();
 		this.currentIndex = 0;
 		
 		this._slideShowTimer = new PeriodicalExecuter(this.showNextPicture.bind(this), 4);
@@ -637,7 +605,7 @@ Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.N
 		$super($$("body")[0].createChild({ className: "pictureViewer" }), { height: 0, width: 0 });
 		this.initializeHistoryNode();
 		
-		this._overlay = new Controls.AutoResizingControl($$("body")[0].createChild({ className: "pictureViewerOverlay" }), { height: 0, width: 0 });	
+		this._overlay = new Controls.AutoResizingControl($$("body")[0].createChild({ className: "pictureViewerOverlay" }), { height: 0, width: 0 });
 		
 		this._pictureContainer = this.element.createChild({ className: "pictureContainer" }).hide();
 		this._pictureContainer.observe("click", this.showNextPicture.bind(this));
@@ -1174,9 +1142,10 @@ Gallery.View = Class.create(Controls.View, /** @scope Gallery.View */ {
 	*/
 	update: function() {
 		this._albumList.innerHTML = Gallery.collect(function(album) {
-			var numberStr = album.numberOfPictures + " Bilder";
+			var picturesCount = album.pictures.count();
+			var numberStr = picturesCount + " Bilder";
 			
-			switch (album.numberOfPictures) {
+			switch (picturesCount) {
 				case 0: numberStr = "Keine Bilder"; break;
 				case 1: numberStr = "Ein Bild"; break;
 			}
