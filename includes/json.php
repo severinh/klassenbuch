@@ -236,7 +236,7 @@ class Services_JSON
     */
     function encode($var)
     {
-		if (!function_exists("json_encode")) {
+		if (function_exists("json_encode")) {
 			return json_encode($var);
 		}
 		
@@ -391,7 +391,7 @@ class Services_JSON
     */
     function decode($str)
     {
-		if (!function_exists("json_decode")) {
+		if (function_exists("json_decode")) {
 			return json_decode($str, $this->use & SERVICES_JSON_LOOSE_TYPE);
 		}
 	
