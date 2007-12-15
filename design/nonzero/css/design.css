@@ -1036,11 +1036,10 @@ ul {
 .tasksView .taskTableActions div {
 	float: left;
 	margin-right: 5px;
-	cursor: pointer;
 }
 
-.tasksView .taskTableActions .notSignedIn {
-	cursor: default !important;
+.tasksView .taskTableActions .actionIcon {
+	cursor: pointer;
 }
 
 /* Eine gelöschte Aufgabe */
@@ -1256,7 +1255,7 @@ ul {
 }
 
 .contactWindow .paneContent {
-	height: 300px;
+	height: 320px;
 }
 
 /* ------------------------ Die Ansicht "Dateiablage" ------------------------ */
