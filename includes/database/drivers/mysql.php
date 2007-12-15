@@ -1,7 +1,8 @@
 <?php
-/*
+/**
  * Klassenbuch
- * Database Abstraction Layer: Based on Joomla.Framework subpackage Database.
+ * Database Abstraction Layer
+ * Based on Joomla.Framework subpackage Database.
  * Copyright (C) 2006 - 2007 Severin Heiniger
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -11,60 +12,58 @@
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  * 
  * To view the GNU General Public License visit
  * http://www.gnu.org/copyleft/gpl.html
  * or write to the Free Software Foundation, Inc.,
- * 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-// Auf diese Datei ist kein direkter Zugriff erlaubt.
-defined("_KBSECURE") or die("Zugriff verweigert.");
+// Ensures this file was included from within the application.
+defined("_KBSECURE") or die("Access denied.");
 
 /**
- * @version		$Id: database.php 8575 2007-08-26 20:02:09Z jinx $
- * @package		Joomla.Framework
- * @subpackage	Database
- * @copyright	Copyright (C) 2005 - 2007 Open Source Matters. All rights reserved.
- * @license		GNU/GPL, see LICENSE.php
+ * 2005 - 2007 Open Source Matters. All rights reserved.
+ * GNU/GPL
  * Joomla! is free software. This version may have been modified pursuant
  * to the GNU General Public License, and as distributed it includes or
  * is derivative of works licensed under the GNU General Public License or
  * other free or open source software licenses.
- * See COPYRIGHT.php for copyright notices and details.
 */
 
 /**
  * MySQL database driver
- *
- * @package		Joomla.Framework
- * @subpackage	Database
 */
 class DatabaseMysql extends Database {
-	/** @var string The database driver name */
+	/** @public string The database driver name */
 	public $name = "mysql";
 	
-	/** @var string The null/zero date string */
+	/** @protected string The null/zero date string */
 	protected $_nullDate = "0000-00-00 00:00:00";
 	
-	/** @var string Quote for named objects */
+	/** @protected string Quote for named objects */
 	protected $_nameQuote	= "`";
 	
 	/**
 	 * Database object constructor
 	 *
-	 * @access	public
-	 * @param	array	List of options used to configure the connection
-	 * @see		JDatabase
+	 * @access public
+	 * @param array List of options used to configure the connection
 	*/
 	public function __construct($options) {
-		$host		= array_key_exists("host", 	   $options) ? $options["host"]		: "localhost";
-		$user		= array_key_exists("user", 	   $options) ? $options["user"]		: "";
-		$password	= array_key_exists("password", $options) ? $options["password"]	: "";
-		$database	= array_key_exists("database", $options) ? $options["database"]	: "";
-		$prefix		= array_key_exists("prefix",   $options) ? $options["prefix"]	: "kb_";
+		$configMap = Array(
+			"host" => "localhost",
+			"user" => "",
+			"password" => "",
+			"database" => "",
+			"prefix" => "kb_"
+		);
+		
+		foreach ($configMap as $key => $standard) {
+			$$key = array_key_exists($key, $options) ? $options[$key] : $standard;
+		}
 		
 		// Perform a number of fatality checks, then return gracefully
 		if (!$this->test()) {
@@ -93,13 +92,11 @@ class DatabaseMysql extends Database {
 	 * @return boolean
 	*/
 	function __destruct() {
-		$return = false;
-		
 		if (is_resource($this->_resource)) {
-			$return = mysql_close($this->_resource);
+			return mysql_close($this->_resource);
 		}
 		
-		return $return;
+		return false;
 	}
 
 	/**
@@ -107,7 +104,7 @@ class DatabaseMysql extends Database {
 	 *
 	 * @static
 	 * @access public
-	 * @return boolean  True on success, false otherwise.
+	 * @return boolean True on success, false otherwise.
 	*/
 	public function test() {
 		return function_exists($this->name . "_connect");
@@ -116,8 +113,8 @@ class DatabaseMysql extends Database {
 	/**
 	 * Determines if the connection to the server is active.
 	 *
-	 * @access	public
-	 * @return	boolean
+	 * @access public
+	 * @return boolean
 	*/
 	public function connected() {
 		if (is_resource($this->_resource)) {
@@ -130,9 +127,9 @@ class DatabaseMysql extends Database {
 	/**
 	 * Select a database for use
 	 *
-	 * @access	public
-	 * @param	string $database
-	 * @return	boolean True if the database has been successfully selected
+	 * @access public
+	 * @param string $database
+	 * @return boolean True if the database has been successfully selected
 	*/
 	public function select($database) {
 		if (!$database) {
@@ -156,7 +153,7 @@ class DatabaseMysql extends Database {
 
 	/**
 	 * Determines UTF support
-	 * @return boolean True - UTF is supported
+	 * @return boolean Returns true if UTF is supported
 	*/
 	public function hasUTF() {
 		$verParts = explode(".", $this->getVersion());
@@ -175,16 +172,12 @@ class DatabaseMysql extends Database {
 	 * @return string
 	*/
 	public function getEscaped($value) {
-		if (get_magic_quotes_gpc()) {
-			$value = stripslashes($value);
-		}
-		
-		return $value;
+		return addslashes($value);
 	}
 
 	/**
 	* Execute the query
-	* @return mixed A database resource if successful, FALSE if not.
+	* @return mixed A database resource if successful, false if not.
 	*/
 	public function query() {
 		if (!$this->_resource) {
@@ -209,11 +202,6 @@ class DatabaseMysql extends Database {
 			$this->_errorNum = $this->_errno();
 			$this->_errorMsg = $this->_error() . " SQL=" . $this->_sql;
 			
-			if ($this->_debug) {
-				// Hay!
-				// JError::raiseError('joomla.database:'.$this->_errorNum, 'JDatabaseMySQL::query: '.$this->_errorMsg );
-			}
-			
 			return false;
 		}
 		
@@ -230,13 +218,13 @@ class DatabaseMysql extends Database {
 	/**
 	 * Execute a batch query
 	 * 
-	 * @return mixed A database resource if successful, FALSE if not.
+	 * @return mixed A database resource if successful, false if not.
 	*/
-	public function queryBatch($abort_on_error = true, $p_transaction_safe = false) {
+	public function queryBatch($abortOnError = true, $transactionSafe = false) {
 		$this->_errorNum = 0;
 		$this->_errorMsg = "";
 		
-		if ($p_transaction_safe) {
+		if ($transactionSafe) {
 			$si = $this->getVersion();
 			preg_match_all("/(\d+)\.(\d+)\.(\d+)/i", $si, $m);
 			
@@ -261,16 +249,16 @@ class DatabaseMysql extends Database {
 				if (!$this->_cursor) {
 					$error = 1;
 					$this->_errorNum .= $this->_errno() . " ";
-					$this->_errorMsg .= $this->_error() . " SQL=$command_line <br />";
+					$this->_errorMsg .= $this->_error() . " SQL=" . $command_line . " <br />";
 					
-					if ($abort_on_error) {
+					if ($abortOnError) {
 						return $this->_cursor;
 					}
 				}
 			}
 		}
 		
-		return $error ? false : true;
+		return !$error;
 	}
 	
 	/**
@@ -287,8 +275,7 @@ class DatabaseMysql extends Database {
 		
 		$first = true;
 
-		$buffer = "<table id=\"explain-sql\">";
-		$buffer .= "<thead><tr><td colspan=\"99\">" . $this->getQuery() . "</td></tr>";
+		$buffer = $this->getQuery() . "<table class=\"explain-sql\">";
 		
 		while ($row = $this->fetchAssoc($cur)) {
 			if ($first) {
@@ -302,7 +289,7 @@ class DatabaseMysql extends Database {
 				$first = false;
 			}
 			
-			$buffer .= "</thead><tbody><tr>";
+			$buffer .= "<tr>";
 			
 			foreach ($row as $k => $v) {
 				$buffer .= "<td>" . $v . "</td>";
@@ -311,10 +298,9 @@ class DatabaseMysql extends Database {
 			$buffer .= "</tr>";
 		}
 		
-		$buffer .= "</tbody></table>";
+		$buffer .= "</table>";
 		
 		$this->freeResult($cur);
-		
 		$this->_sql = $temp;
 		
 		return $buffer;
@@ -437,6 +423,7 @@ class DatabaseMysql extends Database {
 	
 	/**
 	 * Load a list of database objects
+	 * 
 	 * @param string The field name of a primary key
 	 * @return array If <var>key</var> is empty as sequential list of returned records.
 	 * If <var>key</var> is not empty then the returned array is indexed by the value
@@ -483,6 +470,7 @@ class DatabaseMysql extends Database {
 	
 	/**
 	 * Load a list of database rows (numeric column indexing)
+	 * 
 	 * @param string The field name of a primary key
 	 * @return array If <var>key</var> is empty as sequential list of returned records.
 	 * If <var>key</var> is not empty then the returned array is indexed by the value
@@ -510,16 +498,17 @@ class DatabaseMysql extends Database {
 	
 	/**
 	 * Inserts a row into a table based on an objects properties
-	 * @param	string	The name of the table
-	 * @param	object	An object whose properties match table fields
-	 * @param	string	The name of the primary key. If provided the object property is updated.
+	 * 
+	 * @param string The name of the table
+	 * @param object An object whose properties match table fields
+	 * @param string The name of the primary key. If provided the object property is updated.
 	 */
 	public function insertObject($table, &$object, $keyName = null) {
-		$fmtsql = "INSERT INTO $table ( %s ) VALUES ( %s ) ";
+		$fmtsql = "INSERT INTO " . $table . " (%s) VALUES (%s) ";
 		$fields = Array();
 		
 		foreach (get_object_vars($object) as $k => $v) {
-			if (is_array($v) or is_object($v) or $v === NULL) {
+			if (is_array($v) or is_object($v) or $v === null) {
 				continue;
 			}
 			
@@ -528,7 +517,7 @@ class DatabaseMysql extends Database {
 			}
 			
 			$fields[] = $this->nameQuote($k);
-			$values[] = $this->isQuoted($k) ? $this->quote($v) : (int)$v;
+			$values[] = $this->quote($v);
 		}
 		
 		$this->setQuery(sprintf($fmtsql, implode(",", $fields), implode(",", $values)));
@@ -545,21 +534,17 @@ class DatabaseMysql extends Database {
 		
 		return true;
 	}
-
-	/**
-	 * Document::db_updateObject()
-	 * @param [type] $updateNulls
-	 */
+	
 	public function updateObject($table, &$object, $keyName, $updateNulls = true) {
-		$fmtsql = "UPDATE $table SET %s WHERE %s";
+		$fmtsql = "UPDATE " . $table . " SET %s WHERE %s";
 		$tmp = Array();
 		
 		foreach (get_object_vars($object) as $k => $v) {
-			if(is_array($v) or is_object($v) or $k[0] == "_") { // Internal or NA field
+			if (is_array($v) or is_object($v) or $k[0] == "_") { // Internal field
 				continue;
 			}
 			
-			if ($k == $keyName) { // PK not to be updated
+			if ($k == $keyName) { // Primary key not to be updated
 				$where = $keyName . "=" . $this->quote($v);
 				continue;
 			}
@@ -571,7 +556,7 @@ class DatabaseMysql extends Database {
 					continue;
 				}
 			} else {
-				$val = $this->isQuoted($k) ? $this->quote($v) : (int) $v;
+				$val = $this->quote($v);
 			}
 			
 			$tmp[] = $this->nameQuote($k) . "=" . $val;
@@ -642,7 +627,7 @@ class DatabaseMysql extends Database {
 	/**
 	 * @param array A list of table names
 	 * @return array A list the create SQL for the tables
-	 */
+	*/
 	public function getTableCreate($tables) {
 		$result = Array();
 		

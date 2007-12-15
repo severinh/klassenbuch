@@ -1,7 +1,8 @@
 <?php
-/*
+/**
  * Klassenbuch
- * Database Abstraction Layer: Based on Joomla.Framework subpackage Database.
+ * Database Abstraction Layer
+ * Based on Joomla.Framework subpackage Database.
  * Copyright (C) 2006 - 2007 Severin Heiniger
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -11,95 +12,89 @@
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  * 
  * To view the GNU General Public License visit
  * http://www.gnu.org/copyleft/gpl.html
  * or write to the Free Software Foundation, Inc.,
- * 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-// Auf diese Datei ist kein direkter Zugriff erlaubt.
+// Ensures this file was included from within the application.
 defined("_KBSECURE") or die("Access denied.");
 
 /**
- * @version		$Id: database.php 8575 2007-08-26 20:02:09Z jinx $
- * @package		Joomla.Framework
- * @subpackage	Database
- * @copyright	Copyright (C) 2005 - 2007 Open Source Matters. All rights reserved.
- * @license		GNU/GPL, see LICENSE.php
+ * 2005 - 2007 Open Source Matters. All rights reserved.
+ * GNU/GPL
  * Joomla! is free software. This version may have been modified pursuant
  * to the GNU General Public License, and as distributed it includes or
  * is derivative of works licensed under the GNU General Public License or
  * other free or open source software licenses.
- * See COPYRIGHT.php for copyright notices and details.
 */
 
 /**
  * Database connector class
  *
  * @abstract
- * @package		Joomla.Framework
- * @subpackage	Database
 */
 class Database {
 	/** @public string The database driver name */
 	public $name = "";
 	
-	/** @private string Internal private variable to hold the query sql */
+	/** @protected string Internal private variable to hold the query sql */
 	protected $_sql = "";
 	
-	/** @private int Internal private variable to hold the database error number */
+	/** @protected int Internal private variable to hold the database error number */
 	protected $_errorNum = 0;
 	
-	/** @private string Internal private variable to hold the database error message */
+	/** @protected string Internal private variable to hold the database error message */
 	protected $_errorMsg = "";
 	
-	/** @private string Internal private variable to hold the prefix used on all database tables */
+	/** @protected string Internal private variable to hold the prefix used on all database tables */
 	protected $_table_prefix = "";
 	
-	/** @private Internal private variable to hold the connector resource */
+	/** @protected Internal private variable to hold the connector resource */
 	protected $_resource = null;
 	
-	/** @private Internal private variable to hold the last query cursor */
+	/** @protected Internal private variable to hold the last query cursor */
 	protected $_cursor = null;
 	
-	/** @private boolean Debug option */
+	/** @protected boolean Debug option */
 	protected $_debug = 0;
 	
-	/** @private int The limit for the query */
+	/** @protected int The limit for the query */
 	protected $_limit = 0;
 	
-	/** @private int The for offset for the limit */
+	/** @protected int The for offset for the limit */
 	protected $_offset = 0;
 	
-	/** @private int A counter for the number of queries performed by the object instance */
+	/** @protected int A counter for the number of queries performed by the object instance */
 	protected $_ticker = 0;
 	
-	/** @private array A log of queries */
+	/** @protected array A log of queries */
 	protected $_log = null;
 	
-	/** @private string The null/zero date string */
+	/** @protected string The null/zero date string */
 	protected $_nullDate = null;
 	
-	/** @private string Quote for named objects */
+	/** @protected string Quote for named objects */
 	protected $_nameQuote = null;
 	
-	/** @public boolean UTF-8 support */
+	/** @protected boolean UTF-8 support */
 	protected $_utf = 0;
 	
-	/** @public array The fields that are to be quote */
+	/** @protected array The fields that are to be quote */
 	protected $_quoted = null;
 	
-	/** @public bool Legacy compatibility */
+	/** @protected bool Legacy compatibility */
 	protected $_hasQuoted = null;
 	
-	/**
-	* Database object constructor
-	*
-	* @access	public
-	* @param	array	List of options used to configure the connection
+	/** 
+	 * Database object constructor
+	 *
+	 * @access public
+	 * @param array List of options used to configure the connection
 	*/
 	public function __construct($options) {
 		$this->_table_prefix = array_key_exists("prefix", $options) ? $options["prefix"] : "kb_";
@@ -107,7 +102,7 @@ class Database {
 		// Determine utf-8 support
 		$this->_utf = $this->hasUTF();
 		
-		//Set charsets (needed for MySQL 4.1.2+)
+		// Set charsets (needed for MySQL 4.1.2+)
 		if ($this->_utf){
 			$this->setUTF();
 		}
@@ -134,9 +129,7 @@ class Database {
 		if (empty($instances[$signature])) {
 			$driver = array_key_exists("driver", $options) ? $options["driver"]	: "mysql";
 			
-			if (!Core::import("includes.database.drivers." . $driver)) {
-				die("Database driver not found.");
-			}
+			Core::import("includes.database.drivers." . $driver) or die("Database driver not found.");
 			
 			$adapter = "Database" . ucfirst($driver);
 			$instance = new $adapter($options);
@@ -162,7 +155,7 @@ class Database {
 	 * Get the database connectors
 	 *
 	 * @access public
-	 * @return array An array of available session handlers
+	 * @return array An array of available database drivers
 	*/
 	static public function getConnectors() {
 		$dir = dir(dirname(__FILE__) . DS . "database");
@@ -170,7 +163,7 @@ class Database {
 		
 		while ($file = $dir->read()) {
 			$name = substr($file, 0, strrpos($file, "."));
-			Core::import("database.driver." . $name);
+			Core::import("database.drivers." . $name);
 			$class = "Database" . ucfirst($name);
 			
 			if (call_user_func_array(Array(trim($class), "test"), null)) {
@@ -184,6 +177,7 @@ class Database {
 	/**
 	 * Determines if the connection to the server is active.
 	 *
+	 * @abstract
 	 * @access      public
 	 * @return      boolean
 	*/
@@ -222,7 +216,7 @@ class Database {
 		if (is_string($quoted)) {
 			$this->_quoted[] = $quoted;
 		} else {
-			$this->_quoted = array_merge($this->_quoted, (array)$quoted);
+			$this->_quoted = array_merge($this->_quoted, (Array) $quoted);
 		}
 		
 		$this->_hasQuoted = true;
@@ -250,7 +244,7 @@ class Database {
 	 * @param int 0 = off, 1 = on
 	*/
 	public function debug($level) {
-		$this->_debug = intval($level);
+		$this->_debug = (int) $level;
 	}
 
 	/**
@@ -389,10 +383,10 @@ class Database {
 			}
 			
 			$j = strpos($sql, "'", $startPos);
-			$k = strpos($sql, '"', $startPos);
+			$k = strpos($sql, "\"", $startPos);
 			
 			if (($k !== FALSE) && (($k < $j) || ($j === FALSE))) {
-				$quoteChar = '"';
+				$quoteChar = "\"";
 				$j = $k;
 			} else {
 				$quoteChar = "'";
@@ -428,7 +422,7 @@ class Database {
 				}
 				
 				if ($escaped) {
-					$j = $k+1;
+					$j = $k + 1;
 					continue;
 				}
 				
@@ -441,7 +435,7 @@ class Database {
 			}
 			
 			$literal .= substr($sql, $startPos, $k - $startPos + 1);
-			$startPos = $k+1;
+			$startPos = $k + 1;
 		}
 		
 		if ($startPos < $n) {
@@ -466,7 +460,7 @@ class Database {
 	 *
 	 * @abstract
 	 * @access public
-	 * @return mixed A database resource if successful, FALSE if not.
+	 * @return mixed A database resource if successful, false if not.
 	*/
 	public function query() {
 		return;
@@ -488,9 +482,9 @@ class Database {
 	 *
 	 * @abstract
 	 * @access public
-	 * @return mixed A database resource if successful, FALSE if not.
+	 * @return mixed A database resource if successful, false if not.
 	*/
-	public function queryBatch($abort_on_error=true, $p_transaction_safe = false) {
+	public function queryBatch($abortOnError = true, $transactionSafe = false) {
 		return false;
 	}
 
@@ -560,7 +554,6 @@ class Database {
 	/**
 	 * This global function loads the first row of a query into an object
 	 *
-	 *
 	 * @abstract
 	 * @access public
 	 * @param object
@@ -576,7 +569,7 @@ class Database {
 	 * @access public
 	 * @param string The field name of a primary key
 	 * @return array If <var>key</var> is empty as sequential list of returned records.
-	
+	 *
 	 * If <var>key</var> is not empty then the returned array is indexed by the value
 	 * the database key.  Returns <var>null</var> if the query fails.
 	*/
@@ -637,16 +630,16 @@ class Database {
 	/**
 	 * Print out an error statement
 	 *
-	 * @param boolean If TRUE, displays the last SQL statement sent to the database
-	 * @return string A standised error message
+	 * @param boolean If true, displays the last SQL statement sent to the database
+	 * @return string A standardised error message
 	*/
 	public function stderr($showSQL = false) {
-		if ($this->_errorNum != 0) {
-			return "DB function failed with error number " . $this->_errorNum .
-			"<br /><font color=\"red\">" . $this->_errorMsg . "</font>" .
-			($showSQL ? "<br />SQL = <pre>" . $this->_sql . "</pre>" : "");
+		if ($this->_errorNum = 0) {
+			return "<p>Database function reports no errors.</p>";
 		} else {
-			return "DB function reports no errors";
+			return "<p>Database function failed with error number " . $this->_errorNum . ":</p>" .
+			"<p style=\"color: red;\">" . $this->_errorMsg . "</p>" .
+			($showSQL ? "<p>Query: <pre>" . $this->_sql . "</pre>" : "");
 		}
 	}
 
@@ -678,7 +671,7 @@ class Database {
 	 * @abstract
 	*/
 	public function getVersion() {
-		return "Not available for this connector";
+		return "Not available for this connector.";
 	}
 
 	/**
@@ -693,7 +686,7 @@ class Database {
 	}
 
 	/**
-	 * 
+	 *
 	 *
 	 * @abstract
 	 * @access public
@@ -722,11 +715,11 @@ class Database {
 	* @access public
 	* @return string
 	*/
-	function quote($text) {
+	public function quote($text) {
 		$text = $this->getEscaped($text);
 		
 		if (!is_numeric($text)) {
-			$text = "'" . $text . "'";
+			$text = "\"" . $text . "\"";
 		}
 		
 		return $text;

@@ -122,9 +122,9 @@ class JSONRPCResponse {
 		
 		if ($this->errno) {
 			// Let non-ASCII response messages be tolerated by clients by encoding non ascii chars
-			$this->payload .= "\"result\":null,\"error\":{\"faultCode\":" . $this->errno . ",\"faultString\":\"" . $this->errstr . "\"}";
+			$this->payload .= "\"error\":{\"faultCode\":" . $this->errno . ",\"faultString\":\"" . $this->errstr . "\"}";
 		} else {
-			$this->payload .= "\"result\":" . $json->encode($this->val) . ",\"error\":null";
+			$this->payload .= "\"result\":" . $json->encode($this->val);
 		}
 		
 		$this->payload .= "}";

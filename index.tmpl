@@ -12,7 +12,7 @@
 				get: function(name) {
 					var data = DirectData._items[name];
 
-					if (data && Object.isDefined(data.result) && Object.isNull(data.error)) {
+					if (data && Object.isDefined(data.result)) {
 						return data;
 					} else {
 						return false;

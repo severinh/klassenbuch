@@ -282,7 +282,8 @@ Contacts.Contact.Window = Class.create(Controls.Window, {
 		}
 		
 		var row = new Template("<tr><td class=\"caption\">#{caption}:</td><td>#{content}</td></tr>"),
-			totalComments = Contacts.pluck("posts").inject(0, function(acc, n) { return acc + n; });
+			totalComments = Contacts.pluck("posts").inject(0, function(acc, n) { return acc + n; }),
+			totalTasks = Contacts.pluck("tasks").inject(0, function(acc, n) { return acc + n; });
 		
 		this.update("<h2>" + title + "</h2><h3>Kontaktinformationen</h3><table class=\"simpleList\">" +
 			row.evaluate({
@@ -321,6 +322,12 @@ Contacts.Contact.Window = Class.create(Controls.Window, {
 				caption: "Anzahl Kommentare",
 				content: contact.posts + " <small>(" + (contact.posts / totalComments * 100).roundTo(2) +
 					"% aller Kommentare)</small>"
+			}) +
+			
+			row.evaluate({
+				caption: "Anzahl Aufgaben",
+				content: contact.tasks + " <small>(" + (contact.tasks / totalTasks * 100).roundTo(2) +
+					"% aller Aufgaben)</small>"
 			}) +
 			
 			row.evaluate({

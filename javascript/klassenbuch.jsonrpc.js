@@ -131,10 +131,14 @@ JSONRPC.Request = Class.create(Ajax.Request, /** @scope JSONRPC.Request.prototyp
 				options.onComplete(response);
 			}).bind(this),
 			
-			contentType: "application/javascript",
+			contentType: "application/json",
 			
 			// The request body actually sent to the server.
 			postBody: requestParams.toJSON(),
+			
+			requestHeaders: {
+				"Accept": "application/json"
+			},
 			
 			// Force base class to parse the response, even if the response's content type header isn't correctly set.
 			evalJSON: false
@@ -251,6 +255,7 @@ JSONRPC.Response.fromAjaxResponse = function(response) {
 	
 	if (Object.isString(response)) { // Need to parse response string first.
 		raw = response;
+		
 		try {
 			response = response.evalJSON(true);
 		} catch(e) { // Malformed JSON string.
@@ -259,12 +264,14 @@ JSONRPC.Response.fromAjaxResponse = function(response) {
 	}
 	
 	// Check if parsed JSON response follows the JSONRPC specifications.
-	if (response && Object.isDefined(response.result) && Object.isDefined(response.error)) { 
-		if (Object.isNull(response.error)) {
+	if (response) {
+		if (Object.isDefined(response.result)) {
 			result = response.result;
-		} else { // There was an error processing the JSONRPC request.
+		} else if (Object.isDefined(response.error)) { // There was an error processing the JSONRPC request.
 			faultCode = response.error.faultCode;
 			faultString = response.error.faultString;
+		} else {
+			invalidResponse();
 		}
 	} else {
 		invalidResponse();
@@ -494,7 +501,7 @@ JSONRPC.Store = Class.create(Collection, {
 					this.loadSuccess(response, appendOnly);
 				}).bind(this),
 				
-				onFailure: (this.options.suppressErrors) ? Prototype.K : null
+				onFailure: (this.options.suppressErrors) ? Prototype.K : undefined
 			});
         }
     },

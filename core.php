@@ -26,9 +26,19 @@ define("DS", DIRECTORY_SEPARATOR);
 
 class Core {
 	static public function &getUser() {
+		static $instance;
+		
+		if (!is_object($instance)) {
+			$instance = self::_createUser();
+		}
+		
+		return $instance;
+	}
+	
+	static public function &_createUser() {
 		Core::import("includes.user");
 		
-		return User::getInstance();
+		return new User(Core::getDatabase());
 	}
 	
 	static public function &getSettings() {
@@ -49,6 +59,7 @@ class Core {
 	
 	static private function &_createDatabase() {
 		Core::import("includes.database.database");
+		Core::import("includes.database.table");
 		
 		$settings =& Core::getSettings();
 		
@@ -134,7 +145,7 @@ function smartStripSlashes($str) {
 function localizedDate($format, $timestamp) {
 	$result = date($format, $timestamp);
 	
-	$weekdaysEN = Array("/Monday/", "/Tuesday/", "/Wednesday/", "/Thursday/", "/Fr iday/", "/Saturday/", "/Sunday/");
+	$weekdaysEN = Array("/Monday/", "/Tuesday/", "/Wednesday/", "/Thursday/", "/Friday/", "/Saturday/", "/Sunday/");
 	$weekdaysDE = Array("Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag",  "Samstag", "Sonntag");
 	
 	$monthsEN = Array("/January/", "/February/", "/March/", "/April/", "/May/", "/June/", "/July/", "/August/", "/September/", "/October/", "/November/", "/December/");
