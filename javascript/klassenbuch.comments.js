@@ -333,7 +333,7 @@ Comments.CommentInputField = function() {
 			var self = this;
 			
 			(function() {
-				self.inputArea.value = input.replaceAll("[BR /]", "\n");
+				self.inputArea.value = input.replace(/\[BR \/\]/g, "\n");
 			}).defer();
 		},
 		
