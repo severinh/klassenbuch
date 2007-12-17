@@ -1204,7 +1204,7 @@ Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype,
 		}
 		
 		$super("window " + ((this.options.showTitleBar) ? "withTitleBar" : "withoutTitleBar") + " " +
-			this.type.lowerFirstLetter());
+			this.type.charAt(0).toLowerCase() + this.type.substring(1));
 		
 		this.initializeHistoryNode();
 		this.element.hide();

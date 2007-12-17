@@ -101,7 +101,7 @@ Object.extend(Number.prototype, function() {
 		
 		/**
 		 * Adds the appropriate file size unit to number representing a data size.
-		 * @param {Number} [roundTo] The number of decimal places to be returned.
+		 * @param {Number} [roundTo] The number of decimal places to be returned. Defaults to 2.
 		 * @returns {String} The resulting data size string.
 		 * @example
 (2187393).getFormatedDataSize();
@@ -179,17 +179,6 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 	},
 	
 	/**
-	 * Lowercases the first character in the string.
-	 * @returns {String} The resulting string.
-	 * @example
-"FooBar".capitalize();
-// -> "fooBar"
-	*/
-	lowerFirstLetter: function() {
-		return this.charAt(0).toLowerCase() + this.substring(1);
-	},
-	
-	/**
 	 * Checks if the string is a valid mail address.
 	 * @returns {Boolean} Valid or not.
 	* @example
@@ -200,7 +189,7 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 // -> false
 	*/
 	isValidMailAddress: function() {
-		var regExp = /^[a-zA-Z0-9]+[_a-zA-Z0-9-]*(\.[_a-z0-9-]+)*@[a-z??????0-9]+(-[a-z??????0-9]+)*(\.[a-z??????0-9-]+)*(\.[a-z]{2,4})$/;
+		var regExp = /^[a-zA-Z0-9]+[_a-zA-Z0-9-]*(\.[_a-z0-9-]+)*@[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9-]+)*(\.[a-z]{2,4})$/;
 		return regExp.test(this);
 	},
 	
@@ -220,9 +209,7 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 			return store;
 		}
 		
-		return arguments.callee._STORE[this] = this.toLowerCase()
-			.replace(/\s/g, "-")
-			.replace(/[^A-Z^0-9-]/gi, "");
+		return arguments.callee._STORE[this] = this.toLowerCase().replace(/\s/g, "-").replace(/[^A-Z0-9-]/gi, "");
 	},
 	
 	/**
@@ -251,12 +238,15 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 /** @ignore This is an internal cache used by String#addressify. */
 String.prototype.addressify._STORE = {};
 
+/**
+ * BBCode is used for safe text formatting instead of HTML tags. This namespace contains a list of available emoticons along with a 
+ * method to transform BBCode into raw HTML text.
+ * @namespace
+*/
 var BBCode = function() {
-	var emoMap = {};
-	
 	var emoticons = $H({
 	    angry:    ["*angry*"],
-	    biggrin:  [":-D", ":D", "=D"],
+	    biggrin:  [":-D", ":D"],
 	    blink:    ["o.O", "oO"],
 	    blush:    ["*blush*", ":-*)"],
 	    cool:     ["B-)", "B)", "8-D", "8D"],
@@ -265,26 +255,39 @@ var BBCode = function() {
 	    happy:    ["^^"],
 	    huh:      ["*huh*"],
 	    laugh:    ["lol"],
+		lol:	  ["xD", "XD"],
 	    mellow:   ["*mellow*", ":-|"],
 	    ohmy:     [":-o"],
 	    rolleyes: ["*rolleyes*"],
-	    sad:      [":-(", ":(", "=("],
+	    sad:      [":-(", ":("],
 	    sleep:    ["-_-"],
+		smile:	  [":-)", ":)"],
 	    tongue:   [":-P", ":P"],
 	    unsure:   ["*unsure*", ":-/"],
-	    wink:     [";-)", ";)"],
-	    lol:	  ["xD", "XD"]
+	    wink:     [";-)", ";)"]
 	});
+	
+	// Internally used to connect certain emoticons to their corresponding image file in the directory images/emoticons.
+	var reversedMap = {};
 	
 	emoticons.each(function(pair) {
 		pair.value.each(function(emo) {
-			emoMap[emo] = pair.key;
+			reversedMap[emo] = pair.key;
 		});
 	});
 	
-	return {
+	return /** @scope BBCode */ {
+		/**
+		 * Parses a string that contains BBCode tags and emoticons and transforms it into HTML text. Allowed BBCode tags are [B]xyz[/B],
+		 * [I]xyz[/I], [U]xyz[/U], [URL=http://xyz.com]Link to xyz[/URL], [URL]http://xyz.com[/URL], [COLOR=xyz]abc[/COLOR], 
+		 * [QUOTE]xyz[/QUOTE] and [BR /].
+		 * @param {String} value The text to parse.
+		 * @param {Boolean} [skipFormatting] If true, BBCode tags won't be parsed except [BR /]. Defaults to false.
+		 * @returns {String} The transformed text containing html tags.
+		*/
 		parse: function(value, skipFormatting) {
 			if (value.include("[")) { // Performance optimization: Don't do the whole parsing thing if there isn't a BBCode tag.
+				// Three helper functions to avoid redundant code.
 				var replace = function(re, str) {
 					return value = value.replace(re, str);
 				};
@@ -303,6 +306,7 @@ var BBCode = function() {
 					replace(re2, str2);
 				};
 				
+				// BR tags are parsed regardless of the skipFormatting argument
 				replace(/\[BR \/\]/g, "<br />");
 				
 				if (!skipFormatting) {
@@ -317,14 +321,20 @@ var BBCode = function() {
 				}
 			}
 			
-			value = value.replace(
-/(\*(angry|blush|excl|huh|mellow|rolleyes|unsure)\*|:-?[D\(P]|o\.?O|B-?\)|8-?D|-[._]-|:-(\||o|\/|\*\))|;-?\)|\^\^|lol|[xX]D|=\()/g, function($1) {
-				return "<img src=\"images/emoticons/" + emoMap[$1] + ".gif\" class=\"unselectable\" style=\"vertical-align: middle;\" />"
+			// Replacing emoticons by <img ... /> tags.
+			value = value.replace(/(\*(angry|blush|excl|huh|mellow|rolleyes|unsure)\*|:-?[D\(\)P]|o\.?O|B-?\)|8-?D|-[._]-|:-(\||o|\/|\*\))|;-?\)|\^\^|lol|[xX]D|=\()/g, function(emoticon) {
+				return "<img src=\"images/emoticons/" + reversedMap[emoticon] +
+					".gif\" class=\"unselectable\" style=\"vertical-align: middle;\" />"
 			});
 			
 			return value;
 		},
 		
+		/**
+		 * A list of emoticon image filenames that are supported by the parse function. Almost every image file is represented by two or
+		 * more different emoticons.
+		 * @type Hash
+		*/
 		Emoticons: emoticons
 	};
 }();
@@ -526,7 +536,7 @@ Object.extend(Prototype.Browser, (function() {
 	 * Framework are described in the <a href="http://www.prototypejs.org/api/date">Prototype API Documentation</a>.
 	 * @name Date
 	*/
-	Object.extend(Date.prototype, {
+	Object.extend(Date.prototype, /** @scope Date.prototype */ {
 		/**
 		 * Makes it possible to iterate through date ranges using $R. One iteration step spans one day.
 		 * @example
@@ -555,6 +565,9 @@ new Date().add(-3, "minutes").format("d.m.Y H:i");
 			return this;
 		},
 		
+		/**
+		 * Calculates the difference between to dates.
+		*/
 		diff: function(date, unit, allowDecimal) {
 			var ms = this.getTime() - date.getTime();
 			var unitDiff = ms / multipliers.get(unit || "day");
@@ -632,7 +645,7 @@ new Date().add(-3, "minutes").format("d.m.Y H:i");
 		}
 	});
 	
-	Object.extend(Date, {
+	Object.extend(Date, /** @scope Date */ {
 		getCurrentTimestamp: function() {
 			return new Date().getTimestamp();
 		},
@@ -664,7 +677,7 @@ new Date().add(-3, "minutes").format("d.m.Y H:i");
 		daysPerMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
 		
 		/**
-		 * Eine Auflistung der Monatsnamen, beginnend mit Januar.
+		 * A list of month names, beginning with January.
 		 * @type {String[]}
 		*/
 		months: $w("Januar Februar März April Mai Juni Juli August September Oktober November Dezember")
@@ -680,12 +693,10 @@ PeriodicalExecuter.addMethods({
 	
 	setFrequency: function(frequency) {
 		if (frequency !== this.frequency) {
-			this.disable();
+			this.frequency = frequency;
 			
-			if (frequency !== 0) {
-				this.frequency = frequency;
-				this.enable();
-			}
+			this.disable();
+			this.enable();
 		}
 	}
 });
