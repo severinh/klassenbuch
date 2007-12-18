@@ -657,7 +657,7 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 function gallery_getalbums() {
     $database = Core::getDatabase();
 	
-	$database->setQuery("SELECT * FROM #__gallery_albums");
+	$database->setQuery("SELECT a.*, COUNT(p.albumid) AS pictures FROM #__gallery_albums AS a LEFT JOIN #__gallery_pictures AS p ON a.id = p.albumid GROUP BY a.id");
 	$albumsResponse = $database->loadAssocList();
 	
     if (!$database->success()) {
@@ -667,14 +667,11 @@ function gallery_getalbums() {
     $albums = Array();
     
 	foreach ($albumsResponse as $album) {
-		// Needs optimization
-		$database->setQuery("SELECT * FROM #__gallery_pictures WHERE albumid = " . (int) $album["id"]);
-		
         $albums[] = Array(
             "id"          => (int)    $album["id"],
             "name"        => (string) $album["name"],
             "description" => (string) $album["description"],
-            "pictures"	  => (int)	  $database->getNumRows($database->query())
+            "pictures"	  => (int)	  $album["pictures"]
 		);
 	}
 	
