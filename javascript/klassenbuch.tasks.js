@@ -545,18 +545,16 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 	 * @memberof TaskManagement.View
 	*/
 	_onHighlightTask: function(task) {
-		if (!task.comments.loaded) {
-			task.comments.load();
-		}
-		
 		var contact = Contacts.get(task.userid);
 		
 		this._taskInfoBox.innerHTML = (contact) ? "Eingetragen am " + task.added.format("j. F") + "<br />von " +
 			contact.getFullName() : "";
 		
-		
-		
 		if (User.signedIn) {
+			if (!task.comments.loaded) {
+				task.comments.load();
+			}
+			
 			[0, 1, 2].each(function(a) {
 				this._sideMenu.items[a].enable();
 			}, this);
