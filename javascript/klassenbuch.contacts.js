@@ -76,11 +76,11 @@ Contacts.View = Class.create(Controls.View, {
 				};
 				
 				table.addColumn("Name", function(a) {
-						return a.getFullName();
-					}, {
-						width: "150px",
-						sortable: true,
-						allowReversedSorting: true
+					return a.getFullName();
+				}, {
+					width: "150px",
+					sortable: true,
+					allowReversedSorting: true
 				});
 				
 				table.addColumn("Nickname", "nickname", {
@@ -104,11 +104,7 @@ Contacts.View = Class.create(Controls.View, {
 				table.addColumn("SF", "mainsubject", {
 					width: "50px",
 					sortable: true,
-					showSortedInGroups: "outlookStyle",
-					
-					processGroupCaption: function(content) {
-						return content.replace("PAM", "Physik und Anwendungen der Mathematik");
-					}
+					showSortedInGroups: "outlookStyle"
 				});
 				
 				table.addColumn("Status", function(contact) {
