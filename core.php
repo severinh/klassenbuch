@@ -158,7 +158,7 @@ function localizedDate($format, $timestamp) {
 }
 
 function sanitizeFileName($str) {
-	return preg_replace("/[^A-Z0-9|\.|'|\-|\[|\]]/i", "_", $str);
+	return preg_replace("/[^A-Z0-9|\.|'|\-|\[|\]\(\)]/i", "_", $str);
 }
 
 function parseFileName($fileName) {
