@@ -245,26 +245,26 @@ String.prototype.addressify._STORE = {};
 */
 var BBCode = function() {
 	var emoticons = $H({
-	    angry:    ["*angry*"],
-	    biggrin:  [":-D", ":D"],
-	    blink:    ["o.O", "oO"],
-	    blush:    ["*blush*", ":-*)"],
-	    cool:     ["B-)", "B)", "8-D", "8D"],
-	    dry:      ["-.-"],
-	    excl:     ["*excl*"],
-	    happy:    ["^^"],
-	    huh:      ["*huh*"],
-	    laugh:    ["lol"],
-		lol:	  ["xD", "XD"],
-	    mellow:   ["*mellow*", ":-|"],
-	    ohmy:     [":-o"],
-	    rolleyes: ["*rolleyes*"],
-	    sad:      [":-(", ":("],
-	    sleep:    ["-_-"],
-		smile:	  [":-)", ":)"],
-	    tongue:   [":-P", ":P"],
-	    unsure:   ["*unsure*", ":-/"],
-	    wink:     [";-)", ";)"]
+		angry:	["*angry*"],
+		biggrin:	[":-D", ":D"],
+		blink:	["o.O", "oO"],
+		blush:	["*blush*", ":-*)"],
+		cool:		["B-)", "B)", "8-D", "8D"],
+		dry:		["-.-"],
+		excl:		["*excl*"],
+		happy:	["^^"],
+		huh:		["*huh*"],
+		laugh:	["lol"],
+		lol:		["xD", "XD"],
+		mellow:	["*mellow*", ":-|"],
+		ohmy:		[":-o"],
+		rolleyes:	["*rolleyes*"],
+		sad:		[":-(", ":("],
+		sleep:	["-_-"],
+		smile:	[":-)", ":)"],
+		tongue:	[":-P", ":P"],
+		unsure:	["*unsure*", ":-/"],
+		wink:		[";-)", ";)"]
 	});
 	
 	// Internally used to connect certain emoticons to their corresponding image file in the directory images/emoticons.
@@ -709,20 +709,16 @@ Element.addMethods({
 		return element;
 	},
 	
-	setVisibility: function(element, v) {
+	setVisibility: function(element, visibility) {
 		element = $(element);
-		
-		if (v) {
-			element.show();
-		} else {
-			element.hide();
-		}
+		element[visibility ? "show" : "hide"]();
+		return element;
 	},
 	
 	// Eric's weblog: JavaScript: Scroll to Bottom of a Div - http://radio.javaranch.com/pascarello/2005/12/14/1134573598403.html
 	scrollToBottom: function(element) {
-        element.scrollTop = element.scrollHeight;
-        return element;
+		element.scrollTop = element.scrollHeight;
+		return element;
 	},
 	
 	scrollToTop: function(element) {
@@ -731,14 +727,15 @@ Element.addMethods({
 	},
 	
 	centerOnScreen: function(element) {
+		element = $(element);
 		return element.centerVertically().centerHorizontally();
 	},
 	
 	centerVertically: function(element) {
 		var windowHeight = document.viewport.getHeight();
-        var top = (windowHeight - parseInt(element.getStyle("height"), 10)) / 2;
-        
-        return element.setStyle({ top: top.limitTo(0, windowHeight) + "px" });
+		var top = (windowHeight - parseInt(element.getStyle("height"), 10)) / 2;
+
+		return element.setStyle({ top: top.limitTo(0, windowHeight) + "px" });
 	},
 	
 	centerHorizontally: function(element) {
@@ -748,49 +745,45 @@ Element.addMethods({
 		return element.setStyle({ left: left.limitTo(0, windowWidth) + "px" });
 	},
 	
-    createChild: function(element, options, position) {
-        options = Object.extend({ tag: "div" }, options || {});
-        
-        var attributes = {};
-        var insertion = {};
-        
-        for (a in options) {
-            if (a === "tag" || a === "style" || a === "content") {
-				continue;
-            }
-            
-            attributes[a] = options[a];
-        }
-        
-        var child = new Element(options.tag, attributes);
-        
-        if (options.style) {
-			child.setStyle(options.style);
+	createChild: function(element, options, position) {
+		var content = options.content,
+		style = options.style,
+		tag = options.tag,
+		insertion = {};
+
+		delete options["content"];
+		delete options["style"];
+		delete options["tag"];
+
+		var child = new Element(tag || "div", options);
+
+		if (content) {
+			child.innerHTML = content;
 		}
-		
-        if (options.content) {
-			child.innerHTML = options.content;
+
+		if (style) {
+			child.setStyle(style);
 		}
-        
-        insertion[position || "bottom"] = child;
-        
-        $(element).insert(insertion);
-        
-        return child;
-    },
+
+		insertion[position || "bottom"] = child;
+
+		$(element).insert(insertion);
+
+		return child;
+	},
     
-    insertControl: function(element, control, position) {
+	insertControl: function(element, control, position) {
 		var insertion = {};
-		
+
 		position = position || "bottom";
 		insertion[position] = control.element;
-		
-        $(element).insert(insertion);
-        
+
+		$(element).insert(insertion);
+
 		control.fireEvent("insert");
-        
-        return control;
-    }
+
+		return control;
+	}
 });
 
 Class.Methods.alias = function(source, destination) {
@@ -823,74 +816,74 @@ myInstance.on("say", function() {
 });
 */
 var EventPublisher = Class.create( /** @scope EventPublisher.prototype */ {
-    initialize: function() {
+	initialize: function() {
 		/**
-		 * Enthält alle Ereignis-Handler die mit der Methode <a href="#addListener">addListener</a> registriert wurden.
-		 * Die Ereignis-Handler sind nach den dazugehörigen Ereignissen geordnet.
-		 * @type Object
-		 * @name _events
-		 * @memberof EventPublisher
+		* Enthält alle Ereignis-Handler die mit der Methode <a href="#addListener">addListener</a> registriert wurden.
+		* Die Ereignis-Handler sind nach den dazugehörigen Ereignissen geordnet.
+		* @type Object
+		* @name _events
+		* @memberof EventPublisher
 		*/
-        this._events = {};
-    },
-    
-    /**
-     * Registriert einen Ereignis-Handler-Funktion zu einen bestimmten Ereignis, damit diese ausgeführt wird, wenn das 
-     * Ereignis ausgelöst wird.
-     * @param {String} eventName Der Name des Ereignisses, das abgehört werden soll.
-     * @param {Function} handler Die Ereignis-Handler-Funktion, die ausgeführt werden soll.
-     * @return {Function Die Ereignis-Handler-Funktion, um dessen späteres Entfernen zu erleichtern, wenn die Funktion
-     * mit .bind(this) gekapselt wurde.
-     * @memberof EventPublisher
-    */
-    addListener: function(eventName, handler, context) {
-		handler = handler.bind(context);
-		
-		// Wenn zuvor noch kein Ereignis-Handler bei diesem Ereignis registriert worden ist.
-        if (!this._events[eventName]) {
-            this._events[eventName] = [];
-        }
-        
-        // Fügt die Handler-Funktion ein
-        this._events[eventName].push(handler);
-        
-        return handler;
-    },
+		this._events = {};
+	},
 
-    /**
-     * Entfernt einen bestimmten Ereignis-Handler von einemm bestimmten Ereignis
-     * @param {String} eventName Das Ereignis, von welchem der Ereignis-Handler entfernt werden soll
-     * @param {Function} handler Eine Referenz zur Handler-Funktion
-     * @memberof EventPublisher
-    */ 
-    removeListener: function(name, handler) {
-        if (this._events[name]) {
-            this._events[name] = this._events[name].without(handler);
-        }
-    },
-	
+	/**
+	* Registriert einen Ereignis-Handler-Funktion zu einen bestimmten Ereignis, damit diese ausgeführt wird, wenn das 
+	* Ereignis ausgelöst wird.
+	* @param {String} eventName Der Name des Ereignisses, das abgehört werden soll.
+	* @param {Function} handler Die Ereignis-Handler-Funktion, die ausgeführt werden soll.
+	* @return {Function Die Ereignis-Handler-Funktion, um dessen späteres Entfernen zu erleichtern, wenn die Funktion
+	* mit .bind(this) gekapselt wurde.
+	* @memberof EventPublisher
+	*/
+	addListener: function(eventName, handler, context) {
+		handler = handler.bind(context);
+
+		// Wenn zuvor noch kein Ereignis-Handler bei diesem Ereignis registriert worden ist.
+		if (!this._events[eventName]) {
+		this._events[eventName] = [];
+		}
+
+		// Fügt die Handler-Funktion ein
+		this._events[eventName].push(handler);
+
+		return handler;
+	},
+
+	/**
+	* Entfernt einen bestimmten Ereignis-Handler von einemm bestimmten Ereignis
+	* @param {String} eventName Das Ereignis, von welchem der Ereignis-Handler entfernt werden soll
+	* @param {Function} handler Eine Referenz zur Handler-Funktion
+	* @memberof EventPublisher
+	*/ 
+	removeListener: function(name, handler) {
+		if (this._events[name]) {
+		this._events[name] = this._events[name].without(handler);
+		}
+	},
+
 	removeListenersByEventName: function(name) {
 		delete this._events[name];
 	},
-	
-    /**
-     * Entfernt alle Handler von allen Ereignissen (!).
-     * @memberof EventPublisher
-    */ 
-    clearAllListeners: function() {
-        this._events = {};
-    },
 
-    /**
-    * Fires the event {eventName}, resulting in all registered handlers to be executed.
-    * @param {String} eventName The name of the event to fire
-    * @params {Object} args [optional] Any object, will be passed into the handler function as the only argument
-    */
-    fireEvent: function(eventName) {
-        if (this._events[eventName]) {
+	/**
+	* Entfernt alle Handler von allen Ereignissen (!).
+	* @memberof EventPublisher
+	*/ 
+	clearAllListeners: function() {
+		this._events = {};
+	},
+
+	/**
+	* Fires the event {eventName}, resulting in all registered handlers to be executed.
+	* @param {String} eventName The name of the event to fire
+	* @params {Object} args [optional] Any object, will be passed into the handler function as the only argument
+	*/
+	fireEvent: function(eventName) {
+		if (this._events[eventName]) {
 			var args = $A(arguments);
 			args.shift();
-			
+
 			return !this._events[eventName].any(function(handler) {
 				try {
 					if (handler.apply(this, args) === false) {
@@ -905,10 +898,10 @@ var EventPublisher = Class.create( /** @scope EventPublisher.prototype */ {
 						"Zeile: " + e.lineNumber);
 				}
 			}, this);
-        }
-        
-        return true;
-    }
+		}
+
+		return true;
+	}
 }).alias("addListener", "on").alias("removeListener", "un");
 
 var Collection = Class.create(Hash, EventPublisher.prototype, {
@@ -942,7 +935,7 @@ var Collection = Class.create(Hash, EventPublisher.prototype, {
 		this.fireEvent("clear");
 	},
 	
-    _each: function(iterator) {
+	_each: function(iterator) {
 		for (var key in this._object) {
 			iterator(this._object[key]);
 		}
@@ -992,8 +985,8 @@ var WindowCollection = Class.create(ControlCollection, {
 	},
 	
 	getNumberOfOpenWindows: function() {
-        return this.findAll(function(window) {
+		return this.findAll(function(window) {
 			return !window.removed && window.visible();
-        }).length;
+		}).length;
 	}
 }).alias("clear", "closeAll");
