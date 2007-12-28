@@ -24,7 +24,7 @@ App.ThemeManager = new (Class.create(EventPublisher, {
 		}
 	},
 	
-	currentTheme: User.settings.get("theme"),	
+	currentTheme: User.settings.get("theme"),
 	
 	availableThemes: $H({
 		"default": "Standard-Design",

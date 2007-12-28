@@ -40,8 +40,8 @@ var Control = Class.create(EventPublisher, {
 		this.element = $(element);
 		
         /**
-		* @field {String} Die ID des Steuerelements. Wird von Prototype generiert.
-        */
+		 * @field {String} Die ID des Steuerelements. Wird von Prototype generiert.
+		*/
 		this.id = this.element.identify();
 		
 		this._childControls = [];
@@ -168,7 +168,7 @@ var Control = Class.create(EventPublisher, {
 	
 	/**
      * @method Zeigt das Steuerelement an, wenn es zur Zeit unsichtbar ist und umgekehrt (Wrapperfunktion).
-    */
+	*/
 	toggle: function() {
 		this[(this.visible()) ? "hide" : "show"]();
 	}
@@ -279,7 +279,12 @@ Controls.Button = Class.create(Control, {
 		this.element.innerHTML = "<span class=\"leftBoundary\">&nbsp;</span><span class=\"rightBoundary\">" + 
 			"<span class=\"content\"></span></span>";
 		
-		this.makePropertiesFromClassNames("leftBoundary", "rightBoundary", "content");
+		var spans = this.select("span");
+		
+		this.leftBoundary = spans[0];
+		this.rightBoundary = spans[1];
+		this.content = spans[2];
+		
 		this.setButtonClass(this.options.buttonClass);
 		this.setCaption(caption);
 		
@@ -1124,7 +1129,7 @@ Controls.Form.TextField = Class.create(Controls.Form.Field, {
 	getValue: function() {
 		return this.fieldElement.getValue();
 	}
-});
+})
 
 var DragAble = Class.create({
 	initialize: function(target, source) {

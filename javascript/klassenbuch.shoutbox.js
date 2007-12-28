@@ -216,7 +216,7 @@ Shoutbox.View = Class.create(Controls.View, {
 	},
 	
 	send: function(message) {
-		var message = message.stripScripts().stripTags().strip().replace(/(\r?\n)+/g, "[BR /]");
+		message = message.stripScripts().stripTags().strip().replace(/(\r?\n)+/g, "[BR /]");
 		
 		if (message) {
 			var request = new JSONRPC.Request("shoutbox_say", [message, Shoutbox.highestMessageID || 0]);

@@ -400,13 +400,16 @@ Storage.View = Class.create(Controls.View, {
 	},
 	
 	_updateTitle: function(name) {
+		var sortMsg = "";
+		
 		switch (name) {
-			case "Datei":           this.title.innerHTML = "Dateiablage (sortiert nach Dateiname)";    break;
-			case "Grösse":          this.title.innerHTML = "Dateiablage (sortiert nach Dateigrösse)";  break;
-			case "Beschreibung":    this.title.innerHTML = "Dateiablage (sortiert nach Beschreibung)"; break;
-			case "Hochgeladen von": this.title.innerHTML = "Dateiablage (sortiert nach Person)";       break;
-			default:   	            this.title.innerHTML = "Dateiablage";                              break;
+			case "Datei":           sortMsg = " (sortiert nach Dateiname)";    break;
+			case "Grösse":          sortMsg = " (sortiert nach Dateigrösse)";  break;
+			case "Beschreibung":    sortMsg = " (sortiert nach Beschreibung)"; break;
+			case "Hochgeladen von": sortMsg = " (sortiert nach Person)";
 		}
+		
+		this.title.innerHTML = "Dateiablage" + sortMsg;
 	},
 	
 	update: function() {

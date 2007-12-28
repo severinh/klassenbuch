@@ -33,7 +33,7 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
 	 * vorliegt, findet diese Eigenschaft nur Verwendung, falls Cookies vom Browser nicht unterstützt werden. Wenn der
 	 * Benutzer nicht angemeldet ist, enthält diese Eigenschaft eine leere Zeichenfolge.
 	 * @type String
-	*/ 
+	*/
 	token: "",
 	
 	/**
@@ -85,7 +85,6 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
 		$super()
 		
 		App.on("initialize", function() {
-			
 			User.StateDetection.initialize();
 			var userData = DirectData.get("userdata");
 			
