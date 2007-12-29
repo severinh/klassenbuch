@@ -549,13 +549,13 @@ User.SettingsWindow.Profile = Class.create(Controls.TabControl.TabPageWithButton
 		this.editMode = false;
 		
 		var data = [
-			{ caption: "Vorname",	field: "firstname", content: User.profile.firstname, 	maxlength: 30 },
-			{ caption: "Nachname",  field: "surname",  	content: User.profile.surname, 	 	maxlength: 30 },
-			{ caption: "Strasse", 	field: "address",  	content: User.profile.address, 	 	maxlength: 30 },
-			{ caption: "PLZ", 		field: "plz", 	   	content: User.profile.plz,			maxlength: 4  },
-			{ caption: "Ort", 		field: "location", 	content: User.profile.location, 	maxlength: 30 },
-			{ caption: "Telefon", 	field: "phone", 	content: User.profile.phone  || "", maxlength: 13 },
-			{ caption: "Natel", 	field: "mobile", 	content: User.profile.mobile || "", maxlength: 13 },
+			{ caption: "Vorname",	field: "firstname",	content: User.profile.firstname, 	maxlength: 30 },
+			{ caption: "Nachname", 	field: "surname",  	content: User.profile.surname, 	maxlength: 30 },
+			{ caption: "Strasse", 	field: "address",  	content: User.profile.address, 	maxlength: 30 },
+			{ caption: "PLZ", 	field: "plz", 	   	content: User.profile.plz    || "",	maxlength: 4  },
+			{ caption: "Ort", 	field: "location", 	content: User.profile.location, 	maxlength: 30 },
+			{ caption: "Telefon", 	field: "phone", 		content: User.profile.phone  || "", maxlength: 13 },
+			{ caption: "Natel", 	field: "mobile", 		content: User.profile.mobile || "", maxlength: 13 },
 			{ caption: "E-Mail", 	field: "mail", 		content: User.profile.mail   || "", maxlength: 50 }
 		];
 		
