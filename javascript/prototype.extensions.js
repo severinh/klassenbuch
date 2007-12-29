@@ -746,10 +746,12 @@ Element.addMethods({
 	},
 	
 	createChild: function(element, options, position) {
+		options = options || {};
+		
 		var content = options.content,
-		style = options.style,
-		tag = options.tag,
-		insertion = {};
+			style = options.style,
+			tag = options.tag,
+			insertion = {};
 
 		delete options["content"];
 		delete options["style"];
