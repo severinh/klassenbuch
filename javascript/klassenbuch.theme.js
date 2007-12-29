@@ -13,7 +13,7 @@ App.ThemeManager = new (Class.create(EventPublisher, {
 	},
 	
 	switchTheme: function(theme) {
-		$$("link")[0].writeAttribute("href", "design/" + theme + "/css/design.css");
+		$$("link")[1].writeAttribute("href", "design/" + theme + "/css/design.css");
 		this.currentTheme = theme;
 		this.fireEvent("changetheme", theme);
 	},
