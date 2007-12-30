@@ -321,7 +321,7 @@ var BBCode = function() {
 				}
 			}
 			
-			// Replacing emoticons by <img ... /> tags.
+			// Replacing emoticons with <img ... /> tags.
 			value = value.replace(/(\*(angry|blush|excl|huh|mellow|rolleyes|unsure)\*|:-?[D\(\)P]|o\.?O|B-?\)|8-?D|-[._]-|:-(\||o|\/|\*\))|;-?\)|\^\^|lol|[xX]D|=\()/g, function(emoticon) {
 				return "<img src=\"images/emoticons/" + reversedMap[emoticon] +
 					".gif\" class=\"unselectable\" style=\"vertical-align: middle;\" />"
@@ -442,21 +442,16 @@ document.viewport.getHeight();
  * @name Prototype.Browser
 */
 Object.extend(Prototype.Browser, (function() {
-	var version;
-	
-	// Some shortcuts
-	var B = Prototype.Browser;
-	var ua = navigator.userAgent.toLowerCase();
-	
-	var isFirefox = B.Gecko && ua.include("firefox");
+	var version,
+		B = Prototype.Browser,
+		ua = navigator.userAgent.toLowerCase(),
+		isFirefox = B.Gecko && ua.include("firefox");
 	
 	// Browser version detection (only applies to IE, Opera and Firefox)
-	if (B.IE) {
-		version = (!Object.isNull(/msie ([0-9]{1,}[\.0-9]{0,})/.exec(ua))) ? parseFloat(RegExp.$1) : 3;
-	} else if (B.Opera) {
-		version = (window.opera.version) ? parseFloat(window.opera.version()) : 7.5;
-	} else if (isFirefox) {
-		version = parseFloat(ua.substr(ua.indexOf("firefox") + 8, 3));
+	switch (true) {
+		case B.IE: 		version = (!Object.isNull(/msie ([0-9]{1,}[\.0-9]{0,})/.exec(ua))) ? parseFloat(RegExp.$1) : 3; break;
+		case B.Opera: 	version = (window.opera.version) ? parseFloat(window.opera.version()) : 7.5; break;
+		case isFirefox: 	version = parseFloat(ua.substr(ua.indexOf("firefox") + 8, 3));
 	}
 	
 	return /** @scope Prototype.Browser */ {
