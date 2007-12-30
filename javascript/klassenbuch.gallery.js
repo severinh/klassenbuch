@@ -63,12 +63,9 @@ var Gallery = new (Class.create(JSONRPC.Store, {
  * <a href="#_getPictures">_getPictures</a> abgerufen werden. Allerdings kann über den Konstruktor die Anzahl der
  * Fotos in diesem Album angegeben werden.
  * @class
- * @inherits EventPublisher
 */
-Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
-	initialize: function($super, album) {
-		$super();
-		
+Gallery.Album = Class.create(/** @scope Gallery.Album */ {
+	initialize: function(album) {
 		this.update(album);
 		
 		this.pictures = new JSONRPC.Store({
@@ -151,7 +148,7 @@ Gallery.Album = Class.create(EventPublisher, /** @scope Gallery.Album */ {
 			window.location = response.result;
 		}});
 	}
-});
+}).addMethods(Observable);
 
 /**
  * Das Fenster, in dem die Miniaturansichten aller Fotos in einem einzelnen Album angezeigt werden und das zudem
@@ -518,12 +515,9 @@ Gallery.Album.CreationWindow = Class.create(Controls.Window, {
  * @param {String} fileName Der Dateiname des Fotos.
  * @param {Integer} userid Die ID der Benutzers, der das Foto hochgeladen hat.
  * @class
- * @extends EventPublisher
 */
-Gallery.Picture = Class.create(EventPublisher, /** @scope Gallery.Picture */ {
-	initialize: function($super, picture) {
-		$super();
-		
+Gallery.Picture = Class.create(/** @scope Gallery.Picture */ {
+	initialize: function(picture) {
 		/**
 		 * Die ID des Fotos.
 		 * @type Integer
@@ -590,7 +584,7 @@ Gallery.Picture = Class.create(EventPublisher, /** @scope Gallery.Picture */ {
 	reload: function() {
 		this._reloadParam = Date.getCurrentTimestamp();
 	}
-});
+}).addMethods(Observable);
 
 Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.Node.prototype, {
 	initialize: function($super, pictures, indexToDisplay, autoStartSlideShow) {

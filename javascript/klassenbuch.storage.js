@@ -114,12 +114,9 @@ var Storage = new (Class.create(JSONRPC.Store, {
  * Enthält Informationen über eine einzelne Datei und stellt verschiedene Methoden bereit, um beispielsweise die
  * die Datei zu archivieren oder herunterzuladen.
  * @class
- * @inherits EventPublisher
 */
-Storage.File = Class.create(EventPublisher, /** @scope Storage.File */ {
-    initialize: function($super, file) {
-		$super();
-		
+Storage.File = Class.create(/** @scope Storage.File */ {
+    initialize: function(file) {
 		this.update(file);
     },
 	
@@ -237,7 +234,7 @@ Storage.File = Class.create(EventPublisher, /** @scope Storage.File */ {
 			}
 		});
     }
-});
+}).addMethods(Observable);
 
 Storage.View = Class.create(Controls.View, {
 	initialize: function($super) {

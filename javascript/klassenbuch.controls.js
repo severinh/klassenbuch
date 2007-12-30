@@ -24,22 +24,19 @@
  * bequem versteckt, umgestaltet usw. werden kann und teilweise auch entsprechende Ereignisse auslösen, die dann abgehört
  * werden können. Das Steuerelement wird durch Übergabe des DOM-Elements, das in ein Steuerelement verwandelt werden soll,
  * initialisiert.
- * @extends EventPublisher
  * @param {HTMLObject|String} element Das HTML-Element bzw. seine ID, dass als Steuerelements fungieren soll.
  * @event show - Wird ausgelöst, wenn das Steuerelement sichtbar gemacht wird
  * @event hide - Wird ausgelöst, wenn das Steuerelement unsichtbar gemacht wird
  * @event remove - Wird ausgelöst, wenn das Steuerelement entfernt wird
  */
-var Control = Class.create(EventPublisher, {
-	initialize: function($super, element) {
-        $super();
-        
-        /**
+var Control = Class.create({
+	initialize: function(element) {
+		/**
 		 * @field {ExtendedHTMLObject} Das HTML-Element des Steuerelements.
 		*/
 		this.element = $(element);
 		
-        /**
+		/**
 		 * @field {String} Die ID des Steuerelements. Wird von Prototype generiert.
 		*/
 		this.id = this.element.identify();
@@ -172,7 +169,7 @@ var Control = Class.create(EventPublisher, {
 	toggle: function() {
 		this[(this.visible()) ? "hide" : "show"]();
 	}
-});
+}).addMethods(Observable);
 
 $w("setStyle addClassName removeClassName toggleClassName centerOnScreen").each(function(a) {
 	Control.prototype[a] = function(val) {
@@ -495,10 +492,10 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		}, this);
 	},
 	
-    /**
-     * @method Fügt der Liste eine weitere Option hinzu.
-     * @param {String} item Die neue Option.
-    */
+	/**
+	 * @method Fügt der Liste eine weitere Option hinzu.
+	 * @param {String} item Die neue Option.
+	*/
 	addItem: function(item) {
 		this._list.insert("<li>" + item + "</li>");
 		this._items.push(item);
@@ -508,18 +505,18 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		}
 	},
 
-    /**
-     * @method Fügt der Liste weitere Optionen hinzu. Diese Methode gibt die übergebenen Optionen lediglich einzeln
-     * an die Methode <em>addItem</em> weiter.
-     * @param {String[]} items Die neuen Optionen.
-    */
+	/**
+	 * @method Fügt der Liste weitere Optionen hinzu. Diese Methode gibt die übergebenen Optionen lediglich einzeln
+	 * an die Methode <em>addItem</em> weiter.
+	 * @param {String[]} items Die neuen Optionen.
+	*/
 	addItems: function(items) {
 		items.each(this.addItem, this);
 	},
 
-    /**
-     * @method Macht die Liste mit den Auswahlmöglichkeiten wieder sichtbar bzw. wieder unsichtbar.
-    */
+	/**
+	 * @method Macht die Liste mit den Auswahlmöglichkeiten wieder sichtbar bzw. wieder unsichtbar.
+	*/
 	_toggleList: function() {
 		if (this._list.visible()) {
 			this._hideList();
@@ -528,10 +525,10 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		}
 	},
 
-    /**
-     * @method Macht die Liste mit den Auswahlmöglichkeiten wieder sichtbar und positioniert sie entweder ober- oder
-     * unterhalb der Schaltfläche.
-    */
+	/**
+	 * @method Macht die Liste mit den Auswahlmöglichkeiten wieder sichtbar und positioniert sie entweder ober- oder
+	 * unterhalb der Schaltfläche.
+	*/
 	_showList: function() {
 		var buttonPos = this.element.cumulativeOffset();
 		var elementSize = this.element.getDimensions();
@@ -552,19 +549,19 @@ Controls.DropDownSelection = Class.create(Controls.Button, {
 		this._list.hide();
 	},
 	
-    /**
-     * @method Gibt die aktuell ausgewählte Option zurück. Wenn keine Option ausgewählt ist, wird <em>false</em> zurückgegeben.
-     * @returns {String|Boolean} Die ausgewählte Option.
-    */
+	/**
+	 * @method Gibt die aktuell ausgewählte Option zurück. Wenn keine Option ausgewählt ist, wird <em>false</em> zurückgegeben.
+	 * @returns {String|Boolean} Die ausgewählte Option.
+	*/
 	getSelectedItem: function() {
 		return this._selectedItem;
 	},
 
-    /**
-     * @method Wählt eine bestimmte Option aus. Dabei wird automatisch die Auswahlliste versteckt, der Inhalt der
-     * Schaltfläche aktualisiert und das Ereignis <em>change</em> ausgelöst.
-     * @returns {String|Boolean} Die ausgewählte Option.
-    */	
+	/**
+	 * @method Wählt eine bestimmte Option aus. Dabei wird automatisch die Auswahlliste versteckt, der Inhalt der
+	 * Schaltfläche aktualisiert und das Ereignis <em>change</em> ausgelöst.
+	 * @returns {String|Boolean} Die ausgewählte Option.
+	*/
 	selectItem: function(item) {
 		this._list.hide();
 		
@@ -1282,10 +1279,8 @@ Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype,
 Controls.Window.prototype.close = Controls.Window.prototype.remove;
 
 Controls.Window.Overlay = function() {
-	return new (Class.create(EventPublisher, {
-		initialize: function($super) {
-			$super();
-			
+	return new (Class.create({
+		initialize: function() {
 			var self = this;
 			
 			App.on("beforeInitialize", function() {
@@ -1316,7 +1311,7 @@ Controls.Window.Overlay = function() {
 		},
 		
 		_lastAction: ""
-	}))();
+	}).addMethods(Observable))();
 }();
 
 Controls.Table = Class.create(Control, {

@@ -2,11 +2,10 @@
  * Ermöglicht es dem Benutzer, sich an-, bzw. abzumelden und stellt zusätzlich Informationen und Funktionen den
  * angemeldeten Benutzer betreffend bereit.
  * @singleton
- * @inherits EventPublisher
  * @event signIn Wird ausgelöst, wenn sich der Benutzer erfolgreich angemeldet hat
  * @event signOut Wird ausgelöst, wenn sich der Benutzer abgemeldet hat
  */
-var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
+var User = new (Class.create(/** @scope User.prototype */ {
     /**
      * Gibt an, ob ein Benutzer angemeldet ist oder nicht. Standardwert ist <em>false</em>.
      * @type Boolean
@@ -81,9 +80,7 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
      * das Feld <a href="#User._autoSignedIn">User.autoSignedIn</a> auf <em>true</em> gesetzt und die Funktion 
      * <a href="#User._signInSuccess">User._signInSuccess</a> mit den vom Server übergegeben Daten aufgerufen.
 	 */
-	initialize: function($super) {
-		$super()
-		
+	initialize: function() {
 		App.on("initialize", function() {
 			User.StateDetection.initialize();
 			var userData = DirectData.get("userdata");
@@ -239,7 +236,7 @@ var User = new (Class.create(EventPublisher, /** @scope User.prototype */ {
 	showRegisterWindow: function() {
 		var window = new User.RegisterWindow();
 	}
-}))();
+}).addMethods(Observable))();
 
 User.StateDetection = function() {
 	var getTimestamp = Date.getCurrentTimestamp;

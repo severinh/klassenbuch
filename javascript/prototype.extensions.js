@@ -802,48 +802,40 @@ Class.Methods.alias = function(source, destination) {
  * </a> von Ryan Dahl.
  * @class
  * @example
-var MyClass = ClassObsolete.create(EventPublisher, {
-	initialize: function($super) {
-		$super();
-	},
-	
+var MyClass = ClassObsolete.create({
 	saySomeThing: function() {
 		this.fireEvent("say");
 	}
-});
+}).addMethods(Observable);
 
 var myInstance = new MyClass();
 myInstance.on("say", function() {
 	alert("myInstance hat etwas gesagt");
 });
 */
-var EventPublisher = Class.create( /** @scope EventPublisher.prototype */ {
-	initialize: function() {
-		/**
-		* Enthält alle Ereignis-Handler die mit der Methode <a href="#addListener">addListener</a> registriert wurden.
-		* Die Ereignis-Handler sind nach den dazugehörigen Ereignissen geordnet.
-		* @type Object
-		* @name _events
-		* @memberof EventPublisher
-		*/
-		this._events = {};
-	},
-
+var Observable = {
 	/**
-	* Registriert einen Ereignis-Handler-Funktion zu einen bestimmten Ereignis, damit diese ausgeführt wird, wenn das 
-	* Ereignis ausgelöst wird.
-	* @param {String} eventName Der Name des Ereignisses, das abgehört werden soll.
-	* @param {Function} handler Die Ereignis-Handler-Funktion, die ausgeführt werden soll.
-	* @return {Function Die Ereignis-Handler-Funktion, um dessen späteres Entfernen zu erleichtern, wenn die Funktion
-	* mit .bind(this) gekapselt wurde.
-	* @memberof EventPublisher
+	 * Registriert einen Ereignis-Handler-Funktion zu einen bestimmten Ereignis, damit diese ausgeführt wird, wenn das 
+	 * Ereignis ausgelöst wird.
+	 * @param {String} eventName Der Name des Ereignisses, das abgehört werden soll.
+	 * @param {Function} handler Die Ereignis-Handler-Funktion, die ausgeführt werden soll.
+	 * @return {Function Die Ereignis-Handler-Funktion, um dessen späteres Entfernen zu erleichtern, wenn die Funktion
+	 * mit .bind(this) gekapselt wurde.
 	*/
 	addListener: function(eventName, handler, context) {
+		if (Object.isUndefined(this._events)) {
+			/**
+			 * Enthält alle Ereignis-Handler die mit der Methode <a href="#addListener">addListener</a> registriert wurden.
+			 * Die Ereignis-Handler sind nach den dazugehörigen Ereignissen geordnet.
+			*/
+			this._events = {};
+		}
+		
 		handler = handler.bind(context);
 
 		// Wenn zuvor noch kein Ereignis-Handler bei diesem Ereignis registriert worden ist.
 		if (!this._events[eventName]) {
-		this._events[eventName] = [];
+			this._events[eventName] = [];
 		}
 
 		// Fügt die Handler-Funktion ein
@@ -853,35 +845,45 @@ var EventPublisher = Class.create( /** @scope EventPublisher.prototype */ {
 	},
 
 	/**
-	* Entfernt einen bestimmten Ereignis-Handler von einemm bestimmten Ereignis
-	* @param {String} eventName Das Ereignis, von welchem der Ereignis-Handler entfernt werden soll
-	* @param {Function} handler Eine Referenz zur Handler-Funktion
-	* @memberof EventPublisher
+	 * Entfernt einen bestimmten Ereignis-Handler von einemm bestimmten Ereignis
+	 * @param {String} eventName Das Ereignis, von welchem der Ereignis-Handler entfernt werden soll
+	 * @param {Function} handler Eine Referenz zur Handler-Funktion
 	*/ 
 	removeListener: function(name, handler) {
+		if (Object.isUndefined(this._events)) {
+			this._events = {};
+		}
+	
 		if (this._events[name]) {
-		this._events[name] = this._events[name].without(handler);
+			this._events[name] = this._events[name].without(handler);
 		}
 	},
 
 	removeListenersByEventName: function(name) {
+		if (Object.isUndefined(this._events)) {
+			this._events = {};
+		}
+		
 		delete this._events[name];
 	},
 
 	/**
-	* Entfernt alle Handler von allen Ereignissen (!).
-	* @memberof EventPublisher
+	 * Entfernt alle Handler von allen Ereignissen (!).
 	*/ 
 	clearAllListeners: function() {
 		this._events = {};
 	},
 
 	/**
-	* Fires the event {eventName}, resulting in all registered handlers to be executed.
-	* @param {String} eventName The name of the event to fire
-	* @params {Object} args [optional] Any object, will be passed into the handler function as the only argument
+	 * Fires the event {eventName}, resulting in all registered handlers to be executed.
+	 * @param {String} eventName The name of the event to fire
+	 * @params {Object} args [optional] Any object, will be passed into the handler function as the only argument
 	*/
 	fireEvent: function(eventName) {
+		if (Object.isUndefined(this._events)) {
+			this._events = {};
+		}
+		
 		if (this._events[eventName]) {
 			var args = $A(arguments);
 			args.shift();
@@ -904,13 +906,16 @@ var EventPublisher = Class.create( /** @scope EventPublisher.prototype */ {
 
 		return true;
 	}
-}).alias("addListener", "on").alias("removeListener", "un");
+};
 
-var Collection = Class.create(Hash, EventPublisher.prototype, {
+Object.extend(Observable, {
+	on: Observable.addListener,
+	un: Observable.removeListener
+});
+
+var Collection = Class.create(Hash, {
 	initialize: function($super, object) {
 		$super(object);
-		
-		EventPublisher.prototype.initialize.call(this);
 	},
 	
 	set: function(item) {
@@ -947,7 +952,7 @@ var Collection = Class.create(Hash, EventPublisher.prototype, {
 	update: Prototype.emptyFunction,
 	inspect: Prototype.emptyFunction,
 	toQueryString: Prototype.emptyFunction
-}).alias("set", "add").alias("unset", "remove").alias("clear", "removeAll");
+}).alias("set", "add").alias("unset", "remove").alias("clear", "removeAll").addMethods(Observable);
 
 var ControlCollection = Class.create(Collection, {
 	initialize: function($super, autoRemove) {

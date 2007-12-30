@@ -27,12 +27,11 @@
 /**
  * Hauptobjekt des Klassenbuchs, das verschiedene Grundfunktionalitäten - z. B. eine Funktion zum Initialisieren des
  * Klassenbuchs - bereitstellt und den Einstiegspunkt für den Zugriff auf aktive Fenster, Menüpunkte usw. darstellt.
- * @type EventPublisher
  * @event beforeInitialize - Wird ausgelöst, wenn alle benötigen Dateien geladen worden sind und mit der Initialisierung
  * des Klassenbuchs begonnen wird
  * @event initialize - Wird ausgelöst, wenn das Klassenbuch fertig initialisiert worden ist
 */
-var App = Object.extend(new EventPublisher(), /** @scope App */ {
+var App = Object.extend(/** @scope App */ {
     /**
      * Initialisiert das Klassenbuch. Dabei wird überprüft, ob das Klassenbuch mit der verwendeten Browser-Version
      * kompatibel ist und das Hauptmenü des Klassenbuchs eingerichtet. Zusätzlich werden die beiden Ereignisse
@@ -40,32 +39,32 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
     */
 	initialize: function() {
         // Verhindert, dass das Klassenbuch mehrmals initialisiert werden kann und prüft die Kompatibilität
-        if (!App.initialized && App.checkBrowserCompatibility()) {
-            App.fireEvent("beforeInitialize");
+        if (!this.initialized && this.checkBrowserCompatibility()) {
+            this.fireEvent("beforeInitialize");
 			
             // Richtet das Hauptmenü ein.
-            App.Menu = $("menu").insertControl(new Controls.Menu("aufgaben"), "top");
+            this.Menu = $("menu").insertControl(new Controls.Menu("aufgaben"), "top");
             
-            App.fireEvent("initialize");
+            this.fireEvent("initialize");
 			
 			var state = ["aufgaben"];
 			
-			if (App.History.browserSupported) {
-				App.History.start("aufgaben");
+			if (this.History.browserSupported) {
+				this.History.start("aufgaben");
 				
-				var bookmarked = App.History.getBookmarkedState();
+				var bookmarked = this.History.getBookmarkedState();
 				
 				if (bookmarked) {
 					state = bookmarked.split("/");
 				}
             }
 			
-			App.Menu._handleStateChange(state);
+			this.Menu._handleStateChange(state);
             
             // Versteckt den Laden-Hinweis
             $("activeRequest").hide();
 			
-            App.initialized = true;
+            this.initialized = true;
 		}
 	},
 	
@@ -119,7 +118,7 @@ var App = Object.extend(new EventPublisher(), /** @scope App */ {
      * @type Boolean
      */
 	initialized: false
-});
+}, Observable);
 
 App.LoadingIndicator = function() {
 	var active = true;
@@ -227,5 +226,7 @@ var Comparators = {
 // Klassenbuch initialisiert. Dadurch wird erreicht, dass nicht gewartet werden muss, bis alle Bilddateien usw. geladen
 // worden sind.
 if (!window.PREVENT_APP_FROM_STARTING) {
-	document.observe("dom:loaded", App.initialize);
+	document.observe("dom:loaded", function() {
+		App.initialize();
+	});
 }

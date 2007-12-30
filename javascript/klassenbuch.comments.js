@@ -385,10 +385,8 @@ Comments.CommentInputField = function() {
 	});
 }();
 
-Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
-	initialize: function($super, comment) {
-		$super();
-		
+Comments.Comment = Class.create(App.History.Node, {
+	initialize: function(comment) {
 		this.id = comment.id;
 		this.update(comment);
 		
@@ -431,7 +429,7 @@ Comments.Comment = Class.create(EventPublisher, App.History.Node.prototype, {
 	getControl: function() {
 		return new Comments.Comment.Control(this);
 	}
-});
+}).addMethods(Observable);
 
 Comments.Comment.Control = function() {
 	var editButtonHTML = new Sprite("smallIcons", 2).toHTML("editButton");
@@ -486,4 +484,4 @@ Comments.Comment.Control = function() {
 	});
 }();
 
-Object.extend(Comments.Comment.Control, new EventPublisher());
+Object.extend(Comments.Comment.Control, Observable);

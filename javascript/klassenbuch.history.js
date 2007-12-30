@@ -41,7 +41,6 @@
  * und die Lesezeichenfunktion seines Browsers zu verwenden. Damit wird ein oftgenannter und bedeutender Kritikpunkt
  * der Ajax-basierten Webentwicklung aus der Welt geschafft.
  * @class
- * @inherits EventPublisher
  * @static
  * @event start Wird ausgelöst, wenn die Klasse bereit ist und die Navigation des Benutzers verfolgt werden kann.
 */
@@ -255,7 +254,7 @@ App.History = function() {
 		App.History.started = true;
 	};
 	
-	return new (Class.create(EventPublisher, /** @scope App.History.prototype */ {
+	return new (Class.create(/** @scope App.History.prototype */ {
 		/**
 		 * Gibt an, ob der Browser die Funktionen, die von App.History bereitgestellt werden, unterstützt.
 		 * @type Boolean
@@ -425,7 +424,7 @@ App.History = function() {
 			
 			return true;
 		}
-	}))();
+	}).addMethods(Observable))();
 }();
 
 App.History.Node = Class.create({

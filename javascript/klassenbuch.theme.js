@@ -1,7 +1,5 @@
-App.ThemeManager = new (Class.create(EventPublisher, {
-	initialize: function($super) {
-		$super();
-		
+App.ThemeManager = new (Class.create({
+	initialize: function() {
 		var updateTheme = function() {
 			this.setTheme(User.settings.get("theme"));
 		};
@@ -30,4 +28,4 @@ App.ThemeManager = new (Class.create(EventPublisher, {
 		"default": "Standard-Design",
 		"nonzero": "nonZero"
 	})
-}))();
+}).addMethods(Observable))();

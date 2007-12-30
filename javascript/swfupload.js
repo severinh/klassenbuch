@@ -20,13 +20,11 @@
 /* Constructor */
 /* *********** */
 
-var SWFUpload = Class.create(EventPublisher, {
-	initialize: function ($super, init_settings) {
-		$super();
-		
+var SWFUpload = Class.create({
+	initialize: function (init_settings) {
 		this.initSWFUpload(init_settings);
 	}
-});
+}).addMethods(Observable);
 
 SWFUpload.prototype.initSWFUpload = function (init_settings) {
 	// Remove background flicker in IE (read this: http://misterpixel.blogspot.com/2006/09/forensic-analysis-of-ie6.html)

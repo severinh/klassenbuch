@@ -288,7 +288,7 @@ JSONRPC.Response.fromAjaxResponse = function(response) {
 /**
  * Makes it possible to upload multiple files to a JSONRPC web service using Adobe Flash and JavaScript. This class is based on a
  * <a href="http://swfupload.praxion.co.za/">fork of SWFUpload</a>. This subclass provides a solid error handling mechanism and integrates
- * the EventPublisher functionality.
+ * the Observable functionality.
  * @param {String} method Name of the method to be called on the server.
  * @param {Array} params Optional parameter to be passed to the service function. Default value is <em>[]</em>.
  * @param {Object} options May contain various callback function such as <em>onSuccess</em>, <em>onFailure</em>
