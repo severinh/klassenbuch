@@ -586,7 +586,7 @@ Gallery.Picture = Class.create(/** @scope Gallery.Picture */ {
 	}
 }).addMethods(Observable);
 
-Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.Node.prototype, {
+Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, {
 	initialize: function($super, pictures, indexToDisplay, autoStartSlideShow) {
 		this.pictures = pictures.toArray();
 		this.currentIndex = 0;
@@ -808,7 +808,7 @@ Gallery.PictureViewer = Class.create(Controls.AutoResizingControl, App.History.N
 			this.startSlideShow();
 		}
 	}
-});
+}).addMethods(App.History.Node);
 
 Gallery.PictureViewer.prototype.leave = Gallery.PictureViewer.prototype.remove;
 

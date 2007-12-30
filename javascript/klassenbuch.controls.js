@@ -692,7 +692,7 @@ Controls.TabControl = Class.create(Control, {
 	}
 });
 
-Controls.Menu = Class.create(Controls.TabControl, App.History.RootNode.prototype, {
+Controls.Menu = Class.create(Controls.TabControl, {
 	initialize: function($super, initialState) {
 		$super("content", false);
 		
@@ -720,9 +720,9 @@ Controls.Menu = Class.create(Controls.TabControl, App.History.RootNode.prototype
 		
 		return tab;
 	}
-});
+}).addMethods(App.History.RootNode);
 
-Controls.TabControl.TabPage = Class.create(Control, App.History.Node.prototype, {
+Controls.TabControl.TabPage = Class.create(Control, {
 	initialize: function($super, caption) {
 		$super(new Element("div"));
 		
@@ -751,7 +751,7 @@ Controls.TabControl.TabPage = Class.create(Control, App.History.Node.prototype, 
 			this.tabElement.stopObserving().remove();
 		}, this);
 	}
-});
+}).addMethods(App.History.Node);
 
 Controls.TabControl.TabPageWithButtonControl = Class.create(Controls.TabControl.TabPage, {
 	initialize: function($super, caption, icon, buttonClass) {
@@ -1187,7 +1187,7 @@ var DragAble = Class.create({
 	}
 });
 
-Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype, {
+Controls.Window = Class.create(Controls.RoundedPane, {
 	initialize: function($super, type, options) {
 		this.type = type;
 		
@@ -1274,7 +1274,7 @@ Controls.Window = Class.create(Controls.RoundedPane, App.History.Node.prototype,
 		this.remove();
 		this._leaveActiveSubNode();
 	}
-});
+}).addMethods(App.History.Node);
 
 Controls.Window.prototype.close = Controls.Window.prototype.remove;
 

@@ -965,7 +965,7 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
  * die Aufgabe zu löschen oder deren Kommentare anzuzeigen.
  * @class
 */
-TaskManagement.Task = Class.create(App.History.Node, /** @scope TaskManagement.Task.prototype */ {
+TaskManagement.Task = Class.create(/** @scope TaskManagement.Task.prototype */ {
     initialize: function(task) {
 		this.initializeHistoryNode();
 		
@@ -1115,7 +1115,7 @@ TaskManagement.Task = Class.create(App.History.Node, /** @scope TaskManagement.T
 			}).bind(this)
 		});
 	}
-}).addMethods(Observable);
+}).addMethods(Observable).addMethods(App.History.Node);
 
 // Bewirkt, dass beim Initialisieren des Klassenbuchs die Aufgabenansicht als Menüpunkt dem Klassenbuch hinzugefügt wird
 App.on("initialize", function() { App.Menu.addTab(new TaskManagement.View()); });

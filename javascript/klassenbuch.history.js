@@ -427,7 +427,7 @@ App.History = function() {
 	}).addMethods(Observable))();
 }();
 
-App.History.Node = Class.create({
+App.History.Node = {
 	initializeHistoryNode: function() {
 		this._subNodes = {};
 		this._dynamicSubNode = null;
@@ -621,9 +621,9 @@ App.History.Node = Class.create({
 			}
 		}
 	}
-});
+};
 
-App.History.RootNode = Class.create(App.History.Node, {
+App.History.RootNode = Object.extend(Object.clone(App.History.Node), {
 	initializeHistoryNode: function(initialState) {
 		var self = this;
 		
@@ -645,10 +645,10 @@ App.History.RootNode = Class.create(App.History.Node, {
 			});
 		}
 		
-		App.History.Node.prototype.initializeHistoryNode.call(this);
+		App.History.Node.initializeHistoryNode.call(this);
 	},
 	
 	_handleStateChange: function(state) {
-		App.History.Node.prototype._handleStateChange.call(this, (Object.isArray(state) && state.length) ? state : [this._initialState]);
+		App.History.Node._handleStateChange.call(this, (Object.isArray(state) && state.length) ? state : [this._initialState]);
 	}
 });

@@ -32,39 +32,39 @@
  * @event initialize - Wird ausgelöst, wenn das Klassenbuch fertig initialisiert worden ist
 */
 var App = Object.extend(/** @scope App */ {
-    /**
-     * Initialisiert das Klassenbuch. Dabei wird überprüft, ob das Klassenbuch mit der verwendeten Browser-Version
-     * kompatibel ist und das Hauptmenü des Klassenbuchs eingerichtet. Zusätzlich werden die beiden Ereignisse
-     * <em>beforeInitialize</em> und <em>initialize</em> ausgelöst.
-    */
+	/**
+	 * Initialisiert das Klassenbuch. Dabei wird überprüft, ob das Klassenbuch mit der verwendeten Browser-Version
+	 * kompatibel ist und das Hauptmenü des Klassenbuchs eingerichtet. Zusätzlich werden die beiden Ereignisse
+	 * <em>beforeInitialize</em> und <em>initialize</em> ausgelöst.
+	*/
 	initialize: function() {
-        // Verhindert, dass das Klassenbuch mehrmals initialisiert werden kann und prüft die Kompatibilität
-        if (!this.initialized && this.checkBrowserCompatibility()) {
-            this.fireEvent("beforeInitialize");
+		// Verhindert, dass das Klassenbuch mehrmals initialisiert werden kann und prüft die Kompatibilität
+		if (!this.initialized && this.checkBrowserCompatibility()) {
+			this.fireEvent("beforeInitialize");
 			
-            // Richtet das Hauptmenü ein.
-            this.Menu = $("menu").insertControl(new Controls.Menu("aufgaben"), "top");
-            
-            this.fireEvent("initialize");
+			// Richtet das Hauptmenü ein.
+			this.Menu = $("menu").insertControl(new Controls.Menu("aufgaben"), "top");
+			
+			this.fireEvent("initialize");
 			
 			var state = ["aufgaben"];
 			
 			if (this.History.browserSupported) {
 				this.History.start("aufgaben");
-				
+
 				var bookmarked = this.History.getBookmarkedState();
-				
+
 				if (bookmarked) {
 					state = bookmarked.split("/");
 				}
-            }
-			
+			}
+
 			this.Menu._handleStateChange(state);
-            
-            // Versteckt den Laden-Hinweis
-            $("activeRequest").hide();
-			
-            this.initialized = true;
+		
+			// Versteckt den Laden-Hinweis
+			$("activeRequest").hide();
+	
+			this.initialized = true;
 		}
 	},
 	
@@ -93,18 +93,18 @@ var App = Object.extend(/** @scope App */ {
 		return false;
 	},
     
-    /**
-     * Eine Auflistung aller existierenden Fenster, unabhängig davon, ob sie sichtbar sind oder nicht.
-     * @type WindowCollection
-     */
+	/**
+	 * Eine Auflistung aller existierenden Fenster, unabhängig davon, ob sie sichtbar sind oder nicht.
+	 * @type WindowCollection
+	*/
 	Windows: new WindowCollection(),
-	
-    /**
-     * Das Hauptmenü des Klassenbuchs, das den Zugriff auf die verschiedenen Bereiche des Klassenbuchs ermöglicht.
-     * Jeder Menüpunkt ist in einer bestimmten Quelldatei definiert. Die Menüpunkte werden zudem aus ebendiesen Dateien
-     * dem Menü hinzugefügt.
-     * @type Controls.TabControl
-    */
+
+	/**
+	 * Das Hauptmenü des Klassenbuchs, das den Zugriff auf die verschiedenen Bereiche des Klassenbuchs ermöglicht.
+	 * Jeder Menüpunkt ist in einer bestimmten Quelldatei definiert. Die Menüpunkte werden zudem aus ebendiesen Dateien
+	 * dem Menü hinzugefügt.
+	 * @type Controls.TabControl
+	*/
 	Menu: null,
 	
 	/**
@@ -114,9 +114,9 @@ var App = Object.extend(/** @scope App */ {
 	version: "2.8",
 	
 	/**
-     * Gibt an, ob das Klassenbuch bereits initialisiert worden ist. Standartwert ist <em>false</em>.
-     * @type Boolean
-     */
+	 * Gibt an, ob das Klassenbuch bereits initialisiert worden ist. Standartwert ist <em>false</em>.
+	 * @type Boolean
+	*/
 	initialized: false
 }, Observable);
 
@@ -197,23 +197,23 @@ Sprite.List = {
  * @static
 */
 var Comparators = {
-    /**
-     * @method Vergleicht zwei Fliesskommazahlen. Es erfolgt eine automatische Umwandlung der zwei Eingabewerte zum Typ¨
-     * <em>Float</em>.
-     * @param {Object} a Die erste Fliesskommazahl
-     * @param {Object} b Die zweite Fliesskommazahl
-     * @returns {Integer}
-    */
+	/**
+	 * @method Vergleicht zwei Fliesskommazahlen. Es erfolgt eine automatische Umwandlung der zwei Eingabewerte zum Typ¨
+	 * <em>Float</em>.
+	 * @param {Object} a Die erste Fliesskommazahl
+	 * @param {Object} b Die zweite Fliesskommazahl
+	 * @returns {Integer}
+	*/
 	numeric: function(a, b) {
 		return parseFloat(a) - parseFloat(b);
 	},
 	
-    /**
-     * @method Vergleicht zwei Zeichenfolgen.
-     * @param {String} a Die erste Zeichenfolge
-     * @param {String} b Die zweite Zeichenfolge
-     * @returns {Integer}
-    */
+	/**
+	 * @method Vergleicht zwei Zeichenfolgen.
+	 * @param {String} a Die erste Zeichenfolge
+	 * @param {String} b Die zweite Zeichenfolge
+	 * @returns {Integer}
+	*/
 	string: function(a, b) {
 		a = a.toLowerCase().replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u");
 		b = b.toLowerCase().replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u");

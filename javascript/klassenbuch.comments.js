@@ -385,7 +385,7 @@ Comments.CommentInputField = function() {
 	});
 }();
 
-Comments.Comment = Class.create(App.History.Node, {
+Comments.Comment = Class.create({
 	initialize: function(comment) {
 		this.id = comment.id;
 		this.update(comment);
@@ -429,7 +429,7 @@ Comments.Comment = Class.create(App.History.Node, {
 	getControl: function() {
 		return new Comments.Comment.Control(this);
 	}
-}).addMethods(Observable);
+}).addMethods(Observable).addMethods(App.History.Node);
 
 Comments.Comment.Control = function() {
 	var editButtonHTML = new Sprite("smallIcons", 2).toHTML("editButton");
