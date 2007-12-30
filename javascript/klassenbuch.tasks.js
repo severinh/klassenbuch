@@ -811,11 +811,12 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
 			return;
 		}
 		
-		this._subjectSelection = this.select(".subjectContainer")[0].insertControl(
-			new Controls.DropDownSelection(TaskManagement.Subjects.pluck("long"))
-		);
-		
-		this.registerChildControl(this._subjectSelection);
+		this._subjectSelection = this.select(".subjectContainer")[0].createChild({
+			tag: "select",
+			content: TaskManagement.Subjects.pluck("long").collect(function(subject) {
+				return "<option value=\"" + subject + "\">" + subject + "</option>";
+			}).join("")
+		});
 		
 		// Der Parameter 'true' bewirkt, dass das Fenster mit einer unmerklichen Verzögerung sichtbar gemacht wird, um
 		// einen Darstellungsfehler mit unbekannter Quelle zu vermeiden.
@@ -869,7 +870,7 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
 	*/	
 	getInput: function($super) {
 		return Object.extend($super(), {
-			subject: TaskManagement.Subjects.getItem("long", this._subjectSelection.getSelectedItem()).id
+			subject: TaskManagement.Subjects.getItem("long", this._subjectSelection.getValue()).id
 		});
 	}
 });
@@ -963,11 +964,9 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
  * Enthält Informationen über eine einzelne Aufgabe und stellt verschiedene Methoden bereit, um beispielsweise die
  * die Aufgabe zu löschen oder deren Kommentare anzuzeigen.
  * @class
- * @inherits EventPublisher
 */
-TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /** @scope TaskManagement.Task.prototype */ {
-    initialize: function($super, task) {
-		$super();
+TaskManagement.Task = Class.create(App.History.Node, /** @scope TaskManagement.Task.prototype */ {
+    initialize: function(task) {
 		this.initializeHistoryNode();
 		
 		this.update(task);
@@ -1116,7 +1115,7 @@ TaskManagement.Task = Class.create(EventPublisher, App.History.Node.prototype, /
 			}).bind(this)
 		});
 	}
-});
+}).addMethods(Observable);
 
 // Bewirkt, dass beim Initialisieren des Klassenbuchs die Aufgabenansicht als Menüpunkt dem Klassenbuch hinzugefügt wird
 App.on("initialize", function() { App.Menu.addTab(new TaskManagement.View()); });
