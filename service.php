@@ -14,79 +14,79 @@ JSONRPCErrorCodes::add("INVALID_DATABASE_QUERY", 801, "Ungültige Datenbankabfra
 function gettasks($start = null, $end = null) {
 	$database = Core::getDatabase();
 	$user = Core::getUser();
-    
+
 	if ($start == null) {
-        $start = mktime(0, 0, 0);
-    }
-	
-	if ($end) {
-        $cond = " AND t.date < " . $database->quote($end);
+		$start = mktime(0, 0, 0);
 	}
-	
+
+	if ($end) {
+		$cond = " AND t.date < " . $database->quote($end);
+	}
+
 	$database->setQuery("SELECT t.*, COUNT(c.userid) AS comments" .
 		($user->authenticated() ? ", FIND_IN_SET(" . $database->quote($user->id) . ", t.commentsreadby) AS commentsread " : " ") .
 		"FROM #__tasks AS t LEFT JOIN #__comments AS c ON t.id = c.taskid " .
 		"WHERE t.date >= " . $database->quote($start) . $cond . " GROUP BY t.id ORDER BY t.date");
-	
+
 	$taskResponse = $database->loadAssocList();
-	
+
 	if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
-    }
-	
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	}
+
 	$tasks = Array();
-	
+
 	foreach ($taskResponse as $task) {
-        $tasks[] = Array(
-            "id"          => (int)    $task["id"],
-            "date"        => (int)    $task["date"],
-            "subject"     => (int) 	  $task["subject"],
-            "important"   => (bool)   $task["important"],
-            "text"        => (string) $task["text"],
-            "userid"      => (int)    $task["userid"],
-            "added"       => (int)    $task["added"],
-            "removed"     => (bool)   $task["removed"],
+		$tasks[] = Array(
+			"id"          => (int)    $task["id"],
+			"date"        => (int)    $task["date"],
+			"subject"     => (int) 	  $task["subject"],
+			"important"   => (bool)   $task["important"],
+			"text"        => (string) $task["text"],
+			"userid"      => (int)    $task["userid"],
+			"added"       => (int)    $task["added"],
+			"removed"     => (bool)   $task["removed"],
 			"comments"	  => (int)    $task["comments"],
 			"newcomments" => ($user->authenticated() && (int) $task["comments"] && !(bool) $task["commentsread"] ? true : false),
-        );
-    }
-	
-    return $tasks;
+		);
+	}
+
+	return $tasks;
 }
 
 function removetask($taskid) {
-    $user = Core::getUser();
-    
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	$user = Core::getUser();
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
 	}
-	
+
 	$task = Table::getInstance("tasks");
-	
+
 	if (!$task->load($taskid)) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", $task->getError());
 	}
-	
+
 	if (!$task->save(Array("removed" => true))) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $task->getError());
 	}
-	
+
 	$subject = getsubject($task->subject);
-	
+
 	shoutbox_say_system("hat die " . $subject["short"] . "-Aufgabe \"" . $task->text . "\" gelöscht.");
-	
-    return true;
+
+	return true;
 }
 
 function createtask($subject, $date, $text, $important = false) {
 	$user = Core::getUser();
-	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-	
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
 	$task = Table::getInstance("tasks");
-	
+
 	if (!$task->save(Array(
 		"date" 		=> $date,
 		"subject" 	=> $subject,
@@ -96,21 +96,21 @@ function createtask($subject, $date, $text, $important = false) {
 		"added" 	=> time()))) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $task->getError());
 	}
-	
+
 	$subject = getsubject($task->subject);
-	
+
 	shoutbox_say_system("hat eine neue " . $subject["short"] . "-Aufgabe für den " . localizedDate("j. F", $task->date) .
 		" eingetragen:[BR /]\"" . $task->text . "\"");
-    
-    return $task->id;
+
+	return $task->id;
 }
 
 function edittask($id, $date, $text, $important = false) {
 	$user = Core::getUser();
 	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
 	
 	$task = Table::getInstance("tasks");
 	
@@ -131,17 +131,17 @@ function getsubjects() {
 	$database->setQuery("SELECT * FROM #__subjects");
 	$subjectsResponse = $database->loadAssocList();
 	
-    if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	if (!$database->success()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
 	}
 	
 	$subjects = Array();
 	
 	foreach ($subjectsResponse as $subject) {
-        $subjects[] = Array(
-            "id"    => (int)    $subject["id"],
-            "long"  => (string) $subject["long"],
-            "short" => (string) $subject["short"]
+		$subjects[] = Array(
+			"id"    => (int)    $subject["id"],
+			"long"  => (string) $subject["long"],
+			"short" => (string) $subject["short"]
 		);
 	}
 	
@@ -163,11 +163,11 @@ function getsubject($id) {
 }
 
 function getcomments($taskid) {
-    $database = Core::getDatabase();
-    $user = Core::getUser();
-    
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	$database = Core::getDatabase();
+	$user = Core::getUser();
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
 	}
 	
 	$task = Table::getInstance("tasks");
@@ -186,63 +186,63 @@ function getcomments($taskid) {
 		}
 	}
 	
-    $database->setQuery("SELECT * FROM #__comments WHERE taskid = " . $database->quote($taskid) . " ORDER BY date");
-    
+	$database->setQuery("SELECT * FROM #__comments WHERE taskid = " . $database->quote($taskid) . " ORDER BY date");
+
 	$commentsResponse = $database->loadAssocList();
-	
-    if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+
+	if (!$database->success()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
 	}
-	
-    $comments = Array();
-    
+
+	$comments = Array();
+
 	foreach ($commentsResponse as $comment) {
-        $comments[] = Array(
-            "id"     => (int)    $comment["id"],
-            "taskid" => (int)    $comment["taskid"],
-            "userid" => (int)    $comment["userid"],
-            "date"   => (int)    $comment["date"],
-            "text"   => (string) $comment["comment"]
+		$comments[] = Array(
+			"id"     => (int)    $comment["id"],
+			"taskid" => (int)    $comment["taskid"],
+			"userid" => (int)    $comment["userid"],
+			"date"   => (int)    $comment["date"],
+			"text"   => (string) $comment["comment"]
 		);
 	}
-	
-    return $comments;
+
+	return $comments;
 }
 
 function createcomment($taskid, $text) {
 	$user = Core::getUser();
-	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
 	}
-	
+
 	$task = Table::getInstance("tasks");
-	
+
 	if (!$task->load($taskid)) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", $task->getError());
 	}
-	
+
 	if ($task->date < mktime(0, 0, 0)) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Aufgaben in der Vergangenheit können leider nicht mehr kommentiert werden.");
 	}
-	
+
 	$comment = Table::getInstance("comments");
-	
+
 	if (!$comment->save(Array("taskid" => $task->id, "userid" => $user->id, "date" => time(), "comment" => $text))) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $comment->getError());
 	}
-	
+
 	$task->save(Array("commentsreadby" => $user->id));
-    $user->save(Array("posts" => $user->posts + 1));
-	
-    return $comment->id;
+	$user->save(Array("posts" => $user->posts + 1));
+
+	return $comment->id;
 }
 
 function editcomment($id, $text) {
 	$user = Core::getUser();
 	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
 	}
 	
 	$comment = Table::getInstance("comments");
@@ -263,325 +263,325 @@ function editcomment($id, $text) {
 }
 
 function getcontacts() {
-    $database = Core::getDatabase();
-    $user = Core::getUser();
-    
-    $database->setQuery("SELECT u.*, COUNT(t.userid) AS tasks FROM #__users AS u LEFT JOIN #__tasks AS t ON u.id = t.userid GROUP BY u.id");
-	
-    $contactsResponse = $database->loadAssocList();
-	
-    if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
-    }
-	
-    $contacts = Array();
+	$database = Core::getDatabase();
+	$user = Core::getUser();
+
+	$database->setQuery("SELECT u.*, COUNT(t.userid) AS tasks FROM #__users AS u LEFT JOIN #__tasks AS t ON u.id = t.userid GROUP BY u.id");
+
+	$contactsResponse = $database->loadAssocList();
+
+	if (!$database->success()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	}
+
+	$contacts = Array();
     
 	foreach ($contactsResponse as $contact) {
 		$lastcontact = (double) $contact["lastcontact"];
 		$state 		 = (int) 	$contact["state"];
-		
+
 		if ($lastcontact < time() - 100) {
 			$state = 0;
 		}
-		
-        $contacts[] = Array(
-            "id"          => (int)    $contact["id"],
-            "firstname"   => (string) $contact["firstname"],
-            "surname"     => (string) $contact["surname"],
-            "nickname"    => (string) $contact["nickname"],
-            "mail"        => (string) ($user->authenticated()) ? $contact["mail"]     : (($contact["mail"])     ? "hidden" : ""),
-            "address"     => (string) ($user->authenticated()) ? $contact["address"]  : (($contact["address"])  ? "hidden" : ""),
-            "plz"         => (int)    ($user->authenticated()) ? $contact["plz"]      : 0,
-            "location"    => (string) ($user->authenticated()) ? $contact["location"] : (($contact["location"]) ? "hidden" : ""),
-            "phone"       => (string) ($user->authenticated()) ? $contact["phone"]    : (($contact["phone"])    ? "hidden" : ""),
-            "mobile"      => (string) ($user->authenticated()) ? $contact["mobile"]   : (($contact["mobile"])   ? "hidden" : ""),
-            "mainsubject" => (string) $contact["mainsubject"],
-            "posts"       => (int)    $contact["posts"],
-			"tasks"		  => (int)    $contact["tasks"],
-            "classmember" => (bool)   $contact["classmember"],
-            "lastcontact" => $lastcontact,
-			"state"		  => $state
+
+		$contacts[] = Array(
+			"id"			=> (int)    $contact["id"],
+			"firstname"		=> (string) $contact["firstname"],
+			"surname"		=> (string) $contact["surname"],
+			"nickname"		=> (string) $contact["nickname"],
+			"mail"		=> (string) ($user->authenticated()) ? $contact["mail"]     : (($contact["mail"])     ? "hidden" : ""),
+			"address"		=> (string) ($user->authenticated()) ? $contact["address"]  : (($contact["address"])  ? "hidden" : ""),
+			"plz"			=> (int)    ($user->authenticated()) ? $contact["plz"]      : 0,
+			"location"		=> (string) ($user->authenticated()) ? $contact["location"] : (($contact["location"]) ? "hidden" : ""),
+			"phone"		=> (string) ($user->authenticated()) ? $contact["phone"]    : (($contact["phone"])    ? "hidden" : ""),
+			"mobile"		=> (string) ($user->authenticated()) ? $contact["mobile"]   : (($contact["mobile"])   ? "hidden" : ""),
+			"mainsubject"	=> (string) $contact["mainsubject"],
+			"posts"		=> (int)    $contact["posts"],
+			"tasks"		=> (int)    $contact["tasks"],
+			"classmember"	=> (bool)   $contact["classmember"],
+			"lastcontact"	=> $lastcontact,
+			"state"		=> $state
 		);
 	}
-    
-    return $contacts;
+
+	return $contacts;
 }
 
 function getfiles() {
-    $database = Core::getDatabase();
-	
-    $database->setQuery("SELECT * FROM #__files ORDER BY uploaded");
-    $filesResponse = $database->loadAssocList();
-	
-    if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
-    }
-    
-    $files = Array();
-    
+	$database = Core::getDatabase();
+
+	$database->setQuery("SELECT * FROM #__files ORDER BY uploaded");
+	$filesResponse = $database->loadAssocList();
+
+	if (!$database->success()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	}
+
+	$files = Array();
+
 	foreach ($filesResponse as $file) {
 		if ((bool) $file["forcedarchiving"] || time() - (int) $file["uploaded"] >= 2592000) {
 			$archived = true;
 		} else {
 			$archived = false;
 		}
-		
-        $files[] = Array(
-            "id"          => (int)    $file["id"],
-            "name"        => (string) $file["name"],
-            "description" => (string) $file["description"],
-            "size"        => (int)    $file["size"],
-            "userid"      => (int)    $file["userid"],
-            "uploaded"    => (int)    $file["uploaded"],
-            "archived"	  => $archived
+
+		$files[] = Array(
+			"id"          => (int)    $file["id"],
+			"name"        => (string) $file["name"],
+			"description" => (string) $file["description"],
+			"size"        => (int)    $file["size"],
+			"userid"      => (int)    $file["userid"],
+			"uploaded"    => (int)    $file["uploaded"],
+			"archived"	  => $archived
 		);
 	}
-    
-    return $files;
+
+	return $files;
 }
 
 function archivefile($id) {
 	$user = Core::getUser();
-	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-	
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
 	$file = Table::getInstance("files");
-	
+
 	if (!$file->load($id)) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", $file->getError());
 	}
-	
+
 	if ($file->userid !== $user->id) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Du darfst diese Datei leider nicht archivieren. " .
-			"Dies ist dem Benutzer vorbehalten, der die Datei hochgeladen hat.");
+		"Dies ist dem Benutzer vorbehalten, der die Datei hochgeladen hat.");
 	}
-	
+
 	if (!$file->save(Array("forcedarchiving" => true))) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $file->getError());
 	}
-	
+
 	shoutbox_say_system("hat die Datei \"" . $file->name . "\" archiviert.");
-	
+
 	return true;
 }
 
 function uploadfile($description) {
 	$user = Core::getUser();
 	$settings = Core::getSettings();
-	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-    
-    if (!$_FILES["Filedata"]) {
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
+	if (!$_FILES["Filedata"]) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keine Datei hochgeladen");
 	}
-	
+
 	$fnParts = parseFileName(utf8_decode(sanitizeFileName($_FILES["Filedata"]["name"])));
-	
+
 	if (in_array(strtolower($fnParts["ext"]), $settings->get("upload_extblacklist"))) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Aus Sicherheitsgründen sind keine " . 
-			strtoupper($fnParts["ext"]) . "-Dateien erlaubt");
+		strtoupper($fnParts["ext"]) . "-Dateien erlaubt");
 	}
-	
+
 	$fnPartsNew = $fnParts;
 	$i = 1;
-	
+
 	while (is_file("files/" . $fnPartsNew["base"] . "." . $fnPartsNew["ext"])) {
 		$fnPartsNew["base"] = $fnParts["base"] . "_(" . ++$i .")";
 	}
-	
+
 	$newFileName = $fnPartsNew["base"] . "." . $fnPartsNew["ext"];
 	$fileSize = $_FILES["Filedata"]["size"];
-	
+
 	if (!move_uploaded_file($_FILES["Filedata"]["tmp_name"], "files/" . $newFileName)) {
 		return new JSONRPCErrorResponse("SERVER_ERROR");
 	}
-	
+
 	$file = Table::getInstance("files");
-	
+
 	if (!$file->save(Array(
-		"name" 			=> $newFileName,
+		"name" 		=> $newFileName,
 		"description" 	=> $description,
-		"size" 			=> $fileSize,
+		"size" 		=> $fileSize,
 		"userid" 		=> $user->id,
 		"uploaded" 		=> time()))) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $file->getError());
 	}
-	
+
 	shoutbox_say_system("hat die Datei \"" . $newFileName . "\" hochgeladen.");
-	
+
 	return Array("id" => $file->id, "filename" => $file->name);
 }
 
 function signin($nickname, $password) {
 	$user = Core::getUser();
 	
-    if (!$user->signIn($nickname, $password)) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
+	if (!$user->signIn($nickname, $password)) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
     
-    return getuserdata();
+	return getuserdata();
 }
 
 function requestpassword($username, $password) {
-    $database = Core::getDatabase();
+	$database = Core::getDatabase();
 	$settings = Core::getSettings();
-	
-    if (!$username) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keinen Benutzernamen angegeben.");
-    }
-    
-    if (!$password) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Passwort angegeben.");    
-    }
-    
-    $database->setQuery("SELECT * FROM #__users WHERE nickname = " . $database->quote($username));
+
+	if (!$username) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keinen Benutzernamen angegeben.");
+	}
+
+	if (!$password) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Passwort angegeben.");    
+	}
+
+	$database->setQuery("SELECT * FROM #__users WHERE nickname = " . $database->quote($username));
 	$user = $database->loadAssoc();
-    
-    if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+
+	if (!$database->success()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
 	}
-	
-    if ($database->getNumRows() != 1) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Benutzer existiert nicht.");
+
+	if ($database->getNumRows() != 1) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Benutzer existiert nicht.");
 	}
-	
-    $requestKey = generateRandomString();
-    
+
+	$requestKey = generateRandomString();
+
 	$database->setQuery("UPDATE #__users SET " .
 		"newpassword = " 	. $database->quote(md5($password)) . ", " .
 		"newpasswordkey = " . $database->quote($requestKey) . " WHERE " .
 		"nickname = " 		. $database->quote($username)
 	);
-	
-    if (!$database->query()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
-    }
-    
-    if (!mail($user["mail"], "Neues Klassenbuchpasswort bestätigen",
+
+	if (!$database->query()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	}
+
+	if (!mail($user["mail"], "Neues Klassenbuchpasswort bestätigen",
 		"Hallo " . $user["firstname"] . ",\n\n" .
-        "Du hast im Klassenbuch ein neues Passwort angefordert. Klicke auf den foldenden Link, " .
-        "damit dein Passwort endgültig auf \"$password\" gewechselt wird. Wenn du kein Passwort angefordert hast, " .
-        "solltest du nicht auf diesen Link klicken, sondern diese E-Mail gleich löschen!\n\n" .
-        $settings->get("domain") . "index.php?passwordverification=$requestKey",
-        "From: Klassenbuch <" . $settings->get("mail") . ">")) {
-        return new JSONRPCErrorResponse("SERVER_ERROR");
-    }
-    
-    return true;
+		"Du hast im Klassenbuch ein neues Passwort angefordert. Klicke auf den foldenden Link, " .
+		"damit dein Passwort endgültig auf \"$password\" gewechselt wird. Wenn du kein Passwort angefordert hast, " .
+		"solltest du nicht auf diesen Link klicken, sondern diese E-Mail gleich löschen!\n\n" .
+		$settings->get("domain") . "index.php?passwordverification=$requestKey",
+		"From: Klassenbuch <" . $settings->get("mail") . ">")) {
+		return new JSONRPCErrorResponse("SERVER_ERROR");
+	}
+
+	return true;
 }
 
 function verifynewpassword($key) {
-    $database = Core::getDatabase();
-	
-    if (!$key) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Bestätigungsschlussel angegeben");
-    }
-    
-    $database->setQuery("SELECT * FROM #__users WHERE newpasswordkey = " . $database->quote($key));
+	$database = Core::getDatabase();
+
+	if (!$key) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Bestätigungsschlussel angegeben");
+	}
+
+	$database->setQuery("SELECT * FROM #__users WHERE newpasswordkey = " . $database->quote($key));
 	$user = $database->loadAssoc();
-    
-    if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
-    }
-    
-    if ($database->getNumRows() != 1) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Ungültiger Bestätigungsschlüssel.");
-    }
-	
+
+	if (!$database->success()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	}
+
+	if ($database->getNumRows() != 1) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Ungültiger Bestätigungsschlüssel.");
+	}
+
 	$database->setQuery("UPDATE #__users SET " .
 		"password = " . $database->quote($user["newpassword"]) . ", " .
 		"newpasswordkey = '', " .
 		"newpassword = '' WHERE " .
 		"id = " 	  . $database->quote($user["id"])
 	);
-	
-    if (!$database->query()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
-    }
-    
-    return true;
+
+	if (!$database->query()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	}
+
+	return true;
 }
 
 function changepassword($newpassword, $currentpassword) {
 	$user = Core::getUser();
-	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-    
-    if (!$newpassword || !$currentpassword || md5($currentpassword) !== $user->password) {
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
+	if (!$newpassword || !$currentpassword || md5($currentpassword) !== $user->password) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS");
 	}
-	
+
 	if (!$user->save(Array("password" => md5($newpassword)))) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $comment->getError());
 	};
-	
-    return true;
+
+	return true;
 }
 
 function getuserdata() {
 	$user = Core::getUser();
 
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-    
-    return Array(
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
+	return Array(
 		"id" 		=> $user->id,
 		"nickname" 	=> $user->nickname,
 		"token" 	=> $user->token,
 		"profile" 	=> $user->getProfile(),
 		"settings"	=> $user->getSettings(),
 		"isadmin" 	=> $user->isadmin
-    );
+	);
 }
 
 function updateuserprofile($profileInformation) {
 	$user = Core::getUser();
-	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-    
-    if (!$user->updateProfile($profileInformation)) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", $user->getError());
-    }
-    
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
+	if (!$user->updateProfile($profileInformation)) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", $user->getError());
+	}
+
 	return true;
 }
 
 function changeusersettings($settings) {
 	$user = Core::getUser();
-	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-    
-    $currentSettings = $user->getSettings();
-	
-    foreach ($settings as $key => $value) {
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
+	$currentSettings = $user->getSettings();
+
+	foreach ($settings as $key => $value) {
 		$currentSettings[$key] = $value;
 	}
-	
+
 	if (!$user->save(Array("settings" => $currentSettings))) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $user->getError());
 	}
-	
+
 	return true;
 }
 
 function setuserstate($state) {
 	$user = Core::getUser();
-	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-	
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
 	if ($state == User::OFFLINE || $state == User::AWAY || $state == User::ONLINE) {
 		return $user->setState($state);
 	} else {
@@ -604,25 +604,25 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 	$surname   = trim(strip_tags($surname));
 	$mail 	   = trim(strip_tags($mail));
 	
-    if (!$nickname) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Nickname angegeben.");
-    }
-    
-    if (!$firstname) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Vorname angegeben.");
-    }
-    
-    if (!$surname) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Nachname angegeben.");
-    }
-    
-    if (!$mail) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keine E-Mail-Adresse angegeben.");
-    }
-    
-    if (!$password) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keine Passwort angegeben.");
-    }
+	if (!$nickname) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Nickname angegeben.");
+	}
+
+	if (!$firstname) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Vorname angegeben.");
+	}
+
+	if (!$surname) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Nachname angegeben.");
+	}
+
+	if (!$mail) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keine E-Mail-Adresse angegeben.");
+	}
+
+	if (!$password) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Keine Passwort angegeben.");
+	}
     
     /* $database->setQuery("SELECT * FROM #__users WHERE nickname = " . $database->quote($nickname) . " OR mail = " .
 		$database->quote($mail));
@@ -655,34 +655,36 @@ function registeruser($nickname, $firstname, $surname, $mail, $password) {
 }
 
 function gallery_getalbums() {
-    $database = Core::getDatabase();
+	$database = Core::getDatabase();
+
+	$database->setQuery("SELECT a.*, COUNT(p.albumid) AS pictures " .
+		"FROM #__gallery_albums AS a LEFT JOIN #__gallery_pictures AS p ON a.id = p.albumid GROUP BY a.id");
 	
-	$database->setQuery("SELECT a.*, COUNT(p.albumid) AS pictures FROM #__gallery_albums AS a LEFT JOIN #__gallery_pictures AS p ON a.id = p.albumid GROUP BY a.id");
 	$albumsResponse = $database->loadAssocList();
-	
-    if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+
+	if (!$database->success()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
 	}
-	
-    $albums = Array();
-    
+
+	$albums = Array();
+
 	foreach ($albumsResponse as $album) {
-        $albums[] = Array(
-            "id"          => (int)    $album["id"],
-            "name"        => (string) $album["name"],
-            "description" => (string) $album["description"],
-            "pictures"	  => (int)	  $album["pictures"]
+		$albums[] = Array(
+			"id"          => (int)    $album["id"],
+			"name"        => (string) $album["name"],
+			"description" => (string) $album["description"],
+			"pictures"	  => (int)	  $album["pictures"]
 		);
 	}
-	
-    return $albums;
+
+	return $albums;
 }
 
 function gallery_createalbum($name, $description = "") {
 	$user = Core::getUser();
 	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");	
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");	
 	}
 	
 	$album = Table::getInstance("albums");
@@ -702,9 +704,9 @@ function gallery_createalbum($name, $description = "") {
 function gallery_removealbum($id) {
 	$user = Core::getUser();
 	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
     
 	$albumTable = Table::getInstance("albums");
 	
@@ -727,7 +729,7 @@ function gallery_downloadalbum($albumid) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $album->getError());
 	}
     
-    $fileName = "files/" . sanitizeFilename(strtolower($album->name)) . ".zip";
+	$fileName = "files/" . sanitizeFilename(strtolower($album->name)) . ".zip";
 	$rebuild = true;
 	
 	if (file_exists($fileName)) {
@@ -779,7 +781,7 @@ function gallery_getpictures($albumid) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $album->getError());
 	}
     
-    $database->setQuery("SELECT * FROM #__gallery_pictures WHERE albumid = " . $database->quote($albumid) .
+	$database->setQuery("SELECT * FROM #__gallery_pictures WHERE albumid = " . $database->quote($albumid) .
 		" ORDER BY taken ASC");
 	
 	$picturesResponse = $database->loadAssocList();
@@ -788,16 +790,16 @@ function gallery_getpictures($albumid) {
 		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
 	}
 	
-    $pictures = Array();
+	$pictures = Array();
     
 	foreach ($picturesResponse as $picture) {
-        $pictures[] = Array(
-            "id"          => (int)    $picture["id"],
-            "filename"    => (string) $picture["filename"],
-            "caption"     => (string) $picture["caption"],
-            "userid"      => (int)	  $picture["userid"],
-            "submitted"   => (int)	  $picture["submitted"],
-            "taken"   	  => (int)	  $picture["taken"]);
+		$pictures[] = Array(
+			"id"          => (int)    $picture["id"],
+			"filename"    => (string) $picture["filename"],
+			"caption"     => (string) $picture["caption"],
+			"userid"      => (int)	  $picture["userid"],
+			"submitted"   => (int)	  $picture["submitted"],
+			"taken"   	  => (int)	  $picture["taken"]);
 	}
 	
     return $pictures;
@@ -807,9 +809,9 @@ function gallery_uploadpicture($albumid) {
 	$user = Core::getUser();
 	$database = Core::getDatabase();
 	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
     
 	$album = Table::getInstance("albums");
 	
@@ -817,10 +819,10 @@ function gallery_uploadpicture($albumid) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $album->getError());
 	}
 	
-    if (!$_FILES["Filedata"]) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Foto hochgeladen");
-    }
-	
+	if (!$_FILES["Filedata"]) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein Foto hochgeladen");
+	}
+
 	$allowedExtensions = Array("jpg", "bmp", "gif", "png");
 	
 	$fnParts = parseFileName(sanitizeFileName(utf8_decode($_FILES["Filedata"]["name"])));
@@ -896,34 +898,34 @@ function gallery_uploadpicture($albumid) {
 function gallery_rotatepicture($id, $degree) {
 	$user = Core::getUser();
 	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-	
-    if (!$id) {
-        return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiges Bild angegeben.");
-    }
-    
-    if ($degree % 90 != 0) {
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
+	if (!$id) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiges Bild angegeben.");
+	}
+
+	if ($degree % 90 != 0) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiger Winkel angegeben.");
-    }
+	}
     
 	$picture = Table::getInstance("pictures");
 	
 	if (!$picture->load($id)) {
 		return new JSONRPCErrorResponse("INCORRECT_PARAMS", "Kein gültiges Bild angegeben.");
 	}
-	
-    if (!($user->isadmin || $picture->userid == $user->id)) {
+
+	if (!($user->isadmin || $picture->userid == $user->id)) {
 		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED", "Fotos dürfen nur von demjenigen Benutzer bearbeitet werden, " .
-			"der das betreffende Foto hochgeladen hat. Ansonsten hat nur der Administrator das Recht dazu.");
-    }
-    
-    if (!function_exists("gd_info")) {
+		"der das betreffende Foto hochgeladen hat. Ansonsten hat nur der Administrator das Recht dazu.");
+	}
+
+	if (!function_exists("gd_info")) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", "Der Server nicht über eine benötigte Grafikbibliothek zu verfügen.");
-    }
+	}
     
-    $path = "gallery/originals/" . $picture->filename;
+	$path = "gallery/originals/" . $picture->filename;
 	
 	$source = imagecreatefromjpeg($path);
 	$rotated = imagerotate($source, $degree, 0);
@@ -982,28 +984,28 @@ function shoutbox_poll($startAfter) {
 	
 	$messagesResponse = $database->loadAssocList();
 	
-    if (!$database->success()) {
-        return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
+	if (!$database->success()) {
+		return new JSONRPCErrorResponse("INVALID_DATABASE_QUERY", "MySQL-Fehlermeldung: " . $database->getErrorMsg());
 	}
 	
-    $messages = Array();
+	$messages = Array();
     
 	foreach ($messagesResponse as $message) {
-        $messages[] = Array(
-            "id"     => (int)    $message["id"],
-            "userid" => (int)    $message["userid"],
-            "date"   => (int)    $message["date"],
-            "text"   => (string) $message["text"],
-			"system" => (bool)	 $message["system"]
+		$messages[] = Array(
+			"id"     => (int)    $message["id"],
+			"userid" => (int)    $message["userid"],
+			"date"   => (int)    $message["date"],
+			"text"   => (string) $message["text"],
+			"system" => (bool)   $message["system"]
 		);
 	}
-	
+
 	if (count($messages)) {
 		$user = Core::getUser();
-		
-	    if (!$user->authenticated()) {
-	        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-	    }
+
+		if (!$user->authenticated()) {
+			return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+		}
 	}
 	
 	return array_reverse($messages);
@@ -1011,13 +1013,13 @@ function shoutbox_poll($startAfter) {
 
 function shoutbox_say($text, $startAfter, $system = false) {
 	$user = Core::getUser();
-	
-    if (!$user->authenticated()) {
-        return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
-    }
-	
+
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+
 	$message = Table::getInstance("messages");
-	
+
 	if (!$message->save(Array(
 		"userid" => $user->id,
 		"date" => time(),
@@ -1025,7 +1027,7 @@ function shoutbox_say($text, $startAfter, $system = false) {
 		"system" => $system))) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $message->getError());
 	}
-    
+
 	if ($startAfter) {
 		return shoutbox_poll($startAfter);
 	} else {
@@ -1259,19 +1261,19 @@ $service = new JSONRPCService($dispatchMap, false);
 $service->response_charset_encoding = "UTF-8";
 
 if ($_POST["jsonrpc"]) {
- 	$service->service(strip_tags(stripcslashes($_POST["jsonrpc"])), true);
+	$service->service(strip_tags(stripcslashes($_POST["jsonrpc"])), true);
 } elseif (!(defined("INTERNAL_REQUEST") && INTERNAL_REQUEST)) {
-    $service->service(null, true);
+	$service->service(null, true);
 }
 
 function doInternalRequest($method = "", $params = Array()) {
-    global $service;
-    
-    $json = new Services_JSON();
+	global $service;
+
+	$json = new Services_JSON();
 	return $service->service($json->encode(Array(
 		"method" => $method,
 		"params" => $params
-    )), false);
+	)), false);
 }
 
 ?>
