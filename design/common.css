@@ -836,7 +836,8 @@ ul {
 	width: 150px;
 }
 
-.createEditTaskWindow .taskInput {
+.createEditTaskWindow .taskInput,
+.createEditTaskWindow select {
 	width: 241px;
 }
 
@@ -846,14 +847,6 @@ ul {
 
 .createEditTaskWindow .buttonContainer .button {
 	margin: 0px 2px;
-}
-
-.createEditTaskWindow .dropDownSelection {
-	display: inline;
-}
-
-.createEditTaskWindow .dropDownSelection .content {
-	width: 218px;
 }
 
 /* Das Fenster, in dem die Kommentare zu einer Aufgabe angezeigt werden */
