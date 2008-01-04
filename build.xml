@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<project name="klassenbuch" basedir=".">
+	<description>
+		An Open Source Ajax application that allows school classes to manage their homework in a central place,
+		lets the students have discussions and share their photos in a easy-to-use online gallery.
+	</description>
+	
+	<target name="prepare">
+		<mkdir dir="dist"/>
+		
+		<copy todir="dist">
+			<fileset dir=".">
+				<include name="design/**"/>
+				<include name="files"/>
+				<include name="flash"/>
+				<include name="gallery/**"/>
+				<include name="images/**"/>
+				<include name="includes/**"/>
+				<include name="installation/**"/>
+				<include name="*.php"/>
+			</fileset>
+		</copy>
+		
+		<mkdir dir="dist/javascript" />
+		
+		<concat destfile="build/klassenbuch.complete.uncompressed.js">
+			<filelist dir="javascript">
+				<file name="prototype.js"/>
+				<file name="prototype.extensions.js"/>
+				<file name="swfupload.js"/>
+				<file name="klassenbuch.jsonrpc.js"/>
+				<file name="klassenbuch.js"/>
+				<file name="klassenbuch.history.js"/>
+				<file name="klassenbuch.controls.js"/>
+				<file name="klassenbuch.user.js"/>
+				<file name="klassenbuch.theme.js"/>
+				<file name="klassenbuch.tasks.js"/>
+				<file name="klassenbuch.contacts.js"/>
+				<file name="klassenbuch.storage.js"/>
+				<file name="klassenbuch.gallery.js"/>
+				<file name="klassenbuch.shoutbox.js"/>
+				<file name="klassenbuch.comments.js"/>
+			</filelist>
+		</concat>
+	</target>
+	
+	<target name="final" depends="prepare">
+		<java jar="build/yuicompressor-2.2.5.jar" failonerror="true" fork="true">
+			<arg line="build/klassenbuch.complete.uncompressed.js -o dist/javascript/klassenbuch.complete.js"/>
+		</java>
+		
+		<delete file="build/klassenbuch.complete.uncompressed.js"/>
+	</target>
+	
+	<target name="debug" depends="prepare">
+		<move file="build/klassenbuch.complete.uncompressed.js" tofile="dist/javascript/klassenbuch.complete.js"/>
+	</target>
+</project>
