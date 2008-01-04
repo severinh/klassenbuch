@@ -18,6 +18,7 @@
 				<include name="includes/**"/>
 				<include name="installation/**"/>
 				<include name="*.php"/>
+				<include name="*.tmpl"/>
 			</fileset>
 		</copy>
 		
