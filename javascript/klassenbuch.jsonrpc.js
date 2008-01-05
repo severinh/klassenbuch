@@ -363,7 +363,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 		var uploadError = function(errorCode, file, message) {
 			switch(errorCode) {
 				case JSONRPC.Upload.UPLOAD_ERROR.SPECIFIED_FILE_ID_NOT_FOUND:
-					message = "Angegebene Datei-ID f�r den Upload wurde nicht gefunden";
+					message = "Angegebene Datei-ID für den Upload wurde nicht gefunden";
 					break;
 				case JSONRPC.Upload.UPLOAD_ERROR.HTTP_ERROR:
 					message = "HTTP-Fehler: " + errorCode;
