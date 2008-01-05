@@ -9,23 +9,15 @@
 		<mkdir dir="dist"/>
 		
 		<copy todir="dist">
-			<fileset dir=".">
-				<include name="design/**"/>
-				<include name="files"/>
-				<include name="flash"/>
-				<include name="gallery/**"/>
-				<include name="images/**"/>
-				<include name="includes/**"/>
-				<include name="installation/**"/>
-				<include name="*.php"/>
-				<include name="*.tmpl"/>
+			<fileset dir="public">
+				<exclude name="javascript/**"/>
 			</fileset>
 		</copy>
 		
 		<mkdir dir="dist/javascript" />
 		
 		<concat destfile="build/klassenbuch.complete.uncompressed.js">
-			<filelist dir="javascript">
+			<filelist dir="public/javascript">
 				<file name="prototype.js"/>
 				<file name="prototype.extensions.js"/>
 				<file name="swfupload.js"/>
