@@ -363,7 +363,7 @@ JSONRPC.Upload = Class.create(SWFUpload, {
 		var uploadError = function(errorCode, file, message) {
 			switch(errorCode) {
 				case JSONRPC.Upload.UPLOAD_ERROR.SPECIFIED_FILE_ID_NOT_FOUND:
-					message = "Angegebene Datei-ID für den Upload wurde nicht gefunden";
+					message = "Angegebene Datei-ID fï¿½r den Upload wurde nicht gefunden";
 					break;
 				case JSONRPC.Upload.UPLOAD_ERROR.HTTP_ERROR:
 					message = "HTTP-Fehler: " + errorCode;
@@ -496,13 +496,11 @@ JSONRPC.Store = Class.create(Collection, {
 			var params = Function.fromObject(params || this.options.params || []);
 			var appendOnly = appendOnly || this.options.appendOnly || false;
 			
-			var request = new JSONRPC.CachedRequest(method, params(), {
+			var request = new JSONRPC.CachedRequest(method, params(), Object.extend({
 				onUpdated: (function(response) {
 					this.loadSuccess(response, appendOnly);
-				}).bind(this),
-				
-				onFailure: (this.options.suppressErrors) ? Prototype.K : undefined
-			});
+				}).bind(this)
+			}, (this.options.suppressErrors) ? { onFailure: Prototype.K } : {}));
         }
     },
 	
