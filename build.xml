@@ -48,4 +48,10 @@
 	<target name="debug" depends="prepare">
 		<move file="build/klassenbuch.complete.uncompressed.js" tofile="dist/javascript/klassenbuch.complete.js"/>
 	</target>
+	
+	<target name="docs">
+		<java dir="build/jsdoc_toolkit/" jar="build/jsdoc_toolkit/app/js.jar" failonerror="true" fork="true">
+			<arg line="app/run.js -t=templates/sweet -d=../../docs -a ../../public/javascript/"/>
+		</java>
+	</target>
 </project>
