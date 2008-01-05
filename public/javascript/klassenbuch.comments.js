@@ -300,7 +300,7 @@ Comments.CommentInputField = function() {
 		return "<img src=\"images/formatting/" + f.toLowerCase() + ".gif\" name=\"" + f + "\" />";
 	}).join("");
 	
-	var emoticonsHTML =	BBCode.Emoticons.collect(function(pair) {
+	var emoticonsHTML =	Emoticons.Map.collect(function(pair) {
 		return "<img src=\"images/emoticons/" + pair.key + ".gif\" name=\"" + pair.key + "\" />";
 	}).join("");
 	
@@ -379,7 +379,7 @@ Comments.CommentInputField = function() {
 			var fileName = Event.element(e).name;
 			
 			if (fileName) {
-				this.insertTag(BBCode.Emoticons.get(fileName)[0], "");
+				this.insertTag(Emoticons.Map.get(fileName)[0], "");
 			}
 		}
 	});
@@ -479,7 +479,7 @@ Comments.Comment.Control = function() {
 		},
 		
 		refreshControl: function() {
-			this._content.innerHTML = BBCode.parse(this.comment.text);
+			this._content.innerHTML = Emoticons.parse(BBCode.parse(this.comment.text));
 		}
 	});
 }();

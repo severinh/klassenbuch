@@ -1,6 +1,6 @@
 /*
  * Klassenbuch
- * Copyright (C) 2006 - 2007 Severin Heiniger
+ * Copyright (C) 2006 - 2008 Severin Heiniger
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,8 +53,8 @@ Object.extend(Object, /** @scope Object */ {
 	
 	/**
 	 * Clones the passed object using deep copy (copies off all the original's properties and even nested properties
-	 * to the result). Unlike Prototype's <a href="http://www.prototypejs.org/api/object/clone">Object.clone</a> this
-	 * recursive function produces a deep copy rather than a shallow copy.
+	 * to the result). Unlike Prototype's Object.clone this recursive function produces a deep copy rather 
+	 * than a shallow copy.
 	 * @param {Object} object The object to clone.
 	 * @returns {Object} The object's deep copy.
 	*/
@@ -136,6 +136,13 @@ Object.extend(Number.prototype, function() {
 	};
 }());
 
+/**
+ * Returns a function that returns a certain objects: the object is wrapped. In case the passed object is a function
+ * itself the function will return it untouched.
+ * @param {Object} The object to wrap in a function.
+ * @return {Function} The resulting function.
+*/
+
 Function.fromObject = function(object) {
 	return (Object.isFunction(object)) ? object : function() {
 		return object;
@@ -209,7 +216,11 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 			return store;
 		}
 		
-		return arguments.callee._STORE[this] = this.toLowerCase().replace(/\s/g, "-").replace(/[^A-Z0-9-]/gi, "");
+		var result = this.strip().toLowerCase().replace(/\s/g, "-").replace(/[^A-Z0-9-]/gi, "");
+		
+		arguments.callee._STORE[this] = result;
+		
+		return result;
 	},
 	
 	/**
@@ -239,32 +250,85 @@ Object.extend(String.prototype, /** @scope String.prototype */ {
 String.prototype.addressify._STORE = {};
 
 /**
- * BBCode is used for safe text formatting instead of HTML tags. This namespace contains a list of available emoticons along with a 
- * method to transform BBCode into raw HTML text.
+ * BBCode is used for safe text formatting instead of HTML tags. This namespace contains a function to transform BBCode
+ * into HTML text.
  * @namespace
 */
-var BBCode = function() {
+var BBCode = {
+	/**
+	 * Parses a string that contains BBCode tags and transforms it into HTML text. Allowed BBCode tags are [B]xyz[/B],
+	 * [I]xyz[/I], [U]xyz[/U], [URL=http://xyz.com/]Link to xyz[/URL], [URL]http://xyz.com/[/URL], [COLOR=xyz]abc[/COLOR], 
+	 * [QUOTE]xyz[/QUOTE] and [BR /].
+	 * @param {String} value The text to parse.
+	 * @return {String} The transformed text containing html tags.
+	*/
+	parse: function(value) {
+		if (value.include("[")) { // Performance optimization: Don't do the whole parsing thing if there isn't a BBCode tag.
+			// Three helper functions to avoid redundant code.
+			var replace = function(re, str) {
+				value = value.replace(re, str);
+				return value;
+			};
+			
+			var replaceLazy = function(re, str, check) {
+				if (value.include(check)) {
+					return replace(re, str);
+				}
+			};
+			
+			var replacePair = function(re1, re2, str1, str2, match) {
+				if (!replaceLazy(re1, str1, match)) {
+					return false;
+				};
+				
+				replace(re2, str2);
+			};
+			
+			replace(/\[BR \/\]/g, "<br />");
+			
+			replacePair(/\[B\]/g, /\[\/B\]/g, "<strong>", "</strong>", "[B]");
+			replacePair(/\[I\]/g, /\[\/I\]/g, "<em>", "</em>", "[I]");
+			replacePair(/\[U\]/g, /\[\/U\]/g, "<u>", "</u>", "[U]");
+			
+			replaceLazy(/\[URL=([^\]]+)\](.*?)\[\/URL\]/g, "<a href=\"$1\">$2</a>", "[URL=");
+			replaceLazy(/\[URL\](.*?)\[\/URL\]/g, "<a href=\"$1\">$1</a>", "[URL]");
+			
+			// The font tag was intentionally chosen due to possible CSS hacks in a style attribute.
+			replaceLazy(/\[COLOR=(.*?)\](.*?)\[\/COLOR\]/g, "<font color=\"$1\">$2</font>", "[COLOR=");
+			replaceLazy(/\[QUOTE.*?\](.*?)\[\/QUOTE\]/g, "<blockquote>$1</blockquote>", "[QUOTE");
+		}
+		
+		return value;
+	}
+};
+
+/**
+ * This namespace contains a list of emoticons and a function to replace any supported emoticon in a string with its
+ * corresponding <img> tag.
+ * @namespace
+*/
+var Emoticons = function() {
 	var emoticons = $H({
-		angry:	["*angry*"],
-		biggrin:	[":-D", ":D"],
-		blink:	["o.O", "oO"],
-		blush:	["*blush*", ":-*)"],
-		cool:		["B-)", "B)", "8-D", "8D"],
-		dry:		["-.-"],
-		excl:		["*excl*"],
-		happy:	["^^"],
-		huh:		["*huh*"],
-		laugh:	["lol"],
-		lol:		["xD", "XD"],
-		mellow:	["*mellow*", ":-|"],
-		ohmy:		[":-o"],
-		rolleyes:	["*rolleyes*"],
-		sad:		[":-(", ":("],
-		sleep:	["-_-"],
-		smile:	[":-)", ":)"],
-		tongue:	[":-P", ":P"],
-		unsure:	["*unsure*", ":-/"],
-		wink:		[";-)", ";)"]
+		angry:    ["*angry*"],
+		biggrin:  [":-D", ":D"],
+		blink:    ["o.O", "oO"],
+		blush:    ["*blush*", ":-*)"],
+		cool:     ["B-)", "B)", "8-D", "8D"],
+		dry:      ["-.-"],
+		excl:     ["*excl*"],
+		happy:    ["^^"],
+		huh:      ["*huh*"],
+		laugh:    ["lol"],
+		lol:      ["xD", "XD"],
+		mellow:   ["*mellow*", ":-|"],
+		ohmy:     [":-o"],
+		rolleyes: ["*rolleyes*"],
+		sad:      [":-(", ":("],
+		sleep:    ["-_-"],
+		smile:    [":-)", ":)"],
+		tongue:   [":-P", ":P"],
+		unsure:   ["*unsure*", ":-/"],
+		wink:     [";-)", ";)"]
 	});
 	
 	// Internally used to connect certain emoticons to their corresponding image file in the directory images/emoticons.
@@ -276,67 +340,26 @@ var BBCode = function() {
 		});
 	});
 	
-	return /** @scope BBCode */ {
+	return /** @scope Emoticons */ {
 		/**
-		 * Parses a string that contains BBCode tags and emoticons and transforms it into HTML text. Allowed BBCode tags are [B]xyz[/B],
-		 * [I]xyz[/I], [U]xyz[/U], [URL=http://xyz.com]Link to xyz[/URL], [URL]http://xyz.com[/URL], [COLOR=xyz]abc[/COLOR], 
-		 * [QUOTE]xyz[/QUOTE] and [BR /].
+		 * Replaces any supported emoticons with its corresponding <img> tag.
 		 * @param {String} value The text to parse.
-		 * @param {Boolean} [skipFormatting] If true, BBCode tags won't be parsed except [BR /]. Defaults to false.
-		 * @returns {String} The transformed text containing html tags.
+		 * @return {String} The transformed text containing html tags.
 		*/
-		parse: function(value, skipFormatting) {
-			if (value.include("[")) { // Performance optimization: Don't do the whole parsing thing if there isn't a BBCode tag.
-				// Three helper functions to avoid redundant code.
-				var replace = function(re, str) {
-					return value = value.replace(re, str);
-				};
-				
-				var replaceLazy = function(re, str, check) {
-					if (value.include(check)) {
-						return replace(re, str);
-					}
-				};
-				
-				var replacePair = function(re1, re2, str1, str2, match) {
-					if (!replaceLazy(re1, str1, match)) {
-						return false;
-					};
-					
-					replace(re2, str2);
-				};
-				
-				// BR tags are parsed regardless of the skipFormatting argument
-				replace(/\[BR \/\]/g, "<br />");
-				
-				if (!skipFormatting) {
-					replacePair(/\[B\]/g, /\[\/B\]/g, "<strong>", "</strong>", "[B]");
-					replacePair(/\[I\]/g, /\[\/I\]/g, "<em>", "</em>", "[I]");
-					replacePair(/\[U\]/g, /\[\/U\]/g, "<u>", "</u>", "[U]");
-					
-					replaceLazy(/\[URL=([^\]]+)\](.*?)\[\/URL\]/g, "<a href=\"$1\">$2</a>", "[URL=");
-					replaceLazy(/\[URL\](.*?)\[\/URL\]/g, "<a href=\"$1\">$1</a>", "[URL]");
-					replaceLazy(/\[COLOR=(.*?)\](.*?)\[\/COLOR\]/g, "<a href=\"$1\">$2</a>", "[COLOR=");
-					replaceLazy(/\[QUOTE.*?\](.*?)\[\/QUOTE\]/g, "<blockquote>$1</blockquote>", "[QUOTE");
-				}
-			}
-			
-			// Replacing emoticons with <img ... /> tags.
-			value = value.replace(/(\*(angry|blush|excl|huh|mellow|rolleyes|unsure)\*|:-?[D\(\)P]|o\.?O|B-?\)|8-?D|-[._]-|:-(\||o|\/|\*\))|;-?\)|\^\^|lol|[xX]D|=\()/g, function(emoticon) {
+		parse: function(value) {
+			return value.replace(/(\*(angry|blush|excl|huh|mellow|rolleyes|unsure)\*|:-?[D\(\)P]|o\.?O|B-?\)|8-?D|-[._]-|:-(\||o|\/|\*\))|;-?\)|\^\^|lol|[xX]D|=\()/g, function(emoticon) {
 				return "<img src=\"images/emoticons/" + reversedMap[emoticon] +
 					".gif\" class=\"unselectable\" style=\"vertical-align: middle;\" />"
 			});
-			
-			return value;
 		},
 		
 		/**
-		 * A list of emoticon image filenames that are supported by the parse function. Almost every image file is represented by two or
-		 * more different emoticons.
+		 * A list of emoticon image filenames that are supported by the parse function. Almost every image file is
+		 * represented by two or more different emoticons.
 		 * @type Hash
 		*/
-		Emoticons: emoticons
-	};
+		Map: emoticons
+	}
 }();
 
 /**
@@ -347,7 +370,7 @@ var Cookie = {
 	/**
 	 * Returns the value of a certain cookie.
 	 * @param {String} name The name of the cookie to read.
-	 * @returns {String} The cookie's value. Returns false if the cookie doesn't exist.
+	 * @return {String} The cookie's value. Returns false if the cookie doesn't exist.
 	*/
 	get: function(name) {
 		var cookie = document.cookie;
@@ -382,8 +405,8 @@ var Cookie = {
 };
 
 /**
- * Provides various methods to get the browser window inner dimensions (so called viewport), which can be used to center elements on
- * screen or to cover the whole screen with a single element. This definition overrides the original Prototype defition to improve
+ * Provides various methods to get the browser window's inner dimensions (so called viewport), which can be used to center elements on
+ * screen or to cover the whole screen with a single element. This definition overrides the original Prototype definition to improve
  * performance.
  * @namespace
  * @name document.viewport
@@ -402,7 +425,7 @@ Object.extend(document.viewport, function() {
 	return {
 		/**
 		 * Returns both the viewport's width and height in pixels.
-		 * @returns {Object} The viewport's dimensions.
+		 * @return {Object} The viewport's dimensions.
 		 * @example
 document.viewport.getDimensions();
 // -> { width: 1280, height: 725 }
@@ -413,7 +436,7 @@ document.viewport.getDimensions();
 
 		/**
 		 * Returns the viewport's width in pixels.
-		 * @returns {Object} The viewport's width.
+		 * @return {Object} The viewport's width.
 		 * @example
 document.viewport.getWidth();
 // -> 1280
@@ -424,7 +447,7 @@ document.viewport.getWidth();
 
 		/**
 		 * Returns the viewport's height in pixels.
-		 * @returns {Object} The viewport's height.
+		 * @return {Object} The viewport's height.
 		 * @example
 document.viewport.getHeight();
 // -> 725
@@ -444,14 +467,12 @@ document.viewport.getHeight();
 Object.extend(Prototype.Browser, (function() {
 	var version,
 		B = Prototype.Browser,
-		ua = navigator.userAgent.toLowerCase(),
-		isFirefox = B.Gecko && ua.include("firefox");
+		ua = navigator.userAgent.toLowerCase();
 	
-	// Browser version detection (only applies to IE, Opera and Firefox)
+	// Browser version detection (only applies to IE and Opera)
 	switch (true) {
-		case B.IE: 		version = (!Object.isNull(/msie ([0-9]{1,}[\.0-9]{0,})/.exec(ua))) ? parseFloat(RegExp.$1) : 3; break;
-		case B.Opera: 	version = (window.opera.version) ? parseFloat(window.opera.version()) : 7.5; break;
-		case isFirefox: 	version = parseFloat(ua.substr(ua.indexOf("firefox") + 8, 3));
+		case B.IE:    version = (!Object.isNull(/msie ([0-9]{1,}[\.0-9]{0,})/.exec(ua))) ? parseFloat(RegExp.$1) : 3; break;
+		case B.Opera: version = (window.opera.version) ? parseFloat(window.opera.version()) : 7.5;
 	}
 	
 	return /** @scope Prototype.Browser */ {
@@ -472,12 +493,6 @@ Object.extend(Prototype.Browser, (function() {
 		})(),
 		
 		/**
-		 * Indicates whether Firefox is used to access the application.
-		 * @type Boolean
-		*/
-		Firefox: isFirefox,
-		
-		/**
 		 * Indicates whether good ol' Internet Explorer 6 is used to access the application. Perish the thought this property might ever
 		 * be <em>true</em>.
 		 * @type Boolean
@@ -485,23 +500,18 @@ Object.extend(Prototype.Browser, (function() {
 		IE6: (B.IE && version === 6),
 		
 		/**
-		 * Provides the browser version, in case the quite basic version detection did it's job properly.
-		 * @type Boolean
-		*/
-		version: version,
-		
-		/**
 		 * Indicates whether the used browser should be able to run the application smoothly. Currently Firefox versions older than 1.5
 		 * and IE versions older than 6 aren't supported.
 		 * @todo Should be moved to a more reasonable place.
 		 * @type Boolean
 		*/
-		supported: !((isFirefox && version < 1.5) || (B.IE && version < 6))
+		supported: !(B.IE && version < 6)
 	};
 })());
 
-// Stammt in Teilen aus der Entwicklermailingliste von Prototype.
+// Based on a code snippet posted in the Prototype developer mailinglist.
 (function() {
+	// Used for time unit conversion
 	var multipliers = $H({
 		year: 365.25 * 24 * 60 * 60 * 1000,
 		month: 30 * 24 * 60 * 60 * 1000,
@@ -513,6 +523,7 @@ Object.extend(Prototype.Browser, (function() {
 		millisecond: 1
 	});
 	
+	// Pluralized time unit such as "days" may be used as well.
 	var plurals = new Hash();
 	
 	multipliers.each(function(pair) {
@@ -534,6 +545,7 @@ Object.extend(Prototype.Browser, (function() {
 	Object.extend(Date.prototype, /** @scope Date.prototype */ {
 		/**
 		 * Makes it possible to iterate through date ranges using $R. One iteration step spans one day.
+		 * @return {Date} The next day.
 		 * @example
 $R(new Date(), new Date().add(3, "days")).invoke("format", "d.m.Y").join(", ");
 // -> "08.12.2007, 09.12.2007, 10.12.2007, 11.12.2007"
@@ -543,8 +555,8 @@ $R(new Date(), new Date().add(3, "days")).invoke("format", "d.m.Y").join(", ");
 		},
 		
 		/**
-		 * Adds a specific amount of time to the date object. In addition to the numerical amount of time a textual time unit can be
-		 * specified that can be both singular and plural. Even negative values are allowed.
+		 * Adds a specific amount of time to the date object. In addition to the numerical amount of time a textual
+		 * time unit can be specified that can be both singular and plural. Even negative values are allowed.
 		 * @param {Number} number The amount of time to add.
 		 * @param {String} [unit] The textual time unit to be used. Defaults to "day".
 		 * @example
@@ -562,6 +574,10 @@ new Date().add(-3, "minutes").format("d.m.Y H:i");
 		
 		/**
 		 * Calculates the difference between to dates.
+		 * @param {Date} date The date to compare with.
+		 * @param {String} [unit] The time unit to use on returning the difference. Defaults to "day".
+		 * @param {Number} [allowDecimal] If the result may contain decimal places of not. Defaults to false.
+		 * @return {Number} The calculated time difference.
 		*/
 		diff: function(date, unit, allowDecimal) {
 			var ms = this.getTime() - date.getTime();
@@ -570,8 +586,17 @@ new Date().add(-3, "minutes").format("d.m.Y H:i");
 			return allowDecimal ? unitDiff : Math.floor(unitDiff);
 		},
 		
-		// Inspiriert von http://www.codeproject.com/jscript/dateformat.asp
-		format: function(f) {
+		/**
+		 * Formats the date. Returns a string formatted according to the given format string. The format syntax is based
+		 * on PHP's date() function. Escape sequences aren't supported, so it will be inevitable to split up the format
+		 * process in some cases.
+		 * The implementation approach is based on http://www.codeproject.com/jscript/dateformat.asp.
+		 * @param {String} [format] The format of the outputted date string. Refer to
+		 * http://ch2.php.net/manual/de/function.date.php for a list of keywords.
+		 * @return {String} The formatted string.
+		*/
+		format: function(format) {
+			// Avoid redundancy
 			var self = this,
 				hours = this.getHours(),
 				a = (hours < 12) ? "am" : "pm",
@@ -580,8 +605,8 @@ new Date().add(-3, "minutes").format("d.m.Y H:i");
 				j = this.getDate(),
 				n = this.getMonth() + 1;
 			
-			return f.replace(/[aAdDFgGhHijmnMsY]/g, function($1) {
-				switch ($1) {
+			return format.replace(/[aAdDFgGhHijmnMsY]/g, function(key) {
+				switch (key) {
 					case "a": return a;
 					case "A": return a.toUpperCase();
 					case "d": return j.toPaddedString(2);
@@ -602,25 +627,62 @@ new Date().add(-3, "minutes").format("d.m.Y H:i");
 			});
 		},
 		
+		/**
+		 * Returns the date's Unix time.
+		 * @return {Number} The timestamp.
+		*/
 		getTimestamp: function() {
 			return Math.round(this.getTime() / 1000);
 		},
 		
+		/**
+		 * Sets the date using the Unix time.
+		 * @param {Number} timestamp The timestamp.
+		 * @return {Date} The date object. Can be used for chaining purposes.
+		*/
 		setTimestamp: function(timestamp) {
 			this.setTime(timestamp * 1000);
 			
 			return this;
 		},
 		
+		/**
+		 * Indicates if two dates are exactly equal.
+		 * @param {Date} date The Date object to compare with.
+		 * @return {Boolean} Whether the two dates are equal.
+		*/
 		equals: function(date) {
 			return this.getTime() === date.getTime();
 		},
 		
+		/**
+		 * Indicates if the date is today.
+		 * @return {Boolean} Dito.
+		 * @function
+		*/
 		isToday: compare.curry(0),
+		
+		/**
+		 * Indicates if the date was yesterday.
+		 * @return {Boolean} Dito.
+		 * @function
+		*/
 		wasYesterday: compare.curry(-1),
+		
+		/**
+		 * Indicates if the date will be tomorrow.
+		 * @return {Boolean} Dito.
+		 * @function
+		*/
 		willBeTomorrow: compare.curry(1),
 		
-		// Aus dem Ext-Framework (http://www.extjs.com/)
+		/**
+		 * Removes any time informations (hours, minutes, seconds, milliseconds) from the Date object.
+		 * This method's implementation is based on the Ext framework (refer to http://www.extjs.com/).
+		 * @param {Boolean} clone If true, the method isn't desctructive and clones the Date object before
+		 * removing any information. Defaults to false.
+		 * @return {Date} The resulting Date object. Either cloned or not.
+		*/
 		removeTime: function(clone) {
 			if (clone) {
 				return this.clone().removeTime();
@@ -634,40 +696,56 @@ new Date().add(-3, "minutes").format("d.m.Y H:i");
 			return this;
 		},
 		
-		// Aus dem Ext-Framework (http://www.extjs.com/)
+		/**
+		 * Clones the Date object as the method name says.
+		 * @return {Date} The new Date object which holds the same date as the original one.
+		*/
 		clone: function() {
 			return new Date(this.getTime());
 		}
 	});
 	
 	Object.extend(Date, /** @scope Date */ {
+		/**
+		 * Returns the current Unix time.
+		 * @return {Number} The timestamp.
+		*/
 		getCurrentTimestamp: function() {
 			return new Date().getTimestamp();
 		},
 		
+		/**
+		 * Returns the todays Unix time.
+		 * @return {Number} The timestamp.
+		*/
 		getTodaysTimestamp: function() {
 			return new Date().removeTime().getTimestamp();
 		},
 		
+		/**
+		 * Returns a Date object based on a Unix timestamp.
+		 * @param {Number} timestamp The timestamp to use.
+		 * @return {Date} The new Date object.
+		*/
 		fromTimestamp: function(timestamp) {
 			return new Date(timestamp * 1000);
 		},
 		
 		/**
-		 * Eine Auflistung der Wochentagenamen, beginnend mit dem Sonntag.
+		 * A list of weekdays, beginning with Sunday.
 		 * @type {String[]}
 		*/
 		weekdays: $w("Sonntag Montag Dienstag Mittwoch Donnerstag Freitag Samstag"),
 		
 		/**
-		 * Eine Auflistung der Wochentagenamen in abgekürzter Form, beginnend mit dem Sonntag.
+		 * A list of shortened weekdays, beginning with Sunday.
 		 * @type {String[]}
 		*/
 		weekdaysAbbr: $w("So Mo Di Mi Do Fr Sa"),
 		
 		/**
-		 * Eine Auflistung der Anzahl Tage in den einzelnen Monaten, beginnend mit Januar.
-		 * @type {Integer[]}
+		 * A list of the number of days in each month, beginning with January.
+		 * @type {Number[]}
 		*/
 		daysPerMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
 		
@@ -679,53 +757,99 @@ new Date().add(-3, "minutes").format("d.m.Y H:i");
 	});
 })();
 
-PeriodicalExecuter.addMethods({
+PeriodicalExecuter.addMethods(/** @scope PeriodicalExecuter.prototype */ {
+	/**
+	 * Initiates the periodical exection timer if it hasn't been done yet.
+	*/
 	enable: function() {
 		if (!this.timer) {
 			this.registerCallback();
 		}
 	},
 	
+	/**
+	 * Sets the execution frequency. In case the timer was already ticking it will be resetted.
+	 * @param {Number} frequency The new frequency in seconds.
+	*/
 	setFrequency: function(frequency) {
-		if (frequency !== this.frequency) {
+		if (frequency !== this.frequency) { // We do the whole thing only in case the frequency has changed.
 			this.frequency = frequency;
 			
-			this.disable();
-			this.enable();
+			if (this.timer) {
+				this.disable();
+				this.enable();
+			}
 		}
-	}
+	},
+	
+	/**
+	 * An alias for the method "stop".
+	 * @function
+	*/
+	disable: PeriodicalExecuter.prototype.stop
 });
 
-PeriodicalExecuter.prototype.disable = PeriodicalExecuter.prototype.stop;
-
-Element.addMethods({
+Element.addMethods(/** @scope Element.Methods */ {
+	/**
+	 * Removes any content from an element.
+	 * @param {Element} element The element.
+	 * @return {Element} The element. Allows chaining of element methods.
+	*/
 	clear: function(element) {
 		element.innerHTML = "";
 		return element;
 	},
 	
+	/**
+	 * Either shows or hides the element.
+	 * @param {Element} element The element.
+	 * @param {Boolean} visibility The new visibility value. Defaults to false so that the element would be hidden.
+	 * @return {Element} The element. Allows chaining of element methods.
+	*/
 	setVisibility: function(element, visibility) {
 		element = $(element);
 		element[visibility ? "show" : "hide"]();
 		return element;
 	},
 	
-	// Eric's weblog: JavaScript: Scroll to Bottom of a Div - http://radio.javaranch.com/pascarello/2005/12/14/1134573598403.html
+	/**
+	 * Makes a <div> element scroll to the absolute bottom of its content. This method is based on an entry in
+	 * Eric's weblog at http://radio.javaranch.com/pascarello/2005/12/14/1134573598403.html
+	 * @param {Element} element The element.
+	 * @return {Element} The element. Allows chaining of element methods.
+	*/
 	scrollToBottom: function(element) {
 		element.scrollTop = element.scrollHeight;
 		return element;
 	},
 	
+	/**
+	 * Analogue to the scrollToBottom method: This method lets a <div> element scroll to the top.
+	 * @param {Element} element The element.
+	 * @return {Element} The element. Allows chaining of element methods.
+	*/
 	scrollToTop: function(element) {
 		element.scrollTop = "0px";
 		return element;
 	},
 	
+	/**
+	 * Places an element on the center of the browsers viewport based on its size and the one of the viewport.
+	 * This method invokes both the element's centerVertically and centerHorizontally method.
+	 * @param {Element} element The element.
+	 * @return {Element} The element. Allows chaining of element methods.
+	*/
 	centerOnScreen: function(element) {
 		element = $(element);
 		return element.centerVertically().centerHorizontally();
 	},
-	
+
+	/**
+	 * Places an element on the vertical center of the browsers viewport based on its height and the one of the
+	 * viewport. The method won't position the element outside the upper window border.
+	 * @param {Element} element The element.
+	 * @return {Element} The element. Allows chaining of element methods.
+	*/
 	centerVertically: function(element) {
 		var windowHeight = document.viewport.getHeight();
 		var top = (windowHeight - parseInt(element.getStyle("height"), 10)) / 2;
@@ -733,6 +857,12 @@ Element.addMethods({
 		return element.setStyle({ top: top.limitTo(0, windowHeight) + "px" });
 	},
 	
+	/**
+	 * Places an element on the horizontal center of the browsers viewport based on its width and the one of the
+	 * viewport. The method won't position the element outside the left window border.
+	 * @param {Element} element The element.
+	 * @return {Element} The element. Allows chaining of element methods.
+	*/
 	centerHorizontally: function(element) {
 		var windowWidth = document.viewport.getWidth();
 		var left = (windowWidth - parseInt(element.getStyle("width"), 10)) / 2;
@@ -740,24 +870,42 @@ Element.addMethods({
 		return element.setStyle({ left: left.limitTo(0, windowWidth) + "px" });
 	},
 	
+	/**
+	 * Creates a new child node based on attributes, style informations etc. By default a <div> element is
+	 * created.
+	 * @param {Element} element The "parent" element.
+	 * @param {Object} [options] Various options that are to be applied to the new node.
+	 * The new element's tag name can be chosen using the "tag" property. This defaults to "div".
+	 * The new element's content can be set using the "content" property.
+	 * The new elemnts's style information can be set using the "style" property.
+	 * @param {String} [position] The position of the new element. Valid values are "before", "top",
+	 * "bottom", "after". Defaults to "bottom".
+	 * @return {Element} The created node. Please keep in mind: This breaks the chaining of the Prototype
+	 * framework.
+	*/
 	createChild: function(element, options, position) {
 		options = options || {};
 		
+		// Extract "magic" values...
 		var content = options.content,
 			style = options.style,
 			tag = options.tag,
 			insertion = {};
-
+		
+		// ...then remove them from their original place...
 		delete options["content"];
 		delete options["style"];
 		delete options["tag"];
-
+		
+		// ...a proper attributes object.
 		var child = new Element(tag || "div", options);
 
+		// Set the content if needed.
 		if (content) {
 			child.innerHTML = content;
 		}
 
+		// Set the style if needed.
 		if (style) {
 			child.setStyle(style);
 		}
@@ -769,6 +917,14 @@ Element.addMethods({
 		return child;
 	},
     
+	/**
+	 * Places the element of a Control object in the DOM tree.
+	 * @param {Element} element The "parent" element.
+	 * @param {Control} control The control that hasn't been added to the document yet.
+	 * @param {String} [position] The position of the new element. Valid values are "before", "top",
+	 * "bottom", "after". Defaults to "bottom".
+	 * @return {Control} The Control object for chaining purposes.
+	*/
 	insertControl: function(element, control, position) {
 		var insertion = {};
 
@@ -783,6 +939,12 @@ Element.addMethods({
 	}
 });
 
+/**
+ * Creates an alias of a certain method of a class created with the Class.create function.
+ * @param {String} source The method name to create an alias from.
+ * @param {String} destination The new method name.
+ * @return {Function} The class for chaining purposes.
+*/
 Class.Methods.alias = function(source, destination) {
 	this.prototype[destination] = this.prototype[source];
 	
@@ -790,50 +952,37 @@ Class.Methods.alias = function(source, destination) {
 };
 
 /**
- * Eine abstrakte Basisklasse, die eine Möglichkeit bereitstellt, Ereignisse auszulösen. Über die Methode
- * <a href="#addListener">addListener</a> bzw. ihren Alias <a href="#on">on</a> kann ein bestimmtes Ereignis abgehört
- * werden. Mit <a href="#fireEvent">fireEvent</a> wird einbestimmtes Ereignis ausgelöst.<br /><br />Diese Klasse basiert
- * auf der Klasse <a href="http://www.someelement.com/2007/03/eventpublisher-custom-events-la-pubsub.html">EventPublisher
- * </a> von Ryan Dahl.
- * @class
- * @example
-var MyClass = ClassObsolete.create({
-	saySomeThing: function() {
-		this.fireEvent("say");
-	}
-}).addMethods(Observable);
-
-var myInstance = new MyClass();
-myInstance.on("say", function() {
-	alert("myInstance hat etwas gesagt");
-});
+ * An abstract mixin that provides the possibility to fire and observe events. It's based on the
+ * EventPublisher class of Ryan Dahl.
+ * Refer to http://www.someelement.com/2007/03/eventpublisher-custom-events-la-pubsub.html.
+ * @mixin
 */
 var Observable = {
-	/**
-	 * Registriert einen Ereignis-Handler-Funktion zu einen bestimmten Ereignis, damit diese ausgeführt wird, wenn das 
-	 * Ereignis ausgelöst wird.
-	 * @param {String} eventName Der Name des Ereignisses, das abgehört werden soll.
-	 * @param {Function} handler Die Ereignis-Handler-Funktion, die ausgeführt werden soll.
-	 * @return {Function Die Ereignis-Handler-Funktion, um dessen späteres Entfernen zu erleichtern, wenn die Funktion
+	/* * @return {Function Die Ereignis-Handler-Funktion, um dessen späteres Entfernen zu erleichtern, wenn die Funktion
 	 * mit .bind(this) gekapselt wurde.
 	*/
+	
+	/**
+	 * Connects a event handler function to a certain event so that it is executed as soon as the event is fired.
+	 * @param {String} eventName The event to observe.
+	 * @param {Function} handler The event handler.
+	 * @param {Object} [context] The event handler can be bound to a certain context.
+	 * @return {Function} The event handler. This makes it possible to easily remove the event handler at any time.
+	*/
 	addListener: function(eventName, handler, context) {
+		// Inizialize the Observable object if this hasn't happened yet.
 		if (Object.isUndefined(this._events)) {
-			/**
-			 * Enthält alle Ereignis-Handler die mit der Methode <a href="#addListener">addListener</a> registriert wurden.
-			 * Die Ereignis-Handler sind nach den dazugehörigen Ereignissen geordnet.
-			*/
 			this._events = {};
 		}
 		
 		handler = handler.bind(context);
-
-		// Wenn zuvor noch kein Ereignis-Handler bei diesem Ereignis registriert worden ist.
+		
+		// In case no event handlers have been observing this event before.
 		if (!this._events[eventName]) {
 			this._events[eventName] = [];
 		}
 
-		// Fügt die Handler-Funktion ein
+		// Add the event handler function.
 		this._events[eventName].push(handler);
 
 		return handler;
@@ -843,18 +992,30 @@ var Observable = {
 	 * Entfernt einen bestimmten Ereignis-Handler von einemm bestimmten Ereignis
 	 * @param {String} eventName Das Ereignis, von welchem der Ereignis-Handler entfernt werden soll
 	 * @param {Function} handler Eine Referenz zur Handler-Funktion
-	*/ 
-	removeListener: function(name, handler) {
+	*/
+	
+	/**
+	 * Removes a certain event handler.
+	 * @param {Object} eventName The event name.
+	 * @param {Object} handler The event handler function to remove.
+	 */
+	removeListener: function(eventName, handler) {
+		// Inizialize the Observable object if this hasn't happened yet.
 		if (Object.isUndefined(this._events)) {
 			this._events = {};
 		}
 	
-		if (this._events[name]) {
-			this._events[name] = this._events[name].without(handler);
+		if (this._events[eventName]) { // Check if there are event handlers at all
+			this._events[eventName] = this._events[eventName].without(handler);
 		}
 	},
-
+	
+	/**
+	 * Removes any event handlers from a certain event.
+	 * @param {Object} name The event name.
+	*/
 	removeListenersByEventName: function(name) {
+		// Inizialize the Observable object if this hasn't happened yet.
 		if (Object.isUndefined(this._events)) {
 			this._events = {};
 		}
@@ -863,32 +1024,38 @@ var Observable = {
 	},
 
 	/**
-	 * Entfernt alle Handler von allen Ereignissen (!).
-	*/ 
+	 * Removes all event handlers. (!)
+	*/
 	clearAllListeners: function() {
 		this._events = {};
 	},
 
 	/**
-	 * Fires the event {eventName}, resulting in all registered handlers to be executed.
-	 * @param {String} eventName The name of the event to fire
-	 * @params {Object} args [optional] Any object, will be passed into the handler function as the only argument
+	 * Fires the event by executing all registered handlers connected with this event.
+	 * @param {String} eventName The name of the event to fire.
+	 * @param {Object} [args] Any object(s). Will be passed to the handler functions.
+	 * @return {Boolean} Returns true if the event handlers were successfully executed and none of them returned.
+	 * false to stop the event. Otherwise false.
 	*/
 	fireEvent: function(eventName) {
+		// Inizialize the Observable object if this hasn't happened yet.
 		if (Object.isUndefined(this._events)) {
 			this._events = {};
 		}
 		
-		if (this._events[eventName]) {
+		if (this._events[eventName]) { // Checks if there are any event handlers
+			// Extract event arguments.
 			var args = $A(arguments);
 			args.shift();
 
+			// Iterate through the event handlers until one of them returns "false"
 			return !this._events[eventName].any(function(handler) {
 				try {
 					if (handler.apply(this, args) === false) {
 						return true;
 					}
 				} catch (e) {
+					// Oouch.
 					alert("Fehler in " + (this.id || "[unbekanntes Objekt]") + ".fireEvent():\n\n" +
 						"Ereignis: " + eventName + "\n" +
 						"Fehlertyp: " + e.name + "\n" +
