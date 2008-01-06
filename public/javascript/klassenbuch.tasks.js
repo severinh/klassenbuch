@@ -376,7 +376,11 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		
 		// Wird auf eine Aufgabe doppelt geklickt, wird das Kommentarfenster zu dieser Aufgabe geöffnet.
 		this._taskTable.on("selectRow", function(task) {
-			this.reportNavigation(task.id + "/kommentare");
+			if (User.signedIn) {
+				this.reportNavigation(task.id + "/kommentare");
+			} else {
+				alert("Die Kommentare sind nur angemeldeten Benutzern zugänglich.");
+			}
 		}, this);
 		
 		this._taskTable.element.observe("click", (function(event) {
