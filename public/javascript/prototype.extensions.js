@@ -1075,9 +1075,15 @@ Object.extend(Observable, {
 	un: Observable.removeListener
 });
 
-var Collection = Class.create(Hash, {
-	initialize: function($super, object) {
-		$super(object);
+var Collection = Class.create(Enumerable, {
+	initialize: function() {
+		this._object = {};
+	},
+	
+	_each: function(iterator) {
+		for (var key in this._object) {
+			iterator(this._object[key]);
+		}
 	},
 	
 	set: function(item) {
@@ -1088,11 +1094,15 @@ var Collection = Class.create(Hash, {
 		return item;
 	},
 	
-	unset: function($super, value) {
-		var key = (value.id) ? value.id : value;
+	get: function(id) {
+		return this._object[id];
+	},
+	
+	unset: function(value) {
+		var id = value.id || value,
+			item = this._object[id];
 		
-		var item = this._object[key];
-		delete this._object[key];
+		delete this._object[id];
 		
 		this.fireEvent("remove", item);
 		
@@ -1104,16 +1114,9 @@ var Collection = Class.create(Hash, {
 		this.fireEvent("clear");
 	},
 	
-	_each: function(iterator) {
-		for (var key in this._object) {
-			iterator(this._object[key]);
-		}
-	},
-	
-	index: Prototype.emptyFunction,
-	update: Prototype.emptyFunction,
-	inspect: Prototype.emptyFunction,
-	toQueryString: Prototype.emptyFunction
+	keys: function() {
+		return this.pluck("id");
+	}
 }).alias("set", "add").alias("unset", "remove").alias("clear", "removeAll").addMethods(Observable);
 
 var ControlCollection = Class.create(Collection, {
@@ -1142,7 +1145,7 @@ var ControlCollection = Class.create(Collection, {
 
 var WindowCollection = Class.create(ControlCollection, {
 	hasWindowOfType: function(type) {
-		return this.find(function(window) {
+		return !!this.find(function(window) {
 			return window.type === type;
 		});
 	},
