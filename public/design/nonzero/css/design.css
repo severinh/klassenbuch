@@ -144,7 +144,10 @@ textarea {
 	cursor: default;
 }
 
-/* Eine einzelne Ansicht */
+#content {
+	background: url(../images/backgroundContent.jpg) top left repeat-x;
+}
+
 .viewContainer {
 	padding: 15px 15px 6px;
 }
