@@ -260,7 +260,7 @@ Shoutbox.View = Class.create(Controls.View, {
 				html += "<tr class=\"message " + (message.system ? "systemMessage" : ownMessage ? "ownMessage" : "") + "\"" + hide + ">" +
 					"<td class=\"left author unselectable\">" + (!sameUser || self.lastMessage.system !== message.system ||
 					newTime ? nickname : "" ) + "</td>" +
-					"<td class=\"right text\">" + BBCode.parse(message.text, true) + "</td></tr>";
+					"<td class=\"right text\">" + Emoticons.parse(BBCode.parse(message.text)) + "</td></tr>";
 				
 				self.lastMessage = message;	
 				self.lastDate = clonedDate;
