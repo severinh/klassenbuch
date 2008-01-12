@@ -929,16 +929,12 @@ ul {
 
 /* Das Fenster zum Bearbeiten bzw. Eintragen eines Kommentars */
 .commentWindowAbstract {
-	width: 450px;
+	width: 465px;
 	height: 390px;
 }
 
-.commentWindowAbstract .paneContent {
-	height: 240px;
-}
-
 .commentWindowAbstract textarea {
-	width: 420px;
+	width: 430px;
 }
 
 .commentWindowAbstract .buttonContainer {
