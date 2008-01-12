@@ -510,13 +510,12 @@ JSONRPC.Store = Class.create(Collection, {
 	
 	loadSuccess: function(response, appendOnly) {
 		var ItemClass = this.options.itemClass,
-			identifier = Object.isFunction(ItemClass.getKey) ? ItemClass.getKey() : "id",
 			self = this,
 			newItems = [];
 		
 		if (response && response.result) {
 			response.result.each(function(newElement) {
-				var oldElement = self.get(newElement[identifier]);
+				var oldElement = self.get(newElement.id);
 				
 				if (oldElement) {
 					if (!appendOnly) {
@@ -541,7 +540,7 @@ JSONRPC.Store = Class.create(Collection, {
 					if (item.__updated__) {
 						delete item.__updated__;
 					} else {
-						self.unset(item[identifier]);
+						self.unset(item.id);
 					}
 				});
 			}
