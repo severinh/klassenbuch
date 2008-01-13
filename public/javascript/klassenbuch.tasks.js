@@ -27,7 +27,8 @@ var TaskManagement = new (Class.create(JSONRPC.Store, {
 		$super({
 			method: "gettasks",
 			params: function() { return [Date.getTodaysTimestamp() - 2592000] },
-			periodicalUpdate: 1000
+			periodicalUpdate: 1000,
+			suppressErrors: true
 		});
 		
 		App.on("initialize", function() {
@@ -671,132 +672,66 @@ TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope Tas
 		// Versucht das Fenster zu initialisieren
 		if (!$super("CreateEditTaskWindow", {
 				centerOnScreen: true,
-				title: title,
-				onlyAllowOne: true
+				onlyAllowOne: true,
+				showTitleBar: false
 			})) {
 			return false;
 		}
 		
-		// Legt den Fensterinhalt fest
-		this.content.innerHTML = "<h2>" + title + "</h2>" +
-			"<p>Das Datum kannst du auf einfache Weise mit Hilfe des Kalenders wählen. Wenn es sich um eine Probe " +
-			"oder sonst etwas Wichtiges handelt, kannst du das dazugehörige Feld markieren.</p>" +
-			"<form action=\"javascript:void(null);\"><table>" +
-			"	<tr>" +
-			"		<td class=\"inputCaption\">Datum:</td><td></td>" +
-			"	</tr><tr>" +
-			"		<td class=\"inputCaption\">Fach:</td>" +
-			"		<td class=\"subjectContainer\"></td>" +
-			"	</tr><tr>" +
-			"		<td class=\"inputCaption\">Aufgabe:</td>" +
-			"		<td><input name=\"text\" type=\"text\" class=\"taskInput\" /></td>" +
-			"	</tr><tr>" +
-			"		<td class=\"inputCaption\">Wichtig:</td>" +
-			"		<td><input name=\"important\" type=\"checkbox\" class=\"importantInput\" /></td>" +
-			"	</tr>" + 
-			"</table></form>" +
-			"<div class=\"buttonContainer\"></div>";
+		this.update("<h2>" + title + "</h2>");
 		
-		// Macht es möglich, dass man das Formular auch mit <em>Enter</em> absenden kann
-		/**
-		 * Das Formularelement.
-		 * @type ExtendedHTMLObject
-		 * @memberof TaskManagement.TaskWindowAbstract
-		 * @name form
-		*/
-		this.form = this.select("form")[0].observe("submit", this._prepareSubmit.bind(this));
-
-		/**
-		 * Das Eingabefeld.
-		 * @type ExtendedHTMLObject
-		 * @memberof TaskManagement.TaskWindowAbstract
-		 * @name taskInput
-		*/
-		this.taskInput = this.select(".taskInput").first().observe("keyup", this._handleInputChange.bind(this));
-		this.importantInput = this.select(".importantInput").first();
-		this.dateSelection = this.select("td")[1].insertControl(new Controls.Calendar({ allowWeekends: false, allowPast: false }));
+        this._form = this.content.insertControl(new Controls.Form({
+			submitButtonText: "Speichern",
+			submitButtonIcon: new Sprite("smallIcons", 6)
+        }));
+        
+		this._form.add(
+			new Controls.Form.Calendar({
+				caption: "Datum",
+				name: "date",
+				allowWeekends: false,
+				allowPast: false,
+				asTimestamp: true
+			}),
+			
+			new Controls.Form.Selection(TaskManagement.Subjects.pluck("long"), {
+				caption: "Fach",
+				name: "subject"
+			}),
+			
+			new Controls.Form.TextField({
+				caption: "Aufgabe",
+				name: "text",
+				type: "textarea"
+			}),
+			
+			new Controls.Form.Checkbox({
+				caption: "Wichtig",
+				name: "important"
+			})
+		);
 		
-		this.cancelButton = this.select(".buttonContainer")[0].insertControl(new Controls.Button("Abbrechen", 				  
-			this.close.bind(this), {
-				icon: new Sprite("smallIcons", 4)
-			}
-		));
-		
-		this.submitButton = this.select(".buttonContainer")[0].insertControl(new Controls.Button("<strong>Speichern</strong>",
-			this._prepareSubmit.bind(this), {
-				icon: new Sprite("smallIcons", 25),
-				iconDisabled: new Sprite("smallIcons", 26),
-				enabled: false
-			}
-		));
-		
-		this.registerChildControl(this.dateSelection, this.cancelButton, this.submitButton);
-		
-		this.on("remove", function() {
-			this.form.stopObserving();
-			this.taskInput.stopObserving();
-		}, this);
+        this._form.on("submit", this.submit, this);
+        this.registerChildControl(this._form);
 		
 		return true;
 	},
 	
 	/**
-	 * Wird aufgerufen, wenn der Benutzer eine Eingabe im Eingabefeld für den Aufgabentext getätigt hat und aktiviert
-	 * bzw. deaktiviert je nach dem, ob im Eingabefeld Text vorhanden ist, die Schaltfläche zum Speichern der Aufgabe.
-	 * @memberof TaskManagement.TaskWindowAbstract
-	*/
-	_handleInputChange: function() {
-		this.submitButton[(this.taskInput.getValue()) ? "enable" : "disable"]();
-	},
-
-	/**
-	 * Liest die Eingaben im Formular ein und gibt sie zurück. Diese Methode kann von den Subklassen überschrieben werden.
-	 * @return {Object} Die Formulareingaben. Beispiel für einen Rückgabewert: <pre class="code">
-{
-	date: 1181470470,
-	text: "Probe Buchhaltung",
-	important: true
-}
-	 * </pre>
-	 * @memberof TaskManagement.TaskWindowAbstract
-	*/	
-	getInput: function() {
-		var inputs = this.form.serialize(true);
-		
-		// Da die 'this.form.serialize(true)' die Auswahl des Kalenders nicht zurückgeben kann wird hier dem Rückgabewert
-		// noch der gewählte Zeitstempel hinzugefügt. Zusätzlich wird der Typ von 'important' noch in 'Boolean' geändert.
-		return Object.extend(inputs, {
-			important: inputs.important === "on",
-			date: this.dateSelection.selectedDate.getTimestamp()
-		});
-	},
-	
-	/**
-	 * Trifft verschiedene Vorbereitungen, um die Aufgabe abzuspeichern.<br /><br />Dabei werden einerseits die
-	 * Formulareingaben mit <a href="#getInput">getInput</a> eingelesen. Sollte der Benutzer keinen Aufgabentext
-	 * angegeben haben, wird er darauf hingewiesen. Ansonsten wird die Schaltfläche <em>Abspeichern</em> deaktiviert
-	 * (um mehrmaliges Versenden zu verhindert) und die von der Subklasse definierte Methode
-	 * <a href="#submit">submit</a> aufgerufen.
-	 * @private
-	 * @memberof TaskManagement.TaskWindowAbstract
-	*/
-	_prepareSubmit: function() {
-		var input = this.getInput();
-		
-		if (input.text) {
-			this.submitButton.disable();
-			this.submit(input);
-		} else {
-			alert("Bitte gib eine Aufgabe ein.");
-		}
-	},
-
-	/**
 	 * Diese Methode dient nur als Platzhalter und muss zwingend von einer Subklasse implementiert werden, da die Art
 	 * der Kommunikation mit dem Server davon abhängt, ob eine Aufgabe eingetragen oder bearbeitet wird.
 	 * @memberof TaskManagement.TaskWindowAbstract
-	*/	
-	submit: Prototype.emptyFunction
+	*/
+	submit: Prototype.emptyFunction,
+	
+	getInput: function() {
+		var input = this._form.getInput();
+		
+		input.text = input.text.stripScripts().stripTags().replace(/\r?\n/g, " ").strip();
+		input.subject = TaskManagement.Subjects.getItem("long", input.subject).id
+		
+		return input;
+	}
 });
 
 /**
@@ -815,13 +750,6 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
 			return;
 		}
 		
-		this._subjectSelection = this.select(".subjectContainer")[0].createChild({
-			tag: "select",
-			content: TaskManagement.Subjects.pluck("long").collect(function(subject) {
-				return "<option value=\"" + subject + "\">" + subject + "</option>";
-			}).join("")
-		});
-		
 		// Der Parameter 'true' bewirkt, dass das Fenster mit einer unmerklichen Verzögerung sichtbar gemacht wird, um
 		// einen Darstellungsfehler mit unbekannter Quelle zu vermeiden.
 		this.toggle(true);
@@ -838,43 +766,19 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
 	 * @memberof TaskManagement.TaskCreationWindow
 	*/
 	submit: function(input) {
+		var input = this.getInput();
+		
 		var request = new JSONRPC.Request("createtask", [input.subject, input.date, input.text, input.important], {
 			onSuccess: (function(response) {
 				this.fireEvent("created", new TaskManagement.Task(Object.extend(input, {
-					text: input.text.stripTags(),
+					text: input.text,
 					id: response.result,
 					userid: User.id,
 					added: Date.getCurrentTimestamp()
 				})));
 				
 				this.close();
-			}).bind(this),
-			
-			
-			onComplete: (function() {
-				this.submitButton.enable();
 			}).bind(this)
-		});
-	},
-
-	/**
-	 * Überschreibt die in <a href="TaskManagement.TaskWindowAbstract.htm">TaskManagement.TaskWindowAbstract</a> definierte, 
-	 * gleichnamige Methode. Der Grund dazu ist, dass diese Methode neben den anderen Eingabedaten noch das gewählte Fach
-	 * zurückgeben muss. Deshalb wird das gewählte Fach noch mit den Daten kombiniert, die die Methode der Basisklasse
-	 * bereitstellt. Beispiel für einen Rückgabewert:
-<pre class="code">
-{
-	subject: 3,
-	date: 1181470470,
-	text: "Probe Buchhaltung",
-	important: true
-}
-</pre>
-	 * @memberof TaskManagement.TaskCreationWindow
-	*/	
-	getInput: function($super) {
-		return Object.extend($super(), {
-			subject: TaskManagement.Subjects.getItem("long", this._subjectSelection.getValue()).id
 		});
 	}
 });
@@ -892,30 +796,17 @@ TaskManagement.TaskCreationWindow = Class.create(TaskManagement.TaskWindowAbstra
 TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstract, /** @scope TaskManagement.TaskEditingWindow.prototype */ {
 	/** @ignore */
 	initialize: function($super, task) {
-		/**
-		 * Die zu bearbeitende Aufgabe.
-		 * @type task
-		 * @name task
-		 * @memberof TaskManagement.TaskEditingWindow
-		*/		
 		this.task = task;
 		
 		if (!$super("Aufgabe bearbeiten")) {
 			return;
 		}
 		
-		this.submitButton.enable();
-		this.dateSelection.setSelectedDate(this.task.date);
-		this.select(".subjectContainer").first().innerHTML = "<em>" + this.task.subject["long"] + "</em>";
+		this._form.fields[0].setValue(this.task.date);
+		this._form.fields[1].disable().setValue(this.task.subject["long"]);
+		this._form.fields[2].setValue(this.task.text);
+		this._form.fields[3].setValue(this.task.important);
 		
-		(function() {
-			this.taskInput.value = this.task.text;
-		}).bind(this).defer(10);
-		
-		if (this.task.important) {
-			this.importantInput.checked = "checked";
-		}
-
 		// Der Parameter 'true' bewirkt, dass das Fenster mit einer unmerklichen Verzögerung sichtbar gemacht wird, um
 		// einen Darstellungsfehler mit unbekannter Quelle zu vermeiden.		
 		this.toggle(true);
@@ -944,10 +835,6 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
 		this.hide();
 		
 		var request = new JSONRPC.Request("edittask", [this.task.id, input.date, input.text, input.important], {
-			onComplete: function() {
-				self.submitButton.enable();
-			},
-			
 			onFailure: function(response) {
 				self.task.date = oldDate;
 				self.task.text = oldText;
@@ -960,7 +847,7 @@ TaskManagement.TaskEditingWindow = Class.create(TaskManagement.TaskWindowAbstrac
 			},
 			
 			onSuccess: this.close.bind(this)
-		});		
+		});
 	}
 });
 

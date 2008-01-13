@@ -360,24 +360,33 @@ ul {
 }
 
 .form .field {
-	margin: 5px 0px;
+	padding: 4px 0px;
 	position: relative;
+	clear: both;
 }
 
 .form .field .invalidIcon {
 	position: absolute;
 	right: -5px;
-	top: 3px;
+	top: 6px;
 	height: 13px;
 	width: 4px;
 }
 
 .form .field .input {
 	position: relative;
+	float: left;
 }
 
 .form .field input {
 	width: 140px;
+}
+
+.form .field input.checkbox {
+	width: auto;
+	border: 0;
+	margin: 0;
+	padding: 0;
 }
 
 .form .field textarea {
@@ -395,11 +404,14 @@ ul {
 }
 
 .form .buttons {
+	clear: both;
+	padding-top: 4px;
 	margin-left: 120px;
 }
 
 .form .buttons .standardButton {
 	display: inline;
+	margin-right: 2px;
 }
 
 .form .clearFloating {
@@ -565,6 +577,7 @@ ul {
 	text-align: center;
 	border: 1px solid #5690AA;
 	width: 126px;
+	font-size: 11px;
 }
 
 .calendar .header {
@@ -578,7 +591,6 @@ ul {
 	width: 18px;
 	height: 16px;
 	text-align: center;
-	font-size: 11px !important;
 }
 
 .calendar .selectableDay {
@@ -803,50 +815,17 @@ ul {
 
 /* Das Fenster zum Eintragen bzw. Bearbeiten einer Aufgabe */
 .createEditTaskWindow {
-	width: 580px;
-	height: 340px;
+	width: 400px;
+	height: 300px;
 }
 
-.createEditTaskWindow h2 {
-	margin: 10px 0 !important;
+.createEditTaskWindow .form {
+	width: 350px;
 }
 
-.createEditTaskWindow form {
-	margin: 25px 0;
-}
-
-.createEditTaskWindow form > table {
-	margin: auto;
-	width: 450px;
-}
-
-.createEditTaskWindow form > td {
-	margin: 2px;
-}
-
-.createEditTaskWindow form .importantInput {
-	border: 0;
-	margin: 0;
-	padding: 0;
-}
-
-.createEditTaskWindow form .inputCaption {
-	padding-right: 4px;
-	text-align: right;
-	width: 150px;
-}
-
-.createEditTaskWindow .taskInput,
-.createEditTaskWindow select {
-	width: 241px;
-}
-
-.createEditTaskWindow .buttonContainer {
-	text-align: center;
-}
-
-.createEditTaskWindow .buttonContainer .button {
-	margin: 0px 2px;
+.createEditTaskWindow .form select,
+.createEditTaskWindow .form textarea {
+	width: 220px;
 }
 
 /* Das Fenster, in dem die Kommentare zu einer Aufgabe angezeigt werden */

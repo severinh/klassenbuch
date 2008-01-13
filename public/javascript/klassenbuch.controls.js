@@ -940,7 +940,6 @@ Controls.Form = Class.create(Control, {
 		$super(new Element("form", { className: "form", action: "javascript:void(null)" }));
 		
 		this._fieldsContainer = this.element.createChild();
-		
 		this._buttonContainer = this.element.createChild({ className: "buttons" });
 		this.element.createChild({ className: "clearFloating" });
 		
@@ -948,11 +947,17 @@ Controls.Form = Class.create(Control, {
 			icon: this.options.submitButtonIcon
 		}));
 		
-		this.element.observe("keypress", (function(event) {
+		var keyHandler = (function(event) {
 			if (event.keyCode === Event.KEY_RETURN) {
 				this._onSubmit();
 			}
-		}).bindAsEventListener(this));
+		}).bindAsEventListener(this);
+		
+		this.element.observe("keypress", keyHandler);
+		
+		this.on("remove", function() {
+			this.element.stopObserving("keypress", keyHandler);
+		});
 	},
 	
 	add: function() {
@@ -966,7 +971,9 @@ Controls.Form = Class.create(Control, {
 	},
 	
 	isValid: function() {
-		return !this.fields.findAll(function(field) { return !field.validate(); }, this).length;
+		return !this.fields.findAll(function(field) {
+			return !field.validate(); 
+		}, this).length;
 	},
 	
 	getInput: function() {
@@ -981,6 +988,16 @@ Controls.Form = Class.create(Control, {
 	
 	reset: function() {
 		this.fields.invoke("reset");
+	},
+	
+	disable: function() {
+		this.fields.invoke("disable");
+		this.buttons[0].disable();
+	},
+	
+	enable: function() {
+		this.fields.invoke("enable");
+		this.buttons[0].enable();
 	},
 	
 	addButton: function(button) {
@@ -1022,21 +1039,24 @@ Controls.Form.Field = Class.create(Control, {
 		
 		$super(new Element("div", { className: "field" }));
 		
-		this._captionElement = this.element.createChild({ tag: "label" });
-		this._captionElement.innerHTML = this.options.caption + ":";
+		this._captionElement = this.element.createChild({
+			tag: "label",
+			content: this.options.caption + ":"
+		});
+		
 		this.element.insert(this.fieldElement.addClassName("input"));
 	},
 	
-	markAsInvalid: function(m) {
-		m = m || "Der eingegebene Wert ist ungültig.";
+	markAsInvalid: function(message) {
+		message = message || "Der eingegebene Wert ist ungültig.";
 		
 		if (!this._invalidIcon) {
 			this.element.insert(new Sprite("smallIcons", 20).toHTML("invalidIcon"));
 			this._invalidIcon = this.select(".sprite").last().hide();
 		}
 		
-		this._invalidIcon.writeAttribute("title", m).show();
-		this.fireEvent("invalid", m);
+		this._invalidIcon.writeAttribute("title", message).show();
+		this.fireEvent("invalid", message);
 	},
 	
 	markAsValid: function() {
@@ -1079,6 +1099,16 @@ Controls.Form.Field = Class.create(Control, {
 		this.setValue(this.options.defaultValue);
 		this.markAsValid();
 		this.fireEvent("reset", this.options.defaultValue);
+	},
+	
+	disable: function() {
+		this.fieldElement.disable();
+		return this;
+	},
+	
+	enable: function() {
+		this.fieldElement.enable();
+		return this;
 	}
 });
 
@@ -1127,6 +1157,77 @@ Controls.Form.TextField = Class.create(Controls.Form.Field, {
 		return this.fieldElement.getValue();
 	}
 })
+
+Controls.Form.Selection = Class.create(Controls.Form.Field, {
+	initialize: function($super, items, options) {
+		options = Object.extend({
+			disabled: false
+		}, options);
+		
+		$super(new Element("select", { disabled: options.disabled }), options);
+		
+		this.fieldElement.innerHTML = items.collect(function(item) {
+			return "<option value=\"" + item + "\">" + item + "</option>";
+		}).join("");
+	},
+	
+	setValue: function($super, value) {
+		this.fieldElement.value = value;
+		$super(value);
+	},
+	
+	getValue: function() {
+		return this.fieldElement.getValue();
+	}
+});
+
+Controls.Form.Calendar = Class.create(Controls.Form.Field, {
+	initialize: function($super, options) {
+		options = Object.extend({
+			asTimestamp: false
+		}, options);
+		
+		this.calendar = new Controls.Calendar(options);
+		
+		$super(this.calendar.element, options);
+	},
+	
+	setValue: function($super, date) {
+		this.calendar.setSelectedDate(date);
+		$super((this.options.asTimestamp) ? date.getTimestamp() : date);
+	},
+	
+	getValue: function() {
+		var date = this.calendar.selectedDate;
+		
+		return (this.options.asTimestamp) ? date.getTimestamp() : date;
+	},
+	
+	disable: Prototype.emptyFunction
+});
+
+Controls.Form.Checkbox = Class.create(Controls.Form.Field, {
+	initialize: function($super, options) {
+		options = Object.extend({
+			checked: false
+		}, options);
+		
+		$super(new Element("input", {
+			className: "checkbox",
+			type: "checkbox",
+			checked: options.checked
+		}), options);
+	},
+	
+	setValue: function($super, value) {
+		this.fieldElement.checked = (value) ? "checked" : "";
+		$super(value);
+	},
+	
+	getValue: function() {
+		return this.fieldElement.checked;
+	}
+});
 
 var DragAble = Class.create({
 	initialize: function(target, source) {
