@@ -4,7 +4,7 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 -- Table structure for table `comments`
 --
 
-CREATE TABLE `comments` (
+CREATE TABLE `kb_comments` (
   `id` smallint(6) NOT NULL auto_increment,
   `taskid` smallint(6) NOT NULL default '0',
   `userid` smallint(6) NOT NULL default '0',
