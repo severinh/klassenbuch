@@ -46,6 +46,7 @@ var TaskManagement = new (Class.create(JSONRPC.Store, {
 			User.on("signOut", function() {
 				this.each(function(task) {
 					task.newComments = false;
+					task.done = false;
 				});
 				
 				this.fireEvent("updated");
@@ -239,10 +240,10 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		 * @memberof TaskManagement.View
 		 * @name _taskTable
 		*/
-		this._taskTable = this.content.insertControl(new Controls.Table({ keepHighlightedOnUpdate: "id" }));
+		var taskTable = this.content.insertControl(new Controls.Table({ keepHighlightedOnUpdate: "id" }));
 		
 		// Definiert die Tabellenspalten
-		this._taskTable.addColumn("Datum", function(task) {
+		taskTable.addColumn("Datum", function(task) {
 				return task.date.getTimestamp();
 			}, {
 				width: "120px",
@@ -265,9 +266,29 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 			}
 		);
 		
+		taskTable.addColumn("D", function(task) {
+				return (task.done) ? "a" : "b";
+			}, {
+				width: "4px",
+				sortable: true,
+				showSortedInGroups: "outlookStyle",
+				icon: null,
+				centerColumnText: true,
+				restricted: true,
+				
+				processCellContent: function(a) {
+					return  "<input type=\"checkbox\"" + (a === "a" ? " checked=\"checked\"" : "") + " />";
+				},
+				
+				processGroupCaption: function(a) {
+					return a === "a" ? "Erledigt" : "Noch zu erledigen";
+				}
+			}
+		);
+		
 		var importantIcon = new Sprite("smallIcons", 20).toHTML("importantIcon");
 		
-		this._taskTable.addColumn("Wichtig",	function(task) {
+		taskTable.addColumn("Wichtig", function(task) {
 				return (task.important) ? "a" : "b";
 			}, {
 				width: "4px",
@@ -286,7 +307,21 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 			}
 		);
 		
-		this._taskTable.addColumn("Fach", function(task) {
+		var formatText = function(a, task) {
+			var classNames = [];
+			
+			if (task.removed) {
+				classNames.push("removedTask");
+			}
+			
+			if (task.done && taskTable.sortAfterColumn !== 1) {
+				classNames.push("completedTask");
+			}
+			
+			return (classNames.length) ? "<span class=\"" + classNames.join(" ") + "\">" + a + "</span>" : a;
+		};
+		
+		taskTable.addColumn("Fach", function(task) {
 				return task.subject["long"];
 			}, {
 				width: "120px",
@@ -296,23 +331,23 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 				
 				processCellContent: function(a, task) {
 					a = task.subject["short"];
-					return (task.removed) ? "<span class=\"removedTask\">" + a + "</span>" : a;
+					return formatText(a, task);
 				}
 			}
 		);
 		
-		this._taskTable.addColumn("Aufgabe", "text", {
+		taskTable.addColumn("Aufgabe", "text", {
 				width: "450px",
 				sortable: true,
 				allowReversedSorting: true,
 				
 				processCellContent: function(a, task) {
-					return (task.removed) ? "<span class=\"removedTask\">" + a + " (gelöscht)</span>" : a;
+					return formatText(a + (task.removed ? " (gelöscht)" : ""), task);
 				}
 			}
 		);
 		
-		this._taskTable.addColumn("Kommentare", function(task) {
+		taskTable.addColumn("Kommentare", function(task) {
 				return task.comments.count() + ((task.newComments) ? " (neu)" : "");
 			}, {
 				width: "40px",
@@ -336,12 +371,12 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 				
 				processCellContent: function(a, task) {
 					a = a.replace(" (neu)", "<img class=\"newComments\" src=\"design/default/images/newComments.gif\" />");
-					return (task.removed) ? "<span class=\"removedTask\">" + a + "</span>" : a;
+					return formatText(a, task);
 				}
 			}
 		);
 		
-		this._taskTable.addColumn("Aktionen", (function(task) {
+		taskTable.addColumn("Aktionen", (function(task) {
 				/**
 				 * Der HTML-Text für die Aktionssymbole, die angezeigt werden, wenn das Seitenmenü ausgeblendet ist.
 				 * Wird aus Performancegründen gecached, da in der Spalte "Aktionen" alle Zellen den gleichen Inhalt haben.
@@ -368,15 +403,15 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		
 		// Verbindet gewisse Methoden mit Ereignissen der Tabelle (z. B. wenn der Benutzer die Tabelle sortiert oder 
 		// eine Aufgabe markiert
-        this._taskTable.on("sort", this._onSort, this);
-		this._taskTable.on("highlightRow", this._onHighlightTask, this);
+        taskTable.on("sort", this._onSort, this);
+		taskTable.on("highlightRow", this._onHighlightTask, this);
 		
-		this._taskTable.on("refresh", function() {
+		taskTable.on("refresh", function() {
 			this._getContent5Cache = "";
 		}, this);
 		
 		// Wird auf eine Aufgabe doppelt geklickt, wird das Kommentarfenster zu dieser Aufgabe geöffnet.
-		this._taskTable.on("selectRow", function(task) {
+		taskTable.on("selectRow", function(task) {
 			if (User.signedIn) {
 				this.reportNavigation(task.id + "/kommentare");
 			} else {
@@ -384,10 +419,16 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 			}
 		}, this);
 		
-		this._taskTable.element.observe("click", (function(event) {
-			if (!this._sideMenu.visible()) {
-				var element = event.element();
+		taskTable.element.observe("click", (function(event) {
+			var element = event.element();
+			
+			if (element.type === "checkbox") {
+				var taskId = element.up(1).readAttribute("name");
 				
+				if (taskId) {
+					TaskManagement.get(taskId).setCompletionState(element.checked);
+				}
+			} else if (!this._sideMenu.visible()) {
 				if (element.hasClassName("actionIcon")) {
 					var taskId = $(element.parentNode).readAttribute("name");
 					
@@ -405,7 +446,9 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		}).bindAsEventListener(this));
 		
 		// Zeichnet die Tabelle
-		this._taskTable.refresh();
+		taskTable.refresh();
+		
+		this._taskTable = taskTable;
 	},
 	
 	/**
@@ -496,7 +539,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 			}
 			
 			this._taskInfoBox.hide();
-			this._taskTable.columns[5].show();
+			this._taskTable.columns[6].show();
 			
 			// Aufgaben können in diesem Modus nicht per Klick angewählt werden.
 			this._taskTable.options.enableRowHighlighting = false;
@@ -506,7 +549,7 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 		this._sideMenu.on("show", function() {
 			this._newTaskButton.hide();
 			this._taskInfoBox.show();
-			this._taskTable.columns[5].hide();
+			this._taskTable.columns[6].hide();
 			this._taskTable.options.enableRowHighlighting = true;
 			this._taskTable.refresh();
 		}, this);
@@ -677,14 +720,14 @@ TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope Tas
 			})) {
 			return false;
 		}
-		
+
 		this.update("<h2>" + title + "</h2>");
-		
-        this._form = this.content.insertControl(new Controls.Form({
+
+		this._form = this.content.insertControl(new Controls.Form({
 			submitButtonText: "Speichern",
 			submitButtonIcon: new Sprite("smallIcons", 6)
-        }));
-        
+		}));
+
 		this._form.add(
 			new Controls.Form.Calendar({
 				caption: "Datum",
@@ -710,9 +753,9 @@ TaskManagement.TaskWindowAbstract = Class.create(Controls.Window, /** @scope Tas
 				name: "important"
 			})
 		);
-		
-        this._form.on("submit", this.submit, this);
-        this.registerChildControl(this._form);
+
+		this._form.on("submit", this.submit, this);
+		this.registerChildControl(this._form);
 		
 		return true;
 	},
@@ -954,6 +997,8 @@ TaskManagement.Task = Class.create(/** @scope TaskManagement.Task.prototype */ {
 		 * @name removed
 		*/
 		this.removed = task.removed || false;
+		
+		this.done = task.done || false;
 	},
 
 	/**
@@ -1005,7 +1050,25 @@ TaskManagement.Task = Class.create(/** @scope TaskManagement.Task.prototype */ {
 				this.fireEvent("change");
 			}).bind(this)
 		});
-	}
+	},
+	
+	setCompletionState: function(done) {
+		var oldValue = this.done;
+		
+		this.done = done;
+		this.fireEvent("change");
+		
+		var request = new JSONRPC.Request("settaskcompletion", [this.id, done], {
+			onFailure: (function(response) {
+				this.done = oldValue;
+				this.fireEvent("change");
+			}).bind(this)
+		});
+	},
+	
+	markAsDone: function() {
+		this.setCompletionState(true);
+	},
 }).addMethods(Observable).addMethods(App.History.Node);
 
 // Bewirkt, dass beim Initialisieren des Klassenbuchs die Aufgabenansicht als Menüpunkt dem Klassenbuch hinzugefügt wird

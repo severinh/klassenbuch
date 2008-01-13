@@ -45,8 +45,11 @@ class TableTasks extends Table {
 	/** @public int added */
 	public $added = null;
 	
-	/** @public int string */
+	/** @public string commentsreadby */
 	public $commentsreadby = null;
+	
+	/** @public string doneby */
+	public $doneby = null;
 	
 	/** @public bool removed */
 	public $removed = null;
@@ -59,6 +62,7 @@ class TableTasks extends Table {
 		"userid" 		 => "int",
 		"added"			 => "double",
 		"commentsreadby" => "string",
+		"doneby"         => "string",
 		"removed"		 => "bool"
 	);
 	

@@ -1,10 +1,10 @@
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 
--- 
+--
 -- Table structure for table `comments`
--- 
+--
 
-CREATE TABLE `kb_comments` (
+CREATE TABLE `comments` (
   `id` smallint(6) NOT NULL auto_increment,
   `taskid` smallint(6) NOT NULL default '0',
   `userid` smallint(6) NOT NULL default '0',
@@ -15,9 +15,9 @@ CREATE TABLE `kb_comments` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `files`
--- 
+--
 
 CREATE TABLE `kb_files` (
   `id` smallint(6) NOT NULL auto_increment,
@@ -32,9 +32,9 @@ CREATE TABLE `kb_files` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `gallery_albums`
--- 
+--
 
 CREATE TABLE `kb_gallery_albums` (
   `id` int(11) NOT NULL auto_increment,
@@ -46,9 +46,9 @@ CREATE TABLE `kb_gallery_albums` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `gallery_pictures`
--- 
+--
 
 CREATE TABLE `kb_gallery_pictures` (
   `id` int(11) NOT NULL auto_increment,
@@ -58,13 +58,13 @@ CREATE TABLE `kb_gallery_pictures` (
   `submitted` double NOT NULL default '0',
   `taken` double default NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `messages`
--- 
+--
 
 CREATE TABLE `kb_messages` (
   `id` int(10) unsigned NOT NULL auto_increment,
@@ -77,9 +77,9 @@ CREATE TABLE `kb_messages` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `subjects`
--- 
+--
 
 CREATE TABLE `kb_subjects` (
   `id` int(10) unsigned NOT NULL auto_increment,
@@ -90,9 +90,9 @@ CREATE TABLE `kb_subjects` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `tasks`
--- 
+--
 
 CREATE TABLE `kb_tasks` (
   `id` int(5) unsigned NOT NULL auto_increment,
@@ -103,15 +103,16 @@ CREATE TABLE `kb_tasks` (
   `userid` int(5) NOT NULL default '0',
   `added` double NOT NULL default '0',
   `commentsreadby` text collate utf8_unicode_ci,
+  `doneby` text collate utf8_unicode_ci,
   `removed` tinyint(1) default NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `users`
--- 
+--
 
 CREATE TABLE `kb_users` (
   `id` int(5) NOT NULL auto_increment,

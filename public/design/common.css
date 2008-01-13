@@ -809,6 +809,10 @@ ul {
 	color: #777;
 }
 
+.tasksView .completedTask {
+	text-decoration: line-through;
+}
+
 .table .normalCellHighlighted .removedTask {
 	color: #FFF !important;
 }

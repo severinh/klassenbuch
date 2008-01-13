@@ -24,7 +24,9 @@ function gettasks($start = null, $end = null) {
 	}
 
 	$database->setQuery("SELECT t.*, COUNT(c.userid) AS comments" .
-		($user->authenticated() ? ", FIND_IN_SET(" . $database->quote($user->id) . ", t.commentsreadby) AS commentsread " : " ") .
+		($user->authenticated() ? ", FIND_IN_SET(" . $database->quote($user->id) .
+		", t.commentsreadby) AS commentsread, FIND_IN_SET(" . $database->quote($user->id) .
+		", t.doneby) AS done " : " ") .
 		"FROM #__tasks AS t LEFT JOIN #__comments AS c ON t.id = c.taskid " .
 		"WHERE t.date >= " . $database->quote($start) . $cond . " GROUP BY t.id ORDER BY t.date");
 
@@ -48,6 +50,7 @@ function gettasks($start = null, $end = null) {
 			"removed"     => (bool)   $task["removed"],
 			"comments"	  => (int)    $task["comments"],
 			"newcomments" => ($user->authenticated() && (int) $task["comments"] && !(bool) $task["commentsread"] ? true : false),
+			"done"        => ($user->authenticated() && (bool) $task["done"] ? true : false),
 		);
 	}
 
@@ -119,6 +122,37 @@ function edittask($id, $date, $text, $important = false) {
 	}
 	
 	if (!$task->save(Array("date" => $date, "text" => $text, "important" => $important))) {
+		return new JSONRPCErrorResponse("SERVER_ERROR", $task->getError());
+	}
+	
+	return true;
+}
+
+function settaskcompletion($id, $done) {
+	$user = Core::getUser();
+	
+	if (!$user->authenticated()) {
+		return new JSONRPCErrorResponse("AUTHENTICATION_FAILED");
+	}
+	
+	$task = Table::getInstance("tasks");
+	
+	if (!$task->load($id)) {
+		return new JSONRPCErrorResponse("INCORRECT_PARAMS", $task->getError());
+	}
+	
+	$doneBy = explode(",", $task->doneby);
+	$changed = false;
+	
+	if ($done && !in_array($user->id, $doneBy)) {
+		array_push($doneBy, $user->id);
+		$changed = true;
+	} else if (!$done && in_array($user->id, $doneBy)) {
+		$doneBy = array_slice($doneBy, array_search($user->id, $doneBy) + 1, 1);
+		$changed = true;
+	}
+	
+	if (!$task->save(Array("doneby" => implode(",", $doneBy)))) {
 		return new JSONRPCErrorResponse("SERVER_ERROR", $task->getError());
 	}
 	
@@ -1069,6 +1103,12 @@ $dispatchMap = Array(
         "signature" => Array(Array("boolean", "int", "int", "string"), Array("boolean", "int", "int", "string", "boolean")),
         "docstring" => "Bearbeitet eine bestehende Aufgabe. Dabei kann nur das Datum, der Aufgabetext und die " .
 					   "Wichtigkeit verändert werden."
+    ),
+	
+    "settaskcompletion" => Array(
+        "function"  => "settaskcompletion",
+        "signature" => Array(Array("boolean", "int", "boolean")),
+        "docstring" => ""
     ),
 	
     "getsubjects" => Array(

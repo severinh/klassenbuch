@@ -1463,7 +1463,7 @@ Controls.Table = Class.create(Control, {
 	},
 	
 	addColumn: function(caption, getContent, options) {
-		this.columns.push(new Controls.Table.Column(caption, getContent, options));
+		this.columns.push(new Controls.Table.Column(caption, getContent, options).connectTo(this));
 	},
 	
 	addRows: function(rows) {
@@ -1723,15 +1723,28 @@ Controls.Table.Column = Class.create({
 		this.sortType = this.sortType || "normal";
 		this.visible = (Object.isDefined(this.visible)) ? this.visible : true;
 		this.standardSortDirection = this.standardSortDirection || "ascending";
+		
+		if (options.restricted)	{
+			User.on("signIn", this.show, this);
+			User.on("signOut", this.hide, this);
+			
+			this.visible = User.signedIn;
+		}
 	},
 	
-	// Nicht sauber gelöst
 	show: function() {
 		this.visible = true;
+		this._table.refresh();
 	},
 	
 	hide: function() {
 		this.visible = false;
+		this._table.refresh();
+	},
+	
+	connectTo: function(table) {
+		this._table = table;
+		return this;
 	}
 });
 

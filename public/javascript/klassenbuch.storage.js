@@ -325,7 +325,7 @@ Storage.View = Class.create(Controls.View, {
 					}, {
 						width: "85px",
 						sortable: false,
-						visible: User.signedIn
+						restricted: true
 					}
 				);
 				
@@ -379,16 +379,6 @@ Storage.View = Class.create(Controls.View, {
 				this.registerChildControl(this.filesTable, this.filterChooser, this.uploadButton);
 				
 				this._onExternalEvent(Storage, "updated", this.update, this);
-				
-				this._onExternalEvent(User, "signIn", function() {
-					this.filesTable.columns.last().show();
-					this.update();
-				}, this);
-				
-				this._onExternalEvent(User,	"signOut", function() {
-					this.filesTable.columns.last().hide();
-					this.update();
-				}, this);
 				
 				this.update();
 				this.initialized = true;
