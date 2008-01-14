@@ -237,7 +237,7 @@ Shoutbox.View = Class.create(Controls.View, {
 					nickname = Contacts.get(message.userid).nickname,
 					sameUser = self.lastMessage && self.lastMessage.userid == message.userid,
 					clonedDate = message.date.removeTime(true),
-					newDate = !self.lastDate || !clonedDate.equals(self.lastDate.removeTime(true))
+					newDate = !self.lastDate || !clonedDate.equals(self.lastDate.removeTime(true)),
 					html = "",
 					hours = message.date.getHours(),
 					minutes = (message.date.getMinutes() / 5).floor() * 5,
