@@ -134,14 +134,6 @@ function generateRandomString($size = 32) {
     return $rand_str;
 }
 
-function smartStripSlashes($str) {
-	if (get_magic_quotes_gpc()){
-		return stripslashes($str);
-	} else {
-		return $str;
-	}
-}
-
 function localizedDate($format, $timestamp) {
 	$result = date($format, $timestamp);
 	
