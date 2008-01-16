@@ -633,12 +633,11 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 	 * @memberof TaskManagement.View
 	*/
 	removeTask: function(task) {
-		var task = task || this._taskTable.getHighlightedRow();
+		task = task || this._taskTable.getHighlightedRow();
 		
 		if (task.removed) {
             alert("Diese Aufgabe wurde bereits gelöscht."); // Es bringt nichts, eine Aufgabe zweimal zu löschen ;-)
-		} else if (confirm("Möchtest du die " + task.subject["short"] + "-Aufgabe \"" + task.text + "\" wirklich löschen?")
-			&& confirm("Bist du wirklich ganz sicher?")) {
+		} else if (confirm("Möchtest du die " + task.subject["short"] + "-Aufgabe \"" + task.text + "\" wirklich löschen?")) {
 			task.remove();
 		}
 	},
