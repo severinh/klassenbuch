@@ -110,7 +110,7 @@ Object.extend(Object, {
     try {
       if (Object.isUndefined(object)) return 'undefined';
       if (object === null) return 'null';
-      return object.inspect ? object.inspect() : object.toString();
+      return object.inspect ? object.inspect() : String(object);
     } catch (e) {
       if (e instanceof RangeError) return '...';
       throw e;
@@ -578,7 +578,7 @@ var Template = Class.create({
       }
 
       return before + String.interpret(ctx);
-    }.bind(this));
+    });
   }
 });
 Template.Pattern = /(^|.|\r|\n)(#\{(.*?)\})/;
@@ -1674,7 +1674,7 @@ Element.Methods = {
   },
 
   descendants: function(element) {
-    return $(element).getElementsBySelector("*");
+    return $(element).select("*");
   },
 
   firstDescendant: function(element) {
@@ -3278,7 +3278,7 @@ Object.extend(Selector, {
   },
 
   matchElements: function(elements, expression) {
-    var matches = new Selector(expression).findElements(), h = Selector.handlers;
+    var matches = $$(expression), h = Selector.handlers;
     h.mark(matches);
     for (var i = 0, results = [], element; element = elements[i]; i++)
       if (element._counted) results.push(element);
