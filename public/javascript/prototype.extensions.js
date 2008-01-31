@@ -1050,11 +1050,11 @@ var Observable = {
 
 			// Iterate through the event handlers until one of them returns "false"
 			return !this._events[eventName].any(function(handler) {
-				// try {
+				try {
 					if (handler.apply(this, args) === false) {
 						return true;
 					}
-				/* } catch (e) {
+				} catch (e) {
 					// Oouch.
 					alert("Fehler in " + (this.id || "[unbekanntes Objekt]") + ".fireEvent():\n\n" +
 						"Ereignis: " + eventName + "\n" +
@@ -1062,7 +1062,7 @@ var Observable = {
 						"Fehlermeldung: " + e.message + "\n" +
 						"Datei: " + e.fileName + "\n" +
 						"Zeile: " + e.lineNumber);
-				} */
+				}
 			}, this);
 		}
 

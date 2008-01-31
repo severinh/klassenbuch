@@ -51,8 +51,8 @@ var Control = Class.create(/** @scope Control.Prototype */ {
 	},
 	
 	/**
-	 * @method Utility function that add additional options to the <em>options</em> property. Default options can be
-	 * passed to the method along with actal options, which will overwrite existing default values.
+	 * @method Utility function that adds additional options to the <em>options</em> property. Default options can be
+	 * passed to the method along with actual options, which will overwrite existing default values.
 	 * @param {Object|null} standardValues The default values to use.
 	 * @param {Object|null} options The actual options.
 	*/
