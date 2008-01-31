@@ -121,69 +121,13 @@ Storage.File = Class.create(/** @scope Storage.File */ {
     },
 	
 	update: function(file) {
-		/**
-		 * Die einzigartige ID der Datei.
-		 * @type Integer
-		 * @memberof Storage.File
-		 * @name id
-		*/
 		this.id = file.id;
-		
-   		/**
-		 * Wann die Datei hochgeladen wurde.
-		 * @type Date
-		 * @memberof Storage.File
-		 * @name uploaded
-		*/
 		this.uploaded = new Date(file.uploaded * 1000);
-		
-   		/**
-		 * Die Grösse der Datei in Bytes.
-		 * @type Integer
-		 * @memberof Storage.File
-		 * @name size
-		*/
 		this.size = file.size;
-		
-   		/**
-		 * Der Name der Datei
-		 * @type String
-		 * @memberof Storage.File
-		 * @name name
-		*/
 		this.name = file.name;
-		
-   		/**
-		 * Die ID des Benutzers, von dem die Datei hochgeladen wurde.
-		 * @type Integer
-		 * @memberof Storage.File
-		 * @name userid
-		*/
 		this.userid = file.userid;
-		
-   		/**
-		 * Die Beschreibung der Datei. Standardwert ist <em>""</em>.
-		 * @type String
-		 * @memberof Storage.File
-		 * @name description
-		*/
 		this.description = file.description || "";
-		
-   		/**
-		 * Gibt an, ob die Datei bereits zu den archivierten Dateien zählt, sei dies nun, weil sie manuell archiviert
-		 * wurde, oder seit dem Hochladen 30 Tage verstrichen sind. Standardwert ist <em>false</em>.
-		 * @type Boolean
-		 * @memberof Storage.File
-		 * @name archived
-		*/
 		this.archived = file.archived || false;
-		
-   		/**
-		 * Die Dateiendung, die aus dem Dateinamen extrahiert wird.
-		 * @type String
-		 * @memberof Storage.File
-		 * @name type
-		*/
         this.type = this.name.split(".").last().toLowerCase();
     },
 	
@@ -192,7 +136,6 @@ Storage.File = Class.create(/** @scope Storage.File */ {
      * Eigenschaft <a href="#type">type</a> und überprüft, ob in der Liste der Dateitypbeschreibungen in
      * <a href="Storage.htm#fileTypes">Storage.fileTypes</a> diese Dateiendung enthalten ist.
      * @returns {String} Die Beschreibung des Dateityps dieser Datei.
-     * @memberof Storage.File
     */
     getTypeDescription: function() {
         var fileType = Storage.fileTypes[this.type];
@@ -206,7 +149,6 @@ Storage.File = Class.create(/** @scope Storage.File */ {
 
     /**
      * Lädt die Datei herunter. Dabei wird sichergestellt, dass die Datei in einem neuen Fenster geöffnet wird.
-     * @memberof Storage.File
     */
     download: function() {
 		window.open("files/" + this.name, "_blank", "");
@@ -466,7 +408,7 @@ Storage.UploadWindow = Class.create(Controls.Window, /** @scope Storage.UploadWi
         this.on("beforeremove", function() {
 			if (this.uploadInProgress && !confirm("Die Datei wird noch hochgeladen. Möchtest du den Vorgang wirklich abbrechen?")) {
 				// Bestätigt er die Abfrage, wird der Upload abgebrochen
-				this._flashUpload.cancelQueue();
+				this._flashUpload.stopUpload();
 				return false;
 			}
         }, this);
