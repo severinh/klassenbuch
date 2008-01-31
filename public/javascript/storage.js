@@ -78,9 +78,9 @@ var Storage = new (Class.create(JSONRPC.Store, {
 	},
 	
 	mediaGroups: {
-		pictures: ["jpg", "gif", "bmp", "png"],
-		documents: ["doc", "docx", "xls", "xlsx", "pdf", "txt"],
-		archives: ["rar", "zip"]
+		pictures:  $w("jpg gif bmp png"),
+		documents: $w("doc docx xls xlsx pdf txt"),
+		archives:  $w("rar zip")
     },
     
     fileSizeRanges: [
