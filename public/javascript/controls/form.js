@@ -45,10 +45,6 @@ Controls.Form = Class.create(Control, {
 		}).bindAsEventListener(this);
 		
 		this.element.observe("keypress", keyHandler);
-		
-		this.on("remove", function() {
-			this.element.stopObserving("keypress", keyHandler);
-		});
 	},
 	
 	add: function() {

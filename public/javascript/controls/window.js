@@ -121,7 +121,7 @@ Controls.Window.Overlay = function() {
 				});
 				
 				App.Windows.on("add", function(window) {
-					$w("show hide remove").each(function(event) {
+					$w("show hide afterremove").each(function(event) {
 						window.on(event, self.update, self);
 					});
 				});
