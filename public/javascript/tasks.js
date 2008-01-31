@@ -34,12 +34,12 @@ var TaskManagement = new (Class.create(JSONRPC.Store, {
 		App.on("initialize", function() {
 			this.Subjects = new JSONRPC.Store({
 				method: "getsubjects",
-				inlineData: DirectData.get("subjects").result,
+				inlineData: App.DirectData.get("subjects"),
 				itemClass: TaskManagement.Subject
 			});
 		
 			this.options.itemClass = TaskManagement.Task;
-			this.loadData(DirectData.get("tasks").result);
+			this.loadData(App.DirectData.get("tasks"));
 			
 			User.on("signIn", this.load, this);
 			
@@ -166,6 +166,8 @@ TaskManagement.View = Class.create(Controls.View, /** @scope TaskManagement.View
 			// Prüft, ob es sich um eine gültige Aufgaben-ID handelt
 			function(nodeName) {
 				return !!TaskManagement.get(parseInt(nodeName));
+			}, {
+				restrictedAccess: true
 			}
 		);
 		

@@ -66,14 +66,14 @@ if (!$settings->get("online")) {
 		
 		$userData = doInternalRequest("getuserdata");
 		$albums   = doInternalRequest("gallery_getalbums");
-		$tasks 	  = doInternalRequest("gettasks", Array(mktime(0, 0, 0) - 2592000));
+		$tasks    = doInternalRequest("gettasks", Array(mktime(0, 0, 0) - 2592000));
 		$subjects = doInternalRequest("getsubjects");
 		$contacts = doInternalRequest("getcontacts");
-		$files 	  = doInternalRequest("getfiles");
+		$files    = doInternalRequest("getfiles");
 		$albums   = doInternalRequest("gallery_getalbums");
 		
 		if ($userData->val) {
-			$directData[] = "userdata: " . $userData->payload;
+			$directData["userdata"] = $userData->payload;
 			
 			if ($userData->val["settings"] && in_array($userData->val["settings"]["theme"], $designList)) {
 				$tmpl->set_var("DESIGN", $userData->val["settings"]["theme"]);
@@ -81,26 +81,32 @@ if (!$settings->get("online")) {
 		}
 		
 		if ($albums->val) {
-			$directData[] = "albums: " . $albums->payload;
+			$directData["albums"] = $albums->payload;
 		}
 		
 		if ($tasks->val) {
-			$directData[] = "tasks: " . $tasks->payload;
+			$directData["tasks"] = $tasks->payload;
 		}
 		
 		if ($subjects->val) {
-			$directData[] = "subjects: " . $subjects->payload;
+			$directData["subjects"] = $subjects->payload;
 		}
 		
 		if ($contacts->val) {
-			$directData[] = "contacts: " . $contacts->payload;
+			$directData["contacts"] = $contacts->payload;
 		}
 		
 		if ($files->val) {
-			$directData[] = "files: " . $files->payload;
+			$directData["files"] = $files->payload;
 		}
 		
-		$tmpl->set_var("DIRECTDATA", implode(",\n", $directData) . "\n");
+		$dataInsertion = "";
+		
+		foreach ($directData as $key => $value) {
+			$dataInsertion .= "App.DirectData.set(\"" . $key . "\", " . $value . ");\n";
+		}
+		
+		$tmpl->set_var("DIRECTDATA", $dataInsertion);
 	}
 }
 

@@ -155,6 +155,14 @@ App.LoadingIndicator = function() {
 	};
 }();
 
+App.DirectData = new (Class.create(Hash, {
+	set: function($super, key, value) {
+		if (value && !Object.isNull(value.result) && Object.isDefined(value.result)) {
+			$super(key, value.result);
+		}
+	}
+}))();
+
 var Sprite = Class.create({
 	initialize: function(spriteName, index, className) {
 		this.spriteName = spriteName;

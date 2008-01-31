@@ -83,11 +83,11 @@ var User = new (Class.create(/** @scope User.prototype */ {
 	initialize: function() {
 		App.on("initialize", function() {
 			User.StateDetection.initialize();
-			var userData = DirectData.get("userdata");
+			var userData = App.DirectData.get("userdata");
 			
 			if (userData) {
 				// Der Benutzer wurde bereits vom Server identifiziert
-				this._signInSuccess(new JSONRPC.Response(userData.result));
+				this._signInSuccess(new JSONRPC.Response(userData));
 			}
 		}, this);
 	},

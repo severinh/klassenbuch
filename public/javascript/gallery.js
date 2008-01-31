@@ -34,7 +34,7 @@ var Gallery = new (Class.create(JSONRPC.Store, {
 		
 		App.on("initialize", function() {
 			this.options.itemClass = Gallery.Album;
-			this.loadData(DirectData.get("albums").result);
+			this.loadData(App.DirectData.get("albums"));
 		}, this);
 	},
 	

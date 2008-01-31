@@ -34,7 +34,7 @@ var Storage = new (Class.create(JSONRPC.Store, {
 		
 		App.on("initialize", function() {
 			this.options.itemClass = Storage.File;
-			this.loadData(DirectData.get("files").result);
+			this.loadData(App.DirectData.get("files"));
 		}, this);
 	},
 	

@@ -27,7 +27,7 @@ var Contacts = new (Class.create(JSONRPC.Store, {
 		
 		App.on("initialize", function() {
 			this.options.itemClass = Contacts.Contact;
-			this.loadData(DirectData.get("contacts").result);
+			this.loadData(App.DirectData.get("contacts"));
 			
 			User.on("signIn", this.load, this);
 			User.on("signOut", this.hidePersonalInformation, this);

@@ -7,26 +7,11 @@
 	<link href="design/print.css" media="print" type="text/css" rel="stylesheet" />
 	
 	{IF !SIMPLEMESSAGE}
-		<script type="text/javascript">
-			// Könnte bestimmt noch eleganter gelöst werden
-			var DirectData = {
-				get: function(name) {
-					var data = DirectData._items[name];
-
-					if (data && Object.isDefined(data.result)) {
-						return data;
-					} else {
-						return false;
-					}
-				},
-				
-				_items: {
-{DIRECTDATA}
-				}
-			};
-		</script>
-		
 		<script src="javascript/klassenbuch.complete.js" type="text/javascript"></script>
+		
+		<script type="text/javascript">
+{DIRECTDATA}
+		</script>
 	{ENDIF}
 	
 	<title>{TITLE} {SUBTITLE}{IF PAGETITLE} - {PAGETITLE}{ENDIF}</title>
