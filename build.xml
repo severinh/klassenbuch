@@ -5,7 +5,9 @@
 		lets the students have discussions and share their photos in a easy-to-use online gallery.
 	</description>
 	
-	<target name="prepare">
+	<property name="os" value="linux"/>
+	
+	<target name="dist">
 		<mkdir dir="dist"/>
 		
 		<copy todir="dist">
@@ -16,42 +18,58 @@
 		
 		<mkdir dir="dist/javascript" />
 		
-		<concat destfile="build/klassenbuch.complete.uncompressed.js">
+		<concat destfile="dist/javascript/klassenbuch.complete.js">
 			<filelist dir="public/javascript">
-				<file name="prototype.js"/>
+				<file name="lib/prototype.js"/>
 				<file name="prototype.extensions.js"/>
-				<file name="swfupload.js"/>
-				<file name="klassenbuch.jsonrpc.js"/>
-				<file name="klassenbuch.js"/>
-				<file name="klassenbuch.history.js"/>
-				<file name="klassenbuch.controls.js"/>
-				<file name="klassenbuch.user.js"/>
-				<file name="klassenbuch.theme.js"/>
-				<file name="klassenbuch.tasks.js"/>
-				<file name="klassenbuch.contacts.js"/>
-				<file name="klassenbuch.storage.js"/>
-				<file name="klassenbuch.gallery.js"/>
-				<file name="klassenbuch.shoutbox.js"/>
-				<file name="klassenbuch.comments.js"/>
+				<file name="lib/swfupload.js"/>
+				<file name="jsonrpc.js"/>
+				<file name="app.js"/>
+				<file name="history.js"/>
+				<file name="control.js"/>
+				<file name="controls/autoresizingcontrol.js"/>
+				<file name="controls/button.js"/>
+				<file name="controls/dropdownselection.js"/>
+				<file name="controls/link.js"/>
+				<file name="controls/tabcontrol.js"/>
+				<file name="controls/menu.js"/>
+				<file name="controls/roundedpane.js"/>
+				<file name="controls/view.js"/>
+				<file name="controls/sidemenu.js"/>
+				<file name="controls/form.js"/>
+				<file name="controls/window.js"/>
+				<file name="controls/table.js"/>
+				<file name="controls/progressbar.js"/>
+				<file name="controls/calendar.js"/>
+				<file name="notifier.js"/>
+				<file name="user.js"/>
+				<file name="theme.js"/>
+				<file name="tasks.js"/>
+				<file name="contacts.js"/>
+				<file name="storage.js"/>
+				<file name="gallery.js"/>
+				<file name="shoutbox.js"/>
+				<file name="comments.js"/>
 			</filelist>
 		</concat>
 	</target>
 	
-	<target name="final" depends="prepare">
-		<java jar="build/yuicompressor-2.2.5.jar" failonerror="true" fork="true">
-			<arg line="build/klassenbuch.complete.uncompressed.js -o dist/javascript/klassenbuch.complete.js"/>
-		</java>
-		
-		<delete file="build/klassenbuch.complete.uncompressed.js"/>
+	<target name="debug" depends="dist">
 	</target>
 	
-	<target name="debug" depends="prepare">
-		<move file="build/klassenbuch.complete.uncompressed.js" tofile="dist/javascript/klassenbuch.complete.js"/>
+	<target name="final" depends="dist">
+		<java jar="build/yuicompressor-2.2.5.jar" failonerror="true" fork="true">
+			<arg line="dist/javascript/klassenbuch.complete.js -o dist/javascript/klassenbuch.complete.js"/>
+		</java>
 	</target>
 	
 	<target name="docs">
 		<java dir="build/jsdoc_toolkit/" jar="build/jsdoc_toolkit/app/js.jar" failonerror="true" fork="true">
 			<arg line="app/run.js -t=templates/sweet -d=../../docs -a ../../public/javascript/"/>
 		</java>
+	</target>
+	
+	<target name="test" depends="dist">
+		
 	</target>
 </project>
