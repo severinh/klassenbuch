@@ -17,17 +17,20 @@
 	<title>{TITLE} {SUBTITLE}{IF PAGETITLE} - {PAGETITLE}{ENDIF}</title>
 </head>
 <body>
-	<div id="title" class="unselectable">
-		<h1>{TITLE}</h1>
-		<span>{SUBTITLE}</span>
+	<div id="header">
+		<div id="title" class="unselectable">
+			<h1>{TITLE}</h1>
+			<span>{SUBTITLE}</span>
+		</div>
+		
+		{IF SIMPLEMESSAGE}
 	</div>
-	
-	{IF SIMPLEMESSAGE}
 		<div class="simpleMessage">
 			<h2>{SIMPLEMESSAGETITLE}</h2>
 			{SIMPLEMESSAGEBODY}
 		</div>
-	{ELSE}
+	
+		{ELSE}
 		<ul id="headerLinks" class="notSignedIn unselectable">
 			<li><a href="javascript:User.showRegisterWindow();">Registrieren</a></li>
 			<li><a href="javascript:User.showSignInWindow();">Anmelden</a></li>
@@ -42,52 +45,53 @@
 		<div id="menu" class="unselectable">
 			<div id="activeRequest">Laden...</div>
 		</div>
+	</div>
 		
-		<div id="content"></div>
+	<div id="content"></div>
 		
-		<noscript>
-			<div class="simpleMessage">
-				<h2>JavaScript ist nicht aktiviert</h2>
-				<p>Damit das Klassenbuch korrekt angezeigt werden kann, muss bei deinem Browser 
-				<a href="http://de.wikipedia.org/wiki/JavaScript">JavaScript</a> aktiviert sein.
-				Die Vorgehensweise zur Aktivierung unterscheidet sich von Browser zu Browser:</p>
-				
-				<ul>
-					<li><strong>Firefox</strong>: Wähle im Menü <em>Extras</em> den Menüpunkt <em>Einstellungen</em>.
-					Aktiviere dann im Reiter <em>Inhalt</em> den Punkt <em>JavaScript aktivieren</em>.</li>
-					<li><strong>Internet Explorer</strong>: Wähle im Menü <em>Extras</em> den Menüpunkt <em>Internetoptionen</em>.
-					Klicke auf den Reiter <em>Sicherheit</em> und dann auf die Schaltfläche <em>Stufe anpassen</em>.
-					Aktiviere im Abschnitt <em>Scripting</em> den Punkt <em>Active Scripting</em>.</li>
-					<li><strong>Opera</strong>: Wähle im Menü <em>Extras</em> den Menüpunkt <em>Einstellungen</em>.
-					Klicke auf den Reiter <em>Erweitert</em> und wähle im Seitenmenu den Punkt <em>Inhalte</em>.
-					Setze nun ein Häckchen vor den Text <em>JavaScript aktivieren</em>.</li>
-					<li><strong>Safari</strong>: Wähle im Menü <em>Bearbeiten</em> den Menüpunkt <em>Einstellungen</em>.
-					Aktiviere dann im Reiter <em>Sicherheit</em> den Punkt <em>JavaScript aktivieren</em>.</li>
-				</ul>
-				
-				<p>Bestätige nun die Änderungen mit einem Klick auf <em>OK</em> und lade das Klassenbuch neu.<br />
-				Wende dich bei Fragen an <a href="mailto:{ADMINMAIL}">{ADMINNAME}</a>.</p>
-			</div>
-		</noscript>
-		
-		<div id="browserNotSupported" style="display: none;" class="simpleMessage">
-			<h2>Browser wird nicht unterstützt</h2>
+	<noscript>
+		<div class="simpleMessage">
+			<h2>JavaScript ist nicht aktiviert</h2>
+			<p>Damit das Klassenbuch korrekt angezeigt werden kann, muss bei deinem Browser 
+			<a href="http://de.wikipedia.org/wiki/JavaScript">JavaScript</a> aktiviert sein.
+			Die Vorgehensweise zur Aktivierung unterscheidet sich von Browser zu Browser:</p>
 			
-			<p>Leider ist das Klassenbuch nicht mit dieser Browser-Version kompatibel. Bitte aktualisiere deinen 
-			Browser auf die neuste Version.</p>
-			
-			<h3>Unterstützte Browser</h3>
 			<ul>
-				<li><a href="http://www.mozilla-europe.org/de/products/firefox/">Firefox 1.5 oder neuer</a> <em>
-				(empfohlen)</em></li>
-				<li><a href="http://www.microsoft.com/switzerland/windows/de/downloads/ie/getitnow.mspx">Internet 
-				Explorer 6 oder neuer</a></li>
-				<li><a href="http://www.opera.com/products/desktop/?htlanguage=de/">Opera</a></li>
-				<li><a href="http://www.apple.com/de/safari/">Safari</a></li>
+				<li><strong>Firefox</strong>: Wähle im Menü <em>Extras</em> den Menüpunkt <em>Einstellungen</em>.
+				Aktiviere dann im Reiter <em>Inhalt</em> den Punkt <em>JavaScript aktivieren</em>.</li>
+				<li><strong>Internet Explorer</strong>: Wähle im Menü <em>Extras</em> den Menüpunkt <em>Internetoptionen</em>.
+				Klicke auf den Reiter <em>Sicherheit</em> und dann auf die Schaltfläche <em>Stufe anpassen</em>.
+				Aktiviere im Abschnitt <em>Scripting</em> den Punkt <em>Active Scripting</em>.</li>
+				<li><strong>Opera</strong>: Wähle im Menü <em>Extras</em> den Menüpunkt <em>Einstellungen</em>.
+				Klicke auf den Reiter <em>Erweitert</em> und wähle im Seitenmenu den Punkt <em>Inhalte</em>.
+				Setze nun ein Häckchen vor den Text <em>JavaScript aktivieren</em>.</li>
+				<li><strong>Safari</strong>: Wähle im Menü <em>Bearbeiten</em> den Menüpunkt <em>Einstellungen</em>.
+				Aktiviere dann im Reiter <em>Sicherheit</em> den Punkt <em>JavaScript aktivieren</em>.</li>
 			</ul>
 			
-			<p>Vielen Dank für dein Verständnis.</p>
+			<p>Bestätige nun die Änderungen mit einem Klick auf <em>OK</em> und lade das Klassenbuch neu.<br />
+			Wende dich bei Fragen an <a href="mailto:{ADMINMAIL}">{ADMINNAME}</a>.</p>
 		</div>
+	</noscript>
+	
+	<div id="browserNotSupported" style="display: none;" class="simpleMessage">
+		<h2>Browser wird nicht unterstützt</h2>
+		
+		<p>Leider ist das Klassenbuch nicht mit dieser Browser-Version kompatibel. Bitte aktualisiere deinen 
+		Browser auf die neuste Version.</p>
+		
+		<h3>Unterstützte Browser</h3>
+		<ul>
+			<li><a href="http://www.mozilla-europe.org/de/products/firefox/">Firefox 1.5 oder neuer</a> <em>
+			(empfohlen)</em></li>
+			<li><a href="http://www.microsoft.com/switzerland/windows/de/downloads/ie/getitnow.mspx">Internet 
+			Explorer 6 oder neuer</a></li>
+			<li><a href="http://www.opera.com/products/desktop/?htlanguage=de/">Opera</a></li>
+			<li><a href="http://www.apple.com/de/safari/">Safari</a></li>
+		</ul>
+		
+		<p>Vielen Dank für dein Verständnis.</p>
+	</div>
 	{ENDIF}
 </body>
 </html>

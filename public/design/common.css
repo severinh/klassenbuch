@@ -73,6 +73,33 @@ ul {
 	user-select: none;
 }
 
+#notifier {
+	position: absolute;
+	top: 8px;
+	padding: 3px;
+	z-index: 1000;
+	width: 350px;
+}
+
+#notifier.info {
+	border: #204A87 2px solid;;
+	background-color: #D0D7E5;
+}
+
+#notifier.warn {
+	border: #C4A000 2px solid;
+	background-color: #F7EDCA;
+}
+
+#notifier.error {
+	border: #A40000 2px solid;
+	background-color: #EFCACA;
+}
+
+#notifier .linkControl {
+	margin-left: 5px;
+}
+
 /* Das Element, welches das Klassenbuch verdunkelt, wenn ein Fenster angezeigt wird */
 #overlay {
 	background-color: #000;
