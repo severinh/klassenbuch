@@ -5,8 +5,6 @@
 		lets the students have discussions and share their photos in a easy-to-use online gallery.
 	</description>
 	
-	<property name="os" value="linux"/>
-	
 	<target name="dist">
 		<mkdir dir="dist"/>
 		
@@ -61,15 +59,5 @@
 		<java jar="build/yuicompressor-2.2.5.jar" failonerror="true" fork="true">
 			<arg line="dist/javascript/klassenbuch.complete.js -o dist/javascript/klassenbuch.complete.js"/>
 		</java>
-	</target>
-	
-	<target name="docs">
-		<java dir="build/jsdoc_toolkit/" jar="build/jsdoc_toolkit/app/js.jar" failonerror="true" fork="true">
-			<arg line="app/run.js -t=templates/sweet -d=../../docs -a ../../public/javascript/"/>
-		</java>
-	</target>
-	
-	<target name="test" depends="dist">
-		
 	</target>
 </project>
