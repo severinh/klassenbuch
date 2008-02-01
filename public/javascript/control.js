@@ -93,16 +93,15 @@ var Control = Class.create(/** @scope Control.Prototype */ {
 	
 	/**
 	 * @method Connects a list of keys to a handler function that is executed, as soon as the user presses one of the keys.
-	 * @param {Number[]|Number} keys A list of numeric key codes. Can be a single non-array key code as well. A textual
-	 * list of key codes is included in Prototype's Event namespace. This method automatically enables the shortcut
-	 * detection.
+	 * @param {Number[]} keys A list of numeric key codes. A textual list of key codes is included in Prototype's
+	 * Event namespace. This method automatically enables the shortcut detection.
 	 * @param {Object} handler The shortcut handler function.
 	 * @param {Object} [scope] The scope in which the handler is to be executed.
 	*/
 	registerShortcut: function(keys, handler, scope) {
 		handler = handler.bind(scope);
 		
-		$A(keys).each(function(key) {
+		keys.each(function(key) {
 			this._shortcuts[key] = handler;
 		}, this);
 		
