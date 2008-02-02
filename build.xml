@@ -56,7 +56,7 @@
 	</target>
 	
 	<target name="final" depends="dist">
-		<java jar="build/yuicompressor-2.2.5.jar" failonerror="true" fork="true">
+		<java jar="build/yuicompressor-2.3.2.jar" failonerror="true" fork="true">
 			<arg line="dist/javascript/klassenbuch.complete.js -o dist/javascript/klassenbuch.complete.js"/>
 		</java>
 	</target>
